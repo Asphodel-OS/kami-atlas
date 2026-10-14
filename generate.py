@@ -468,19 +468,162 @@ def rel_type(comp):
     return 'directed'
 
 
+def split_args(raw, i):
+    """Top-level comma-separated arguments of a call whose '(' ends just before i, as normalized text."""
+    depth, cur, out = 1, [], []
+    while i < len(raw) and depth:
+        ch = chr(raw[i])
+        if ch in '([': depth += 1
+        elif ch in ')]': depth -= 1
+        if depth == 1 and ch == ',': out.append(''.join(cur)); cur = []
+        elif depth: cur.append(ch)
+        i += 1
+    out.append(''.join(cur))
+    return [' '.join(a.split()) for a in out if a.strip()]
+
+
+COMP_METHODS = ('set', 'get', 'safeGet', 'has', 'remove', 'inc', 'dec', 'extract', 'getValue', 'setAll', 'getEntitiesWithValue', 'eqString')
+
+
+def classify_namespaces(ix, ns_struct):
+    """Is each hashed namespace a stored record (components are written at the id) or an anchor key (the id is only ever
+    a value other records point at)? Follows the generator function's result through locals, returns and parameters."""
+    gen = {}  # fid -> ns, for functions that return a namespace id
+    for ns, occ in ns_struct.items():
+        for ofid, _ in occ:
+            if ofid is not None: gen.setdefault(ofid, ns)
+    def unwrap(e):
+        while isinstance(e, dict) and e.get('nodeType') == 'FunctionCall' and e.get('kind') == 'typeConversion': e = e['arguments'][0]
+        return e
+    changed = True
+    while changed:  # wrappers: function W returns genX(...) -> W also produces that namespace
+        changed = False
+        for fid, (c, f, path) in ix.fn.items():
+            if fid in gen or not f.get('body'): continue
+            for n in walk(f['body']):
+                if n.get('nodeType') == 'Return' and n.get('expression'):
+                    e = unwrap(n['expression'])
+                    if e.get('nodeType') == 'FunctionCall' and e['expression'].get('referencedDeclaration') in gen:
+                        gen[fid] = gen[e['expression']['referencedDeclaration']]; changed = True; break
+    role_cache = {}
+    def is_comp_call(callee):
+        return callee.get('nodeType') == 'MemberAccess' and callee.get('memberName') in COMP_METHODS and \
+            'Component' in callee['expression'].get('typeDescriptions', {}).get('typeString', '')
+    def comp_name(callee):
+        t = callee['expression'].get('typeDescriptions', {}).get('typeString', '')
+        c = ix.comp_of(callee['expression'], {})
+        return c if c and not c.startswith('@') else re.sub(r'^contract\s+|Component$', '', t)
+    def call_args(n):
+        callee = n['expression']; args = list(n['arguments'])
+        ref = callee.get('referencedDeclaration')
+        if ref in ix.fn and callee.get('nodeType') == 'MemberAccess' and len(ix.fn[ref][1]['parameters']['parameters']) == len(args) + 1:
+            args = [None] + args  # using-for
+        return ref, args
+    def param_roles(fid, pi, depth=0):
+        """[(role, component or consumer)] for how parameter pi of fid is used."""
+        key = (fid, pi)
+        if key in role_cache: return role_cache[key]
+        role_cache[key] = []
+        if depth > 4 or fid not in ix.fn or not ix.fn[fid][1].get('body'): return []
+        ps = ix.fn[fid][1]['parameters']['parameters']
+        if pi >= len(ps): return []
+        pid, out = ps[pi]['id'], []
+        for n in walk(ix.fn[fid][1]['body']):
+            if n.get('nodeType') != 'FunctionCall' or n.get('kind') != 'functionCall': continue
+            callee = n['expression']
+            for j, a in enumerate(n['arguments']):
+                a = unwrap(a)
+                if not (isinstance(a, dict) and a.get('nodeType') == 'Identifier' and a.get('referencedDeclaration') == pid): continue
+                if is_comp_call(callee):
+                    out.append(('id' if j == 0 and callee['memberName'] != 'getEntitiesWithValue' else 'value', comp_name(callee)))
+                else:
+                    ref, args = call_args(n)
+                    if ref in ix.fn:
+                        jj = args.index(n['arguments'][j]) if n['arguments'][j] in args else j
+                        sub = param_roles(ref, jj, depth + 1)
+                        if sub and ix.name(ref) == 'LibConditional.create' and any(r == 'id' for r, _ in sub):
+                            sub = sub + [('shape', 'CONDITION')]
+                        out += sub
+        role_cache[key] = out
+        return out
+    uses = defaultdict(list)  # ns -> [(role, component, where)]
+    for fid, (c, f, path) in ix.fn.items():
+        if not f.get('body'): continue
+        local = {}
+        for n in walk(f['body']):
+            if n.get('nodeType') == 'VariableDeclarationStatement' and n.get('initialValue') and len(n['declarations']) == 1 and n['declarations'][0]:
+                e = unwrap(n['initialValue'])
+                if e.get('nodeType') == 'FunctionCall' and e['expression'].get('referencedDeclaration') in gen:
+                    local[n['declarations'][0]['id']] = gen[e['expression']['referencedDeclaration']]
+            if n.get('nodeType') == 'Assignment' and n['leftHandSide'].get('nodeType') == 'Identifier':
+                e = unwrap(n['rightHandSide'])
+                if e.get('nodeType') == 'FunctionCall' and e['expression'].get('referencedDeclaration') in gen:
+                    local[n['leftHandSide']['referencedDeclaration']] = gen[e['expression']['referencedDeclaration']]
+        def ns_of(a):
+            a = unwrap(a)
+            if not isinstance(a, dict): return None
+            if a.get('nodeType') == 'FunctionCall' and a['expression'].get('referencedDeclaration') in gen: return gen[a['expression']['referencedDeclaration']]
+            if a.get('nodeType') == 'Identifier': return local.get(a.get('referencedDeclaration'))
+            return None
+        for n in walk(f['body']):
+            if n.get('nodeType') != 'FunctionCall' or n.get('kind') != 'functionCall': continue
+            callee = n['expression']
+            for j, a in enumerate(n['arguments']):
+                ns = ns_of(a)
+                if not ns: continue
+                if is_comp_call(callee):
+                    role = 'id' if j == 0 and callee['memberName'] != 'getEntitiesWithValue' else 'value'
+                    uses[ns].append((role, comp_name(callee), ix.key(fid)))
+                else:
+                    ref, args = call_args(n)
+                    if ref in ix.fn and ref not in gen:
+                        jj = args.index(n['arguments'][j]) if n['arguments'][j] in args else j
+                        roles_ = param_roles(ref, jj)
+                        if ix.name(ref) == 'LibConditional.create' and any(r == 'id' for r, _ in roles_):
+                            roles_ = roles_ + [('shape', 'CONDITION')]
+                        for r, comp in roles_:
+                            uses[ns].append((r, comp, ix.key(fid)))
+    out = {}
+    comp_names = set(ix.comp_id_decl.values())
+    for ns in ns_struct:
+        u = uses.get(ns, [])
+        ids = [x for x in u if x[0] == 'id']; vals = [x for x in u if x[0] == 'value']
+        kind = 'record' if ids else 'anchor key' if vals else 'unused'
+        rec = {'kind': kind}
+        real = lambda c: c in comp_names
+        if ids: rec['fields'] = sorted({c for _, c, _ in ids if real(c)})
+        if vals and not ids: rec['pointed_at_by'] = sorted({c for _, c, _ in vals if real(c)})
+        if any(r == 'shape' for r, _, _ in u): rec['shape'] = 'CONDITION'
+        out[ns] = rec
+    return out, gen
+
+
 SHAPE_NAMES = {'LibConditional': 'CONDITION', 'LibRoom.createGate': 'ROOM_GATE', 'LibCommit': 'COMMIT',
                'LibKill._logBounty': 'KILL_BOUNTY_LOG'}  # names for untyped shapes; others default to the library name
 SINGLETON_NAMES = {'gacha.id': 'GACHA_POOL'}
+ADDRESS_KEYED_NAMES = {'CacheOperator': 'operator.cache'}
 ADMIN_MODIFIERS = {'onlyAdmin', 'onlyOwner', 'onlyCommManager', 'onlyLocal'}  # entry points players can't call
 
 
-def derive_domain(ix, ents, creators, ns_struct, systems, indexed=None, untyped=(), singletons=None):
-    indexed = indexed or {}
+def derive_domain(ix, ents, creators, ns_struct, systems, indexed=None, untyped=(), singletons=None, ns_kind=None, gen_ns=None):
+    indexed, ns_kind, gen_ns = indexed or {}, ns_kind or {}, gen_ns or {}
+    via_anchor = []  # anchor keys passed through while resolving the current link
     """Top-level entities, their links and sub-entities, inferred from the code. `inferred` marks name-based guesses."""
     callers = defaultdict(list)  # callee fid -> [(caller fid, args)]
     for fid in ix.fn:
         for st in flat_events(ix.events(fid)):
             if st[0] == 'call' and len(st) > 4: callers[st[1]].append((fid, st[4]))
+
+    def gen_owner(text, where_lib):
+        """For a value like genReqAnchor(nodeIndex): the namespace it produces and the entity whose library defines it."""
+        m = re.match(r'(?:(\w+)\.)?(\w+)\(', text or '')
+        if not m: return None, None
+        lib = m.group(1) or where_lib
+        fid = key_fid.get('%s.%s' % (lib, m.group(2)))
+        if fid is None or fid not in gen_ns: return None, None
+        owners = lib_creates.get(ix.fn[fid][0]) or {e for e, cs in creators.items() if any(stem(ix.fn[c][0]) == stem(ix.fn[fid][0]) for c in cs)}
+        owners = {o for o in owners if o not in untyped}
+        return gen_ns[fid], (next(iter(owners)) if len(owners) == 1 else None)
 
     def trace(fid, pi, depth=0, seen=()):
         """Entity types that callers pass as parameter pi of fid."""
@@ -492,6 +635,9 @@ def derive_domain(ix, ents, creators, ns_struct, systems, indexed=None, untyped=
             t = name_type(nm) if kind in ('ref', 'expr') else None
             if not t and nm in ('id', 'entityID') and len(lib_creates.get(ix.fn[caller][0], ())) == 1:
                 t = next(iter(lib_creates[ix.fn[caller][0]]))
+            if not t and kind == 'expr':
+                ns_, owner_ = gen_owner(nm, ix.fn[caller][0])
+                if owner_: t = owner_; via_anchor.append(ns_)
             if t: out.add(t); continue
             cps = [x['id'] for x in ix.fn[caller][1]['parameters']['parameters']]
             if kind == 'ref' and ref in cps:
@@ -500,6 +646,8 @@ def derive_domain(ix, ents, creators, ns_struct, systems, indexed=None, untyped=
 
     def resolve(fid, argname):
         """Type for an argument name inside fid: by name, else traced through callers if it is a parameter."""
+        ns_, owner_ = gen_owner(argname, ix.fn[fid][0] if fid in ix.fn else None)
+        if owner_: via_anchor.append(ns_); return {owner_}, False
         t = name_type(argname)
         if t: return {t}, False
         ps = [x['name'] for x in ix.fn[fid][1]['parameters']['parameters']] if fid in ix.fn else []
@@ -607,9 +755,12 @@ def derive_domain(ix, ents, creators, ns_struct, systems, indexed=None, untyped=
                 types = {INDEX_TARGET[comp]}; how.append('component name: %s points at %s by index' % (comp, INDEX_TARGET[comp]))
             else:
                 for c, val, where, conds in rows:
+                    del via_anchor[:]
                     t, inf = resolve(key_fid.get(where), val)
                     types |= t; inferred |= inf
-                    how.append('%s = %s in %s%s' % (comp, val, where, ' (traced through callers)' if inf and t else ' (from the name)' if t else ' (not resolved)'))
+                    anchors = sorted(set(via_anchor))
+                    how.append('%s = %s in %s%s%s' % (comp, val, where, ' (traced through callers)' if inf and t else ' (from the name)' if t else ' (not resolved)',
+                                                      ('; through anchor keys ' + ', '.join(anchors)) if anchors else ''))
             dev = lambda z: ix.fn[z][2].endswith('__LocalSetupSystem.sol')  # local-only setup, never deployed
             later = [z for z, op in all_sets.get(comp, []) if op == 'set' and not dev(z) and ix.fn[z][0] not in {ix.fn[c][0] for c in creators[et]}]
             removed = [z for z, op in all_sets.get(comp, []) if op == 'remove']
@@ -681,15 +832,56 @@ def derive_domain(ix, ents, creators, ns_struct, systems, indexed=None, untyped=
         sub = {'id': '%s(%s)' % (ns, ', '.join(keys)), 'keys': keyinfo, 'parent_from': how,
                'relation': {'type': 'keyed', 'required': True,
                             'navigate': {'down': 'compute %s(%s) from the parent' % (ns, ', '.join(keys)), 'up': 'from the key values'}}}
+        sub.update(ns_kind.get(ns, {}))
         if parent:
             model[parent].setdefault('sub_entities', {})[ns] = sub
         else:
             sub['held_by'] = runtime_holders or None
             shared[ns] = {k: v for k, v in sub.items() if v is not None}
+    # untyped shapes built on another shape's fields (a room gate is a condition plus pointers)
+    def reach(fid, depth=0, seen=None):
+        seen = set() if seen is None else seen
+        if fid in seen or depth > 3: return seen
+        seen.add(fid)
+        for st in flat_events(ix.events(fid)):
+            if st[0] == 'call': reach(st[1], depth + 1, seen)
+        return seen
+    for et in untyped:
+        mine = {lib_of(c) for c in creators[et]}
+        for other in untyped:
+            if other == et: continue
+            olibs = {lib_of(c) for c in creators[other]}
+            if any(lib_of(z) in olibs and ix.summary(z)['writes'] for c in creators[et] for z in reach(c)) and not (mine & olibs):
+                model[et]['extends'] = other
+
+    # address-keyed records: components written at uint256(uint160(address))
+    for z in ix.fn:
+        for st in flat_events(ix.events(z)):
+            if st[0] == 'access' and st[2] == 'set' and len(st) > 3 and len(st[3]) >= 2 and st[3][0].startswith('uint256(uint160('):
+                inner = st[3][0][len('uint256(uint160('):].rstrip(')')
+                name = ADDRESS_KEYED_NAMES.get(cname(st[1]), 'address.' + cname(st[1]))
+                t, inf = resolve(z, st[3][1].strip())
+                parent = next(iter(t)) if len(t) == 1 else None
+                rec_ = {'id': 'address(%s)' % inner, 'kind': 'record', 'fields': [cname(st[1])], 'keys': {inner: 'wallet address'},
+                        'parent_from': 'value of %s set in %s' % (cname(st[1]), ix.key(z)),
+                        'relation': {'type': 'keyed', 'required': True, 'navigate': {'down': 'read %s at the address' % cname(st[1]), 'up': 'its value'}}}
+                if parent: model[parent].setdefault('sub_entities', {})[name] = rec_
+                else: shared[name] = rec_
+
     order = sorted(model, key=lambda k: ({'runtime': 0, 'hybrid': 1, 'registry': 2}[model[k]['layer']], k))
     model_out = {'relationship_types': REL_TYPES, 'entities': {k: model[k] for k in order}, 'shared_sub_entities': shared}
     if singletons: model_out['singletons'] = singletons
     return model_out
+
+
+def source_rev():
+    """The contracts checkout's commit (and a -dirty mark), so every output says exactly what it was built from."""
+    try:
+        sha = subprocess.run(['git', 'rev-parse', '--short=12', 'HEAD'], cwd=ROOT, capture_output=True, text=True).stdout.strip()
+        dirty = subprocess.run(['git', 'status', '--porcelain', '--', '.'], cwd=ROOT, capture_output=True, text=True).stdout.strip()
+        return (sha or 'unknown') + ('-dirty' if dirty else '')
+    except OSError:
+        return 'unknown'
 
 
 def main():
@@ -865,20 +1057,26 @@ def main():
         if not path.startswith(('src/libraries/', 'src/systems/')): continue
         fids = [(f['src'], ix.key(fid)) for fid, (c, f, p_) in ix.fn.items() if p_ == path]
         raw = ix.src[path]
-        for m in re.finditer(rb'keccak256\(\s*abi\.encodePacked\(\s*"([a-zA-Z][a-zA-Z0-9._]*)"\s*(,[^;]*?)?\)\s*\)', raw):
+        for m in re.finditer(rb'keccak256\(\s*abi\.encode(?:Packed)?\(', raw):
+            args = split_args(raw, m.end())
+            lits = [a for a in args if re.fullmatch(r'"[a-zA-Z][a-zA-Z0-9._]*"', a)]
+            if not lits: continue  # randomness, not an id
+            ns = lits[0].strip('"')
+            keys = [a for a in args if a != lits[0]]
             owner = next((k for src_, k in fids if int(src_.split(':')[0]) <= m.start() < sum(map(int, src_.split(':')[:2]))), None)
-            keyargs = ' '.join((m.group(2) or b'').decode().lstrip(',').split())
-            namespaces[m.group(1).decode()].add('%s(%s)  in %s' % (m.group(1).decode(), keyargs, owner or os.path.basename(path)[:-4]))
+            namespaces[ns].add('%s(%s)  in %s' % (ns, ', '.join(keys), owner or os.path.basename(path)[:-4]))
             ofid = next((fid for fid, (c_, f_, p_) in ix.fn.items() if p_ == path and int(f_['src'].split(':')[0]) <= m.start() < sum(map(int, f_['src'].split(':')[:2]))), None)
-            ns_struct[m.group(1).decode()].append((ofid, [x.strip() for x in keyargs.split(',') if x.strip()]))
+            ns_struct[ns].append((ofid, keys))
     id_ns = {k: sorted(v) for k, v in sorted(namespaces.items())}
+    ns_kind, gen_ns = classify_namespaces(ix, ns_struct)
 
     # untyped shapes reachable from no deployed system are dead code: leave them out
     for et in list(untyped):
         if not any(any(c in r for c in creators[et]) for n, r in sys_reach.items() if not n.startswith('__')):
             untyped.discard(et); ents.pop(et); creators.pop(et)
+    model_meta = {'contracts': os.path.relpath(ROOT, os.path.dirname(HERE)), 'commit': source_rev()}
     model = derive_domain(ix, ents, creators, ns_struct, systems, {c['comp']: bool(c.get('indexed')) for c in deploy['components']},
-                          untyped, singletons)
+                          untyped, singletons, ns_kind, gen_ns)
 
     # function table: every library function reachable from a system, written once
     reach, todo = set(), list(reach_roots)
@@ -918,7 +1116,7 @@ def main():
     for sub in ('systems', 'functions'):
         d_ = os.path.join(GEN, sub)
         for f in os.listdir(d_) if os.path.isdir(d_) else []: os.remove(os.path.join(d_, f))
-    src_note = 'the compiler AST of %s' % os.path.relpath(ROOT, os.path.dirname(HERE))
+    src_note = 'the compiler AST of %s at %s' % (os.path.relpath(ROOT, os.path.dirname(HERE)), source_rev())
     for name, rec in systems.items():
         write(os.path.join(GEN, 'systems', name + '.yaml'), src_note, {name: rec})
     for c, tbl in tables.items():
@@ -926,6 +1124,7 @@ def main():
     write(os.path.join(GEN, 'formulas.yaml'), src_note, formulas)
     write(os.path.join(GEN, 'components.yaml'), src_note, comps)
     write(os.path.join(GEN, 'entities.yaml'), src_note, {'entity_types': ents, 'id_namespaces': id_ns})
+    model = {'source': model_meta, **model}
     write(os.path.join(GEN, 'domain-model.yaml'), src_note, model)
     with open(os.path.join(GEN, 'domain-model.json'), 'w') as f_: json.dump(model, f_, indent=1)
 

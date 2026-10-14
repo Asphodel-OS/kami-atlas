@@ -1,4 +1,8 @@
 {
+ "source": {
+  "contracts": "kamigotchi/packages/contracts",
+  "commit": "2c358a667e6a"
+ },
  "relationship_types": {
   "ownership": "The holder belongs to the referenced entity (IDOwns*, IdHolder).",
   "registry": "The holder is an instance of, or uses, a registry entry, referenced by its index (Index*).",
@@ -73,7 +77,13 @@
        "down": "compute faction.reputation(holderID, index) from the parent",
        "up": "from the key values"
       }
-     }
+     },
+     "kind": "record",
+     "fields": [
+      "IDType",
+      "IdHolder",
+      "Value"
+     ]
     },
     "friendship.ptr": {
      "id": "friendship.ptr(accID, state)",
@@ -89,7 +99,11 @@
        "down": "compute friendship.ptr(accID, state) from the parent",
        "up": "from the key values"
       }
-     }
+     },
+     "kind": "anchor key",
+     "pointed_at_by": [
+      "IDAnchor"
+     ]
     },
     "goal.contribution": {
      "id": "goal.contribution(goalID, accID)",
@@ -105,23 +119,14 @@
        "down": "compute goal.contribution(goalID, accID) from the parent",
        "up": "from the key values"
       }
-     }
-    },
-    "has.flag": {
-     "id": "has.flag(id, flagType)",
-     "keys": {
-      "id": "ACCOUNT",
-      "flagType": null
      },
-     "parent_from": "key",
-     "relation": {
-      "type": "keyed",
-      "required": true,
-      "navigate": {
-       "down": "compute has.flag(id, flagType) from the parent",
-       "up": "from the key values"
-      }
-     }
+     "kind": "record",
+     "fields": [
+      "IDType",
+      "IdHolder",
+      "IsComplete",
+      "Value"
+     ]
     },
     "is.data": {
      "id": "is.data(holderID, index, type_)",
@@ -142,7 +147,11 @@
        "down": "compute is.data(holderID, index, type_) from the parent",
        "up": "from the key values"
       }
-     }
+     },
+     "kind": "record",
+     "fields": [
+      "Value"
+     ]
     },
     "is.score": {
      "id": "is.score(holderID, epoch, index, type_)",
@@ -160,7 +169,13 @@
        "down": "compute is.score(holderID, epoch, index, type_) from the parent",
        "up": "from the key values"
       }
-     }
+     },
+     "kind": "record",
+     "fields": [
+      "IDType",
+      "IdHolder",
+      "Value"
+     ]
     },
     "sacrifice.pity": {
      "id": "sacrifice.pity(accID)",
@@ -175,7 +190,11 @@
        "down": "compute sacrifice.pity(accID) from the parent",
        "up": "from the key values"
       }
-     }
+     },
+     "kind": "record",
+     "fields": [
+      "Value"
+     ]
     },
     "scavenge.instance": {
      "id": "scavenge.instance(field, index, holderID)",
@@ -191,6 +210,29 @@
       "navigate": {
        "down": "compute scavenge.instance(field, index, holderID) from the parent",
        "up": "from the key values"
+      }
+     },
+     "kind": "record",
+     "fields": [
+      "Value"
+     ]
+    },
+    "operator.cache": {
+     "id": "address(addr)",
+     "kind": "record",
+     "fields": [
+      "CacheOperator"
+     ],
+     "keys": {
+      "addr": "wallet address"
+     },
+     "parent_from": "value of CacheOperator set in LibAccount.setOperator",
+     "relation": {
+      "type": "keyed",
+      "required": true,
+      "navigate": {
+       "down": "read CacheOperator at the address",
+       "up": "its value"
       }
      }
     }
@@ -306,24 +348,20 @@
    },
    "links": {
     "IDAnchor": {
-     "to": null,
+     "to": "FRIENDSHIP",
      "type": "attachment",
      "stored_on": "FRIENDSHIP",
      "required": true,
-     "cardinality": "many FRIENDSHIP per referenced entity",
+     "cardinality": "many FRIENDSHIP per FRIENDSHIP",
      "navigate": {
       "up": "read IDAnchor on FRIENDSHIP",
       "down": "reverse lookup on IDAnchor (indexed)"
      },
      "derived": [
-      "IDAnchor = genCounterPtr(targetID, \"REQUEST\") in LibFriend.updateInReqCounter (not resolved)",
+      "IDAnchor = genCounterPtr(targetID, \"REQUEST\") in LibFriend.updateInReqCounter (from the name); through anchor keys friendship.ptr",
       "IDAnchor = pointers in LibFriend.updateFriendCounter (not resolved)"
      ],
-     "inferred": true,
-     "unresolved_from": [
-      "genCounterPtr(targetID, \"REQUEST\")",
-      "pointers"
-     ]
+     "inferred": true
     },
     "IdSource": {
      "to": "ACCOUNT",
@@ -562,7 +600,28 @@
    "owns": [
     "EQUIPMENT",
     "HARVEST"
-   ]
+   ],
+   "sub_entities": {
+    "SOULBOUND": {
+     "id": "SOULBOUND(kamiID)",
+     "keys": {
+      "kamiID": "KAMI"
+     },
+     "parent_from": "holder key",
+     "relation": {
+      "type": "keyed",
+      "required": true,
+      "navigate": {
+       "down": "compute SOULBOUND(kamiID) from the parent",
+       "up": "from the key values"
+      }
+     },
+     "kind": "record",
+     "fields": [
+      "Value"
+     ]
+    }
+   }
   },
   "KAMI_COLLECTION_OFFER": {
    "layer": "runtime",
@@ -934,7 +993,12 @@
        "down": "compute trade.buy(tradeID) from the parent",
        "up": "from the key values"
       }
-     }
+     },
+     "kind": "record",
+     "fields": [
+      "Keys",
+      "Values"
+     ]
     },
     "trade.sell": {
      "id": "trade.sell(tradeID)",
@@ -949,7 +1013,12 @@
        "down": "compute trade.sell(tradeID) from the parent",
        "up": "from the key values"
       }
-     }
+     },
+     "kind": "record",
+     "fields": [
+      "Keys",
+      "Values"
+     ]
     }
    }
   },
@@ -970,24 +1039,20 @@
    "index": "IndexQuest",
    "links": {
     "IDAnchor": {
-     "to": null,
+     "to": "QUEST",
      "type": "attachment",
      "stored_on": "QUEST",
      "required": false,
      "only_when": [
       "for each (i < objectives.length) and handler == HANDLER.INCREASE || handler == HANDLER.DECREASE"
      ],
-     "cardinality": "many QUEST per referenced entity",
+     "cardinality": "many QUEST per QUEST",
      "navigate": {
       "up": "read IDAnchor on QUEST",
       "down": "reverse lookup on IDAnchor (indexed)"
      },
      "derived": [
-      "IDAnchor = genSnapshotAnchor(questID) in LibQuest.snapshotObjective (not resolved)"
-     ],
-     "inferred": true,
-     "unresolved_from": [
-      "genSnapshotAnchor(questID)"
+      "IDAnchor = genSnapshotAnchor(questID) in LibQuest.snapshotObjective (from the name); through anchor keys snapshot.anchor"
      ]
     },
     "IDOwnsQuest": {
@@ -1038,7 +1103,12 @@
        "down": "compute quest.objective.snapshot(questID, logicType, _type, index) from the parent",
        "up": "from the key values"
       }
-     }
+     },
+     "kind": "record",
+     "fields": [
+      "IDAnchor",
+      "Value"
+     ]
     },
     "registry.quest.objective": {
      "id": "registry.quest.objective(index)",
@@ -1053,7 +1123,11 @@
        "down": "compute registry.quest.objective(index) from the parent",
        "up": "from the key values"
       }
-     }
+     },
+     "kind": "anchor key",
+     "pointed_at_by": [
+      "IDAnchor"
+     ]
     },
     "registry.quest.requirement": {
      "id": "registry.quest.requirement(index)",
@@ -1068,7 +1142,11 @@
        "down": "compute registry.quest.requirement(index) from the parent",
        "up": "from the key values"
       }
-     }
+     },
+     "kind": "anchor key",
+     "pointed_at_by": [
+      "IDAnchor"
+     ]
     },
     "registry.quest.reward": {
      "id": "registry.quest.reward(index)",
@@ -1083,7 +1161,11 @@
        "down": "compute registry.quest.reward(index) from the parent",
        "up": "from the key values"
       }
-     }
+     },
+     "kind": "anchor key",
+     "pointed_at_by": [
+      "IDAnchor"
+     ]
     },
     "snapshot.anchor": {
      "id": "snapshot.anchor(questID)",
@@ -1098,7 +1180,11 @@
        "down": "compute snapshot.anchor(questID) from the parent",
        "up": "from the key values"
       }
-     }
+     },
+     "kind": "anchor key",
+     "pointed_at_by": [
+      "IDAnchor"
+     ]
     }
    }
   },
@@ -1229,7 +1315,11 @@
        "down": "compute registry.skill.bonus(index) from the parent",
        "up": "from the key values"
       }
-     }
+     },
+     "kind": "anchor key",
+     "pointed_at_by": [
+      "IDAnchor"
+     ]
     },
     "registry.skill.requirement": {
      "id": "registry.skill.requirement(index)",
@@ -1244,7 +1334,11 @@
        "down": "compute registry.skill.requirement(index) from the parent",
        "up": "from the key values"
       }
-     }
+     },
+     "kind": "anchor key",
+     "pointed_at_by": [
+      "IDAnchor"
+     ]
     }
    }
   },
@@ -1373,7 +1467,11 @@
        "down": "compute auction.requirement(auctionID) from the parent",
        "up": "from the key values"
       }
-     }
+     },
+     "kind": "anchor key",
+     "pointed_at_by": [
+      "IDAnchor"
+     ]
     }
    }
   },
@@ -1392,32 +1490,39 @@
    },
    "links": {
     "IDAnchor": {
-     "to": "ALLOCATION",
+     "to": [
+      "ALLOCATION",
+      "NODE",
+      "SKILL"
+     ],
      "type": "attachment",
      "stored_on": "BONUS",
      "required": true,
-     "cardinality": "one BONUS per ALLOCATION per type_",
+     "cardinality": "one BONUS per ALLOCATION/NODE/SKILL per type_",
      "navigate": {
       "up": "read IDAnchor on BONUS",
       "down": "compute bonus.registry(anchorID, type_), or reverse lookup on IDAnchor (indexed)"
      },
      "derived": [
-      "IDAnchor = anchorID in LibBonus.regCreate (traced through callers)"
+      "IDAnchor = anchorID in LibBonus.regCreate (traced through callers); through anchor keys node.bonus, registry.skill.bonus"
      ],
      "inferred": true
     },
     "IdSource": {
-     "to": "SKILL",
+     "to": [
+      "NODE",
+      "SKILL"
+     ],
      "type": "directed",
      "stored_on": "BONUS",
      "required": true,
-     "cardinality": "many BONUS per SKILL",
+     "cardinality": "many BONUS per NODE/SKILL",
      "navigate": {
       "up": "read IdSource on BONUS",
       "down": "reverse lookup on IdSource (indexed)"
      },
      "derived": [
-      "IdSource = sourceID in LibBonus.regCreate (traced through callers)"
+      "IdSource = sourceID in LibBonus.regCreate (traced through callers); through anchor keys node"
      ],
      "inferred": true
     }
@@ -1454,22 +1559,28 @@
    },
    "links": {
     "IDAnchor": {
-     "to": null,
+     "to": [
+      "AUCTION",
+      "GOAL",
+      "ITEM",
+      "LISTING",
+      "NODE",
+      "QUEST",
+      "RECIPE",
+      "SKILL"
+     ],
      "type": "attachment",
      "stored_on": "CONDITION",
      "required": true,
-     "cardinality": "many CONDITION per referenced entity",
+     "cardinality": "many CONDITION per AUCTION/GOAL/ITEM/LISTING/NODE/QUEST/RECIPE/SKILL",
      "navigate": {
       "up": "read IDAnchor on CONDITION",
       "down": "reverse lookup on IDAnchor (indexed)"
      },
      "derived": [
-      "IDAnchor = pointerID in LibConditional.createFor (not resolved)"
+      "IDAnchor = pointerID in LibConditional.createFor (traced through callers); through anchor keys auction.requirement, goal.requirement, item.requirement, listing.requirement, node.requirement, recipe.requirement, registry.quest.objective, registry.quest.requirement, registry.skill.requirement"
      ],
-     "inferred": true,
-     "unresolved_from": [
-      "pointerID"
-     ]
+     "inferred": true
     }
    },
    "components": [
@@ -1556,7 +1667,17 @@
        "down": "compute goal.objective(goalID) from the parent",
        "up": "from the key values"
       }
-     }
+     },
+     "kind": "record",
+     "fields": [
+      "For",
+      "IDAnchor",
+      "Index",
+      "LogicType",
+      "Type",
+      "Value"
+     ],
+     "shape": "CONDITION"
     },
     "goal.requirement": {
      "id": "goal.requirement(index)",
@@ -1571,7 +1692,11 @@
        "down": "compute goal.requirement(index) from the parent",
        "up": "from the key values"
       }
-     }
+     },
+     "kind": "anchor key",
+     "pointed_at_by": [
+      "IDAnchor"
+     ]
     },
     "goal.reward": {
      "id": "goal.reward(tierID)",
@@ -1586,7 +1711,11 @@
        "down": "compute goal.reward(tierID) from the parent",
        "up": "from the key values"
       }
-     }
+     },
+     "kind": "anchor key",
+     "pointed_at_by": [
+      "IDAnchor"
+     ]
     },
     "goal.tier": {
      "id": "goal.tier(goalIndex)",
@@ -1601,7 +1730,11 @@
        "down": "compute goal.tier(goalIndex) from the parent",
        "up": "from the key values"
       }
-     }
+     },
+     "kind": "anchor key",
+     "pointed_at_by": [
+      "IDAnchor"
+     ]
     }
    }
   },
@@ -1643,7 +1776,11 @@
        "down": "compute item.allo(refID) from the parent",
        "up": "from the key values"
       }
-     }
+     },
+     "kind": "anchor key",
+     "pointed_at_by": [
+      "IDAnchor"
+     ]
     },
     "item.requirement": {
      "id": "item.requirement(refID)",
@@ -1658,7 +1795,11 @@
        "down": "compute item.requirement(refID) from the parent",
        "up": "from the key values"
       }
-     }
+     },
+     "kind": "anchor key",
+     "pointed_at_by": [
+      "IDAnchor"
+     ]
     },
     "item.usecase": {
      "id": "item.usecase(index)",
@@ -1673,7 +1814,11 @@
        "down": "compute item.usecase(index) from the parent",
        "up": "from the key values"
       }
-     }
+     },
+     "kind": "anchor key",
+     "pointed_at_by": [
+      "IDAnchor"
+     ]
     }
    }
   },
@@ -1754,7 +1899,16 @@
        "down": "compute listing.buy(regID) from the parent",
        "up": "from the key values"
       }
-     }
+     },
+     "kind": "record",
+     "fields": [
+      "Decay",
+      "Period",
+      "Rate",
+      "Scale",
+      "Type",
+      "Value"
+     ]
     },
     "listing.requirement": {
      "id": "listing.requirement(regID)",
@@ -1769,7 +1923,11 @@
        "down": "compute listing.requirement(regID) from the parent",
        "up": "from the key values"
       }
-     }
+     },
+     "kind": "anchor key",
+     "pointed_at_by": [
+      "IDAnchor"
+     ]
     },
     "listing.sell": {
      "id": "listing.sell(regID)",
@@ -1784,7 +1942,16 @@
        "down": "compute listing.sell(regID) from the parent",
        "up": "from the key values"
       }
-     }
+     },
+     "kind": "record",
+     "fields": [
+      "Decay",
+      "Period",
+      "Rate",
+      "Scale",
+      "Type",
+      "Value"
+     ]
     }
    }
   },
@@ -1853,7 +2020,11 @@
        "down": "compute node.bonus(index) from the parent",
        "up": "from the key values"
       }
-     }
+     },
+     "kind": "anchor key",
+     "pointed_at_by": [
+      "IDAnchor"
+     ]
     },
     "node.requirement": {
      "id": "node.requirement(index)",
@@ -1868,7 +2039,11 @@
        "down": "compute node.requirement(index) from the parent",
        "up": "from the key values"
       }
-     }
+     },
+     "kind": "anchor key",
+     "pointed_at_by": [
+      "IDAnchor"
+     ]
     }
    }
   },
@@ -1961,7 +2136,12 @@
        "down": "compute recipe.input(recipeIndex) from the parent",
        "up": "from the key values"
       }
-     }
+     },
+     "kind": "record",
+     "fields": [
+      "Keys",
+      "Values"
+     ]
     },
     "recipe.output": {
      "id": "recipe.output(recipeIndex)",
@@ -1976,7 +2156,12 @@
        "down": "compute recipe.output(recipeIndex) from the parent",
        "up": "from the key values"
       }
-     }
+     },
+     "kind": "record",
+     "fields": [
+      "Keys",
+      "Values"
+     ]
     },
     "recipe.requirement": {
      "id": "recipe.requirement(recipeIndex)",
@@ -1991,7 +2176,11 @@
        "down": "compute recipe.requirement(recipeIndex) from the parent",
        "up": "from the key values"
       }
-     }
+     },
+     "kind": "anchor key",
+     "pointed_at_by": [
+      "IDAnchor"
+     ]
     }
    }
   },
@@ -2009,22 +2198,22 @@
    },
    "links": {
     "IDAnchor": {
-     "to": null,
+     "to": [
+      "GOAL",
+      "ITEM"
+     ],
      "type": "attachment",
      "stored_on": "REFERENCE",
      "required": true,
-     "cardinality": "one REFERENCE per referenced entity per field",
+     "cardinality": "one REFERENCE per GOAL/ITEM per field",
      "navigate": {
       "up": "read IDAnchor on REFERENCE",
       "down": "compute reference.instance(field, anchorID), or reverse lookup on IDAnchor (indexed)"
      },
      "derived": [
-      "IDAnchor = anchorID in LibReference._create (not resolved)"
+      "IDAnchor = anchorID in LibReference._create (traced through callers); through anchor keys goal.tier, item.usecase"
      ],
-     "inferred": true,
-     "unresolved_from": [
-      "anchorID"
-     ]
+     "inferred": true
     }
    },
    "components": [
@@ -2064,7 +2253,7 @@
    },
    "links": {
     "IDFrom": {
-     "to": null,
+     "to": "ROOM",
      "type": "directed",
      "stored_on": "ROOM_GATE",
      "required": false,
@@ -2074,39 +2263,31 @@
      ],
      "changes_after_creation": false,
      "removable": true,
-     "cardinality": "many ROOM_GATE per referenced entity",
+     "cardinality": "many ROOM_GATE per ROOM",
      "navigate": {
       "up": "read IDFrom on ROOM_GATE",
       "down": "reverse lookup on IDFrom (indexed)"
      },
      "derived": [
-      "IDFrom = genGateSourcePtr(sourceIndex) in LibRoom.createGate (not resolved)",
+      "IDFrom = genGateSourcePtr(sourceIndex) in LibRoom.createGate (from the name); through anchor keys room.gate.from",
       "IDFrom = 0 in LibRoom.createGate (not resolved)"
      ],
-     "inferred": true,
-     "unresolved_from": [
-      "0",
-      "genGateSourcePtr(sourceIndex)"
-     ]
+     "inferred": true
     },
     "IDTo": {
-     "to": null,
+     "to": "ROOM",
      "type": "directed",
      "stored_on": "ROOM_GATE",
      "required": true,
      "changes_after_creation": false,
      "removable": true,
-     "cardinality": "many ROOM_GATE per referenced entity",
+     "cardinality": "many ROOM_GATE per ROOM",
      "navigate": {
       "up": "read IDTo on ROOM_GATE",
       "down": "reverse lookup on IDTo (indexed)"
      },
      "derived": [
-      "IDTo = genGateAtPtr(roomIndex) in LibRoom.createGate (not resolved)"
-     ],
-     "inferred": true,
-     "unresolved_from": [
-      "genGateAtPtr(roomIndex)"
+      "IDTo = genGateAtPtr(roomIndex) in LibRoom.createGate (from the name); through anchor keys room.gate.to"
      ]
     },
     "IdSource": {
@@ -2140,7 +2321,8 @@
     "LogicType",
     "Type",
     "Value"
-   ]
+   ],
+   "extends": "CONDITION"
   },
   "SCAVENGE": {
    "layer": "registry",
@@ -2174,7 +2356,11 @@
        "down": "compute scavenge.reward(regID) from the parent",
        "up": "from the key values"
       }
-     }
+     },
+     "kind": "anchor key",
+     "pointed_at_by": [
+      "IDAnchor"
+     ]
     }
    }
   },
@@ -2191,21 +2377,17 @@
    },
    "links": {
     "IDAnchor": {
-     "to": null,
+     "to": "TRAIT",
      "type": "attachment",
      "stored_on": "TRAIT",
      "required": true,
-     "cardinality": "many TRAIT per referenced entity",
+     "cardinality": "many TRAIT per TRAIT",
      "navigate": {
       "up": "read IDAnchor on TRAIT",
       "down": "reverse lookup on IDAnchor (indexed)"
      },
      "derived": [
-      "IDAnchor = genReverseMappingPtr(_type) in LibTraitRegistry.setReverseMappingPtr (not resolved)"
-     ],
-     "inferred": true,
-     "unresolved_from": [
-      "genReverseMappingPtr(_type)"
+      "IDAnchor = genReverseMappingPtr(_type) in LibTraitRegistry.setReverseMappingPtr (from the name); through anchor keys registry.trait.type"
      ]
     }
    },
@@ -2235,7 +2417,11 @@
        "down": "compute registry.trait.type(_type) from the parent",
        "up": "from the key values"
       }
-     }
+     },
+     "kind": "anchor key",
+     "pointed_at_by": [
+      "IDAnchor"
+     ]
     }
    }
   }
@@ -2259,6 +2445,10 @@
      "up": "from the key values"
     }
    },
+   "kind": "anchor key",
+   "pointed_at_by": [
+    "IDAnchor"
+   ],
    "held_by": [
     "ACCOUNT",
     "KAMI"
@@ -2283,6 +2473,13 @@
      "up": "from the key values"
     }
    },
+   "kind": "record",
+   "fields": [
+    "IDAnchor",
+    "IDType",
+    "IdSource",
+    "Time"
+   ],
    "held_by": [
     "ACCOUNT",
     "KAMI"
@@ -2306,6 +2503,10 @@
      "up": "from the key values"
     }
    },
+   "kind": "anchor key",
+   "pointed_at_by": [
+    "IDType"
+   ],
    "held_by": [
     "ACCOUNT",
     "KAMI"
@@ -2325,7 +2526,12 @@
      "down": "compute droptable.item.log(holderID, dtID) from the parent",
      "up": "from the key values"
     }
-   }
+   },
+   "kind": "record",
+   "fields": [
+    "Time",
+    "Values"
+   ]
   },
   "flag.type": {
    "id": "flag.type(parentType, flagType)",
@@ -2341,7 +2547,39 @@
      "down": "compute flag.type(parentType, flagType) from the parent",
      "up": "from the key values"
     }
-   }
+   },
+   "kind": "anchor key",
+   "pointed_at_by": [
+    "IDType"
+   ]
+  },
+  "has.flag": {
+   "id": "has.flag(id, flagType)",
+   "keys": {
+    "id": [
+     "ACCOUNT",
+     "ITEM",
+     "QUEST",
+     "ROOM"
+    ],
+    "flagType": null
+   },
+   "parent_from": "no single parent",
+   "relation": {
+    "type": "keyed",
+    "required": true,
+    "navigate": {
+     "down": "compute has.flag(id, flagType) from the parent",
+     "up": "from the key values"
+    }
+   },
+   "kind": "record",
+   "fields": [
+    "HasFlag",
+    "IDOwnsFlag",
+    "IDType",
+    "Type"
+   ]
   },
   "is.config": {
    "id": "is.config(name)",
@@ -2356,7 +2594,11 @@
      "down": "compute is.config(name) from the parent",
      "up": "from the key values"
     }
-   }
+   },
+   "kind": "record",
+   "fields": [
+    "Value"
+   ]
   },
   "room.gate.from": {
    "id": "room.gate.from(index)",
@@ -2371,7 +2613,11 @@
      "down": "compute room.gate.from(index) from the parent",
      "up": "from the key values"
     }
-   }
+   },
+   "kind": "anchor key",
+   "pointed_at_by": [
+    "IDFrom"
+   ]
   },
   "room.gate.to": {
    "id": "room.gate.to(index)",
@@ -2386,7 +2632,11 @@
      "down": "compute room.gate.to(index) from the parent",
      "up": "from the key values"
     }
-   }
+   },
+   "kind": "anchor key",
+   "pointed_at_by": [
+    "IDTo"
+   ]
   },
   "sacrifice.log": {
    "id": "sacrifice.log(holderID, dtID)",
@@ -2402,7 +2652,12 @@
      "down": "compute sacrifice.log(holderID, dtID) from the parent",
      "up": "from the key values"
     }
-   }
+   },
+   "kind": "record",
+   "fields": [
+    "Time",
+    "Values"
+   ]
   },
   "score.total": {
    "id": "score.total(typeID)",
@@ -2420,7 +2675,11 @@
      "down": "compute score.total(typeID) from the parent",
      "up": "from the key values"
     }
-   }
+   },
+   "kind": "record",
+   "fields": [
+    "Value"
+   ]
   },
   "score.type": {
    "id": "score.type(epoch, index, scoreType)",
@@ -2437,7 +2696,11 @@
      "down": "compute score.type(epoch, index, scoreType) from the parent",
      "up": "from the key values"
     }
-   }
+   },
+   "kind": "anchor key",
+   "pointed_at_by": [
+    "IDType"
+   ]
   }
  },
  "singletons": {

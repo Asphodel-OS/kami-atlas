@@ -66,7 +66,12 @@ h1 small { display: block; font: 400 12px/1.3 var(--f-mono); color: var(--muted)
 .zoomed-out .edge .lbl { display: none; }
 .far .node .name { display: none; }
 .faded { opacity: .1; transition: opacity .12s; }
-.node.pinned circle { stroke-dasharray: 3 2; }
+.node.pinned circle { stroke-width: 4; }
+.node.untyped circle { stroke-dasharray: 4 3; }
+.node.singleton path { stroke-width: 2; }
+.node .badge { font: 600 9.5px var(--f-mono); letter-spacing: .06em; text-transform: uppercase; paint-order: stroke; stroke: var(--panel); stroke-width: 3px; pointer-events: none; }
+.sysbtn { font: 500 12px var(--f-mono); color: var(--ink); background: none; border: 1px dashed var(--line); border-radius: 4px; padding: 0 5px; cursor: pointer; }
+.sysbtn:hover { border-color: var(--ink); border-style: solid; }
 .hint { position: absolute; right: 12px; bottom: 10px; font: 11px var(--f-mono); color: var(--muted); background: color-mix(in srgb, var(--panel) 90%, transparent); padding: 3px 6px; border-radius: 4px; pointer-events: none; text-align: right; }
 .maptools .chip { min-width: 30px; justify-content: center; }
 .card rect.box { fill: var(--panel); stroke: var(--line); stroke-width: 1.2; }
@@ -177,6 +182,7 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
   }
   const E = model.entities, NE = notes.entities || {}, NL = notes.links || {}, NS = notes.sub_entities || {};
   const RT = model.relationship_types || {};
+  const SG = model.singletons || {};
 
   // ---------------- facts ----------------
   const compUse = {};
@@ -219,6 +225,16 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
       <div class="row"><b>Changed by</b><span>${cb.length ? list(cb) : '<span class="muted">no field unique to it, so not isolable</span>'}</span></div>
       <div class="row"><b>Structure</b><span>${(e.components || []).length} fields · ${subsOf(n).length} sub-entities · ${relsOf(n).out.length} out, ${relsOf(n).in.length} in</span></div>
       <div class="muted small" style="margin-top:6px">Click to open its structure.</div>`;
+  }
+  function singletonTip(n) {
+    const g = SG[n] || {};
+    return `<h4>${esc(n)}</h4><span class="pill" style="background:var(--muted)">Singleton</span>
+      <div style="margin-top:6px">One entity at a fixed id, not a type: there is only ever one.</div>
+      <div class="row"><b>Id</b><span><code>${esc(g.id || '')}</code> (constant <code>${esc(g.constant || '')}</code>)</span></div>
+      <div class="row"><b>Used in</b><span>${list(arr(g.used_in))}</span></div>`;
+  }
+  function systemTip(n, role) {
+    return `<h4>${esc(n)}</h4><div><b>${esc(role)}</b> by <code>${esc(st.system)}</code></div>${entityTip(n).replace(/^<h4>.*?<\/h4>/, '')}`;
   }
   function relTip(r) {
     const l = r.l;
@@ -283,14 +299,18 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
     svg.transition().duration(ms(dur)).call(zoom.transform, d3.zoomIdentity.translate(lw + aw / 2 - s * (b.x + b.width / 2), H() / 2 - s * (b.y + b.height / 2)).scale(s));
   }
 
-  function legend(types, extra) {
+  function legend(types, extra, shapes) {
     const line = (stroke, dash) => `<svg viewBox="0 0 28 8" aria-hidden="true"><line x1="0" y1="4" x2="22" y2="4" stroke="${stroke}" stroke-width="2"${dash ? ' stroke-dasharray="4 3"' : ''}/><path d="M21 1L27 4L21 7z" fill="${stroke}"/></svg>`;
     document.getElementById('legend').innerHTML =
       '<span class="lg-title">Relationship type</span>'
       + types.map(t => `<span>${line(`var(--r-${t})`)}${esc(REL_NAME[t])}</span>`).join('')
       + '<span class="lg-title">Line</span>'
       + `<span>${line('var(--muted)')}required</span><span>${line('var(--muted)', true)}optional</span>`
-      + `<span class="lg-note">A → B: A stores B's id or index</span>` + (extra ? `<span class="lg-note">${extra}</span>` : '');
+      + `<span class="lg-note">A → B: A stores B's id or index</span>` + (extra ? `<span class="lg-note">${extra}</span>` : '')
+      + (shapes ? '<span class="lg-title">Node</span>'
+        + '<span><svg viewBox="0 0 28 8" aria-hidden="true"><circle cx="8" cy="4" r="3.2" fill="none" stroke="var(--muted)" stroke-width="1.5"/></svg>typed entity</span>'
+        + '<span><svg viewBox="0 0 28 8" aria-hidden="true"><circle cx="8" cy="4" r="3.2" fill="none" stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="2 1.5"/></svg>untyped shape</span>'
+        + '<span><svg viewBox="0 0 28 8" aria-hidden="true"><path d="M8,0.5L11.5,4L8,7.5L4.5,4Z" fill="none" stroke="var(--muted)" stroke-width="1.3"/></svg>singleton</span>' : '');
   }
 
   function edgePath(sx, sy, tx, ty, rT, bend) {
@@ -304,14 +324,17 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
   const st = { layers: new Set(LAYERS), view: 'overview', sel: null };
   let sim;
   const BAND = 320, bandY = { runtime: 0, hybrid: 1, registry: 2 };
-  const radius = n => 12 + Math.sqrt(subsOf(n).length) * 3.2;
+  const radius = n => E[n] ? 12 + Math.sqrt(subsOf(n).length) * 3.2 : 12;
 
-  function overviewView() {
-    st.view = 'overview'; st.sel = null; hide();
-    document.getElementById('crumb').hidden = true; wrap.classList.remove('focus');
+  function overviewView(system) {
+    st.view = 'overview'; st.sel = null; st.system = system && systems[system] ? system : null; hide();
+    document.getElementById('crumb').hidden = !st.system; wrap.classList.toggle('focus', !!st.system);
+    document.getElementById('crumb-name').textContent = st.system ? 'System: ' + st.system : '';
     root.selectAll('*').remove();
     const ids = Object.keys(E).filter(n => st.layers.has(E[n].layer));
     const nodes = ids.map(id => ({ id, layer: E[id].layer }));
+    // singletons that an entity points at (the gacha pool) join the map beside their referrers
+    for (const r of rels) if (r.to && SG[r.to] && ids.includes(r.from) && !nodes.some(n => n.id === r.to)) nodes.push({ id: r.to, layer: E[r.from].layer, singleton: true });
     const byId = Object.fromEntries(nodes.map(n => [n.id, n]));
     const er = rels.filter(r => r.to && byId[r.from] && byId[r.to] && r.from !== r.to);
     const pairCount = {};
@@ -327,15 +350,37 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
     edge.append('text').attr('class', 'lbl').attr('text-anchor', 'middle').style('fill', d => `var(--r-${d.r.l.type})`).text(d => d.r.comp);
     edge.on('mouseenter', (ev, d) => { show(relTip(d.r), ev); edge.classed('faded', e => e !== d); node.classed('faded', n => n.id !== d.source.id && n.id !== d.target.id); })
       .on('mousemove', ev => placeTip(ev))
-      .on('mouseleave', () => { hide(); edge.classed('faded', false); node.classed('faded', false); });
+      .on('mouseleave', () => { hide(); edge.classed('faded', false); node.classed('faded', false); applySystem(); });
 
-    const node = ng.selectAll('g').data(nodes).join('g').attr('class', 'node').attr('tabindex', 0).attr('role', 'button').attr('aria-label', d => d.id);
-    node.append('circle').attr('r', d => radius(d.id))
+    const node = ng.selectAll('g').data(nodes).join('g')
+      .attr('class', d => 'node' + (d.singleton ? ' singleton' : E[d.id] && E[d.id].typed === false ? ' untyped' : ''))
+      .attr('tabindex', 0).attr('role', 'button').attr('aria-label', d => d.id);
+    node.filter(d => !d.singleton).append('circle').attr('r', d => radius(d.id))
       .style('fill', d => `color-mix(in srgb, var(--${d.layer}) 22%, var(--panel))`).style('stroke', d => `var(--${d.layer})`);
+    node.filter(d => d.singleton).append('path').attr('d', 'M0,-12L12,0L0,12L-12,0Z')
+      .style('fill', 'var(--panel)').style('stroke', 'var(--muted)');
     node.append('text').attr('class', 'name').attr('text-anchor', 'middle').attr('dy', d => radius(d.id) + 14).text(d => d.id);
+    const role = {};
+    if (st.system) {
+      const sy = systems[st.system] || {}, w = new Set(sy.writes || []), rd = new Set(sy.reads || []);
+      for (const n of ids) {
+        const own = uniqueFields(n);
+        if (arr(E[n].created_by).includes(st.system)) role[n] = 'creates';
+        else if (own.some(c => w.has(c))) role[n] = 'changes';
+        else if (own.some(c => rd.has(c))) role[n] = 'reads';
+      }
+    }
+    const applySystem = () => {
+      node.selectAll('.badge').remove();
+      if (!st.system) return;
+      node.classed('faded', d => !role[d.id]);
+      edge.classed('faded', d => !(role[d.source.id] && role[d.target.id]));
+      node.filter(d => role[d.id]).append('text').attr('class', 'badge').attr('text-anchor', 'middle')
+        .attr('dy', d => -radius(d.id) - 6).style('fill', d => role[d.id] === 'reads' ? 'var(--muted)' : 'var(--ink)').text(d => role[d.id]);
+    };
     const near = id => { const s = new Set([id]); links.forEach(l => { if (l.source.id === id) s.add(l.target.id); if (l.target.id === id) s.add(l.source.id); }); return s; };
     const highlight = id => {
-      if (!id) { node.classed('faded', false); edge.classed('faded', false); return; }
+      if (!id) { node.classed('faded', false); edge.classed('faded', false); applySystem(); return; }
       const s = near(id);
       node.classed('faded', d => !s.has(d.id));
       edge.classed('faded', d => d.source.id !== id && d.target.id !== id);
@@ -348,10 +393,11 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
       if (reduceMotion) focusView(d.id);
     };
     let dragging = false;
-    node.on('mouseenter', (ev, d) => { if (!dragging) { highlight(d.id); show(entityTip(d.id), ev); } })
+    const tipFor = d => d.singleton ? singletonTip(d.id) : st.system && role[d.id] ? systemTip(d.id, role[d.id]) : entityTip(d.id);
+    node.on('mouseenter', (ev, d) => { if (!dragging) { highlight(d.id); show(tipFor(d), ev); } })
       .on('mousemove', (ev, d) => { if (!dragging) placeTip(ev); })
-      .on('mouseleave', () => { if (!dragging) { highlight(null); hide(); } })
-      .on('click', (ev, d) => { ev.stopPropagation(); if (ev.defaultPrevented) return; flyTo(d); })
+      .on('mouseleave', () => { if (!dragging) { highlight(null); applySystem(); hide(); } })
+      .on('click', (ev, d) => { ev.stopPropagation(); if (ev.defaultPrevented || d.singleton) return; flyTo(d); })
       .on('dblclick', (ev, d) => { ev.stopPropagation(); d.fx = null; d.fy = null; d3.select(ev.currentTarget).classed('pinned', false); sim.alpha(0.3).restart(); })
       .on('keydown', (ev, d) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); focusView(d.id); } })
       .call(d3.drag().clickDistance(4)
@@ -384,9 +430,10 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
         node.attr('transform', d => `translate(${d.x},${d.y})`);
       });
     sim.alpha(0.02).restart();
-    legend(['ownership', 'registry', 'directed', 'attachment', 'classifier']);
-    overviewPanel();
-    try { history.replaceState(null, '', location.pathname); } catch (e) {}
+    legend(['ownership', 'registry', 'directed', 'attachment', 'classifier'], null, true);
+    applySystem();
+    if (st.system) systemPanel(st.system, role); else overviewPanel();
+    try { history.replaceState(null, '', st.system ? '#sys.' + st.system : location.pathname); } catch (e) {}
     setTimeout(() => fit(0), 30);
   }
 
@@ -487,17 +534,42 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
     const counts = LAYERS.map(l => [l, Object.values(E).filter(e => e.layer === l).length]);
     const nSub = Object.values(E).reduce((a, e) => a + Object.keys(e.sub_entities || {}).length, 0) + Object.keys(model.shared_sub_entities || {}).length;
     panel.innerHTML = `<h2>Kamigotchi’s entities</h2>
-      <p class="what">Every entity type the contracts create, generated from the compiler’s view of the code, with descriptions and corrections from the team’s notes. Hover an entity for who creates and changes it; click it for its fields, sub-entities and relationships. Hover an edge to see how the relationship was derived.</p>
+      <p class="what">Every entity the contracts create, generated from the compiler’s view of the code, with descriptions and corrections from the team’s notes. Hover an entity for who creates and changes it; click it for its fields, sub-entities and relationships. Hover an edge to see how the relationship was derived. Search a system to see everything it touches.</p>
       <section class="block"><h3>In this model</h3><div class="kv">
         ${counts.map(([l, c]) => `<span class="k">${esc(LAYER_NAME[l])}</span><span>${c} entity types</span>`).join('')}
+        <span class="k">Untyped shapes</span><span>${Object.keys(E).filter(n => E[n].typed === false).join(', ') || 'none'} <span class="muted">(dashed)</span></span>
         <span class="k">Relationships</span><span>${rels.length} stored references</span>
         <span class="k">Sub-entities</span><span>${nSub} records keyed under a parent</span>
       </div></section>
       <section class="block"><h3>Relationship types</h3><ul class="plain">${Object.keys(REL_NAME).map(t =>
         `<li><span class="swatch" style="background:var(--r-${t})"></span> <b>${esc(REL_NAME[t])}</b> <span class="muted">${rels.filter(r => r.l.type === t).length || ''}</span><div class="muted small">${esc(RT[t] || '')}</div></li>`).join('')}</ul>
         <p class="muted small" style="margin-top:8px">Arrows run from the entity that stores the reference to the one it references. Solid lines are set every time the entity is created; dashed lines only under a condition.</p></section>
-      <section class="block"><h3>Start with</h3><div class="chips">${['ACCOUNT', 'KAMI', 'HARVEST', 'NODE', 'ITEM', 'QUEST'].filter(x => E[x]).map(entBtn).join(' ')}</div></section>
+      <section class="block"><h3>Start with</h3><div class="chips">${['ACCOUNT', 'KAMI', 'HARVEST', 'NODE', 'ITEM', 'QUEST', 'CONDITION'].filter(x => E[x]).map(entBtn).join(' ')}</div></section>
+      <section class="block"><h3>Or a system</h3><div class="chips">${['HarvestStart', 'HarvestLiquidate', 'KamiGachaMint', 'QuestComplete', 'Craft'].filter(x => systems[x]).map(sysBtn).join(' ')}</div></section>
+      ${Object.keys(SG).length ? `<section class="block"><h3>Singletons (${Object.keys(SG).length})</h3><ul class="plain">${Object.entries(SG).map(([n, g]) =>
+        `<li><code>${esc(n)}</code> <span class="muted small">${esc(g.id)} · used in ${arr(g.used_in).map(esc).join(', ')}</span></li>`).join('')}</ul>
+        <p class="muted small" style="margin:6px 0 0">One entity at a fixed id. Those an entity points at appear on the map as diamonds.</p></section>` : ''}
       ${arr(notes.open_questions).length ? `<section class="block"><h3>Open questions</h3><ul class="plain">${arr(notes.open_questions).map(q => '<li class="muted small">' + esc(q) + '</li>').join('')}</ul></section>` : ''}`;
+  }
+  const sysBtn = n => `<button class="sysbtn" data-sys="${esc(n)}" title="Show what ${esc(n)} touches">${esc(n)}</button>`;
+  const GH = 'https://github.com/Asphodel-OS/kami-domain/blob/main/generated/systems/';
+  function systemPanel(n, role) {
+    const sy = systems[n] || {};
+    const by = r => Object.keys(role).filter(k => role[k] === r).sort();
+    const sec = (title, xs) => xs.length ? `<section class="block"><h3>${title} (${xs.length})</h3><div class="chips">${xs.map(entBtn).join(' ')}</div></section>` : '';
+    panel.innerHTML = `<span class="pill" style="background:var(--muted)">System</span>
+      <h2>${esc(n)}</h2>
+      ${sy.comment ? `<p class="what">${esc(sy.comment)}</p>` : ''}
+      <section class="block"><div class="kv">
+        ${sy.args ? `<span class="k">args</span><code>${esc(sy.args)}</code>` : ''}
+        ${arr(sy.events).length ? `<span class="k">events</span><span>${arr(sy.events).map(x => '<code>' + esc(x) + '</code>').join(', ')}</span>` : ''}
+        ${arr(sy.config).length ? `<span class="k">config</span><span>${arr(sy.config).map(x => '<code>' + esc(x) + '</code>').join(', ')}</span>` : ''}
+        <span class="k">full detail</span><a href="${GH}${encodeURIComponent(n)}.yaml" target="_blank" rel="noopener">generated/systems/${esc(n)}.yaml</a>
+      </div></section>
+      ${sec('Creates', by('creates'))}${sec('Changes', by('changes'))}${sec('Reads', by('reads'))}
+      <section class="block"><h3>Writes (${arr(sy.writes).length} components)</h3><div class="chips">${arr(sy.writes).map(c => `<span class="cmp ${compUse[c] && compUse[c].length === 1 ? 'own' : ''}">${esc(c)}</span>`).join('')}</div>
+        <p class="muted small" style="margin:6px 0 0">An entity counts as changed or read when the system touches a field only that entity has; shared fields like Value can't be attributed.</p></section>`;
+    panel.scrollTop = 0;
   }
   function relRow(r, dir) {
     const l = r.l, other = dir === 'out' ? r.to : r.from;
@@ -519,8 +591,8 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
         ${Object.entries(e.id || {}).map(([k, v]) => `<span class="k">${esc(k)} id</span><code>keccak256(${esc(v)})</code>`).join('') || '<span class="k">id</span><span class="muted">not from a hashed namespace</span>'}
         ${e.index ? `<span class="k">index</span><code>${esc(e.index)}</code>` : ''}
         <span class="k">created in</span><span>${arr(e.created_in).map(x => '<code>' + esc(x) + '</code>').join(', ')}</span>
-        <span class="k">created by</span><span>${arr(e.created_by).map(x => '<code>' + esc(x) + '</code>').join(', ') || '<span class="muted">none</span>'}</span>
-        <span class="k">changed by</span><span>${cb.map(x => '<code>' + esc(x) + '</code>').join(', ') || '<span class="muted">not isolable</span>'}</span>
+        <span class="k">created by</span><span class="chips">${arr(e.created_by).map(sysBtn).join(' ') || '<span class="muted">none</span>'}</span>
+        <span class="k">changed by</span><span class="chips">${cb.map(sysBtn).join(' ') || '<span class="muted">not isolable</span>'}</span>
       </div></section>
       ${out.length ? `<section class="block"><h3>Stores a reference to (${out.length})</h3>${out.map(r => relRow(r, 'out')).join('')}</section>` : ''}
       ${inn.length ? `<section class="block"><h3>Referenced by (${inn.length})</h3>${inn.map(r => relRow(r, 'in')).join('')}</section>` : ''}
@@ -530,7 +602,10 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
         <p class="muted small" style="margin:6px 0 0">Outlined: no other entity type uses it.</p></section>`;
     panel.scrollTop = 0;
   }
-  panel.addEventListener('click', ev => { const b = ev.target.closest('[data-go]'); if (b) focusView(b.dataset.go); });
+  panel.addEventListener('click', ev => {
+    const s_ = ev.target.closest('[data-sys]'); if (s_) { overviewView(s_.dataset.sys); return; }
+    const b = ev.target.closest('[data-go]'); if (b) focusView(b.dataset.go);
+  });
 
   // ---------------- search ----------------
   const q = document.getElementById('q'), res = document.getElementById('results');
@@ -541,6 +616,7 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
     for (const s of arr(e.created_by)) index.push({ label: s, kind: 'creates ' + n, go: n });
   }
   for (const [ns, s] of Object.entries(model.shared_sub_entities || {})) for (const h of arr(s.held_by)) if (E[h]) index.push({ label: ns, kind: 'shared, on ' + h, go: h, sub: ns });
+  for (const n of Object.keys(systems)) if (!n.startsWith('__')) index.push({ label: n, kind: 'system', system: n });
   for (const c of Object.keys(compUse)) index.push({ label: c, kind: compUse[c].length === 1 ? 'field of ' + compUse[c][0] : 'field on ' + compUse[c].length + ' entities', go: compUse[c][0] });
   let hits = [], hi = 0;
   const renderHits = () => { res.hidden = !hits.length; res.innerHTML = hits.map((h, i) => `<button class="${i === hi ? 'on' : ''}" data-i="${i}">${esc(h.label)}<em>${esc(h.kind)}</em></button>`).join(''); };
@@ -556,18 +632,18 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
     if (ev.key === 'Escape') { hits = []; renderHits(); }
   });
   res.addEventListener('click', ev => { const b = ev.target.closest('[data-i]'); if (b) pick(hits[+b.dataset.i]); });
-  const pick = h => { hits = []; renderHits(); q.value = ''; focusView(h.go, h.sub); };
+  const pick = h => { hits = []; renderHits(); q.value = ''; if (h.system) overviewView(h.system); else focusView(h.go, h.sub); };
   document.addEventListener('click', ev => { if (!ev.target.closest('.search')) { hits = []; renderHits(); } });
-  document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && st.view === 'focus' && document.activeElement !== q) overviewView(); });
+  document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && (st.view === 'focus' || st.system) && document.activeElement !== q) overviewView(); });
 
   // ---------------- controls ----------------
   const press = (id, on) => document.getElementById(id).setAttribute('aria-pressed', on ? 'true' : 'false');
   for (const l of LAYERS) document.getElementById('f-' + l).addEventListener('click', () => {
     if (st.layers.has(l) && st.layers.size > 1) st.layers.delete(l); else st.layers.add(l);
     LAYERS.forEach(x => press('f-' + x, st.layers.has(x)));
-    overviewView();
+    overviewView(st.system);
   });
-  document.getElementById('back').addEventListener('click', overviewView);
+  document.getElementById('back').addEventListener('click', () => overviewView());
   document.getElementById('fit').addEventListener('click', () => fit());
   document.getElementById('zin').addEventListener('click', () => zoomBy(1.35));
   document.getElementById('zout').addEventListener('click', () => zoomBy(1 / 1.35));
@@ -584,6 +660,6 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
   // ---------------- go ----------------
   document.getElementById('sourceline').textContent = `Kamigotchi World · ${Object.keys(E).length} entity types · ${rels.length} relationships · ${Object.keys(systems).length} systems · generated from the contracts`;
   const start = decodeURIComponent((location.hash || '').slice(1));
-  if (E[start]) focusView(start); else overviewView();
+  if (E[start]) focusView(start); else if (start.startsWith('sys.') && systems[start.slice(4)]) overviewView(start.slice(4)); else overviewView();
 })();
 </script>

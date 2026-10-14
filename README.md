@@ -83,6 +83,19 @@ The contracts are compiled with `--ast`, and calls are resolved by the compiler,
 - `writes_without_access` comes from `LibSetter.update`, which picks what to write from registry data at run time. Whether those paths can fire depends on how items and skills are configured, not on the code.
 - ECS framework internals (`src/solecs/`) and interfaces are not in the function table; calls to them are shown by name only.
 
+## Reproducibility
+
+Everything in `generated/` and `viz/data/` is a pure function of the contracts checkout: `rm -rf .cache && python3 generate.py` rebuilds it byte for byte (checked: a fresh compile and analysis reproduced all 177 files with no difference). Each output records the contracts commit it came from (`kamigotchi/packages/contracts at <sha>`, `-dirty` if that checkout had local changes), so any output can be traced to its source.
+
+It depends on:
+- **the contracts commit:** the generator reads whatever branch `kami/kamigotchi` has checked out; check out the commit in the header to reproduce an old output;
+- **the compiler:** solc is pinned by the contracts' `foundry.toml` (0.8.28); Foundry itself is not pinned, and a release that changes the AST format could change the output;
+- **the rules in `generate.py`:** the few hand-written tables (stat names, untyped-shape names, singleton names, admin modifiers) are versioned with the script.
+
+Only `notes/` is written by hand. To check that committed output is current, as CI could:
+
+    rm -rf .cache && python3 generate.py && git diff --exit-code generated viz/data
+
 ## History
 
 The first commits were made after the work, grouped by concern (generator, generated output, notes, config reader, atlas) in the order they were built, not as a step-by-step record. Later commits are real history.

@@ -2,7 +2,7 @@
 
 The Kamigotchi domain manifest: what every component, system, function and entity type in the Kamigotchi contracts does and means, as YAML that people and agents can read without tracing the Solidity, plus a live config reader and an interactive map (the Kami Domain Atlas).
 
-Lives next to the game checkout: `Asphodel-OS/kami/kami-domain/` reads `Asphodel-OS/kami/kamigotchi/`. Local only for now (no remote).
+Lives next to the game checkout: `Asphodel-OS/kami/kami-domain/` reads `Asphodel-OS/kami/kamigotchi/`. Repository: https://github.com/Asphodel-OS/kami-domain (private; keep it out of any public mirror, since notes hold design intent).
 
 ```
 generated/                   rebuilt from the code on every run; never edit

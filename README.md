@@ -59,7 +59,7 @@ Reads `kami/kamigotchi/packages/contracts` (whatever branch it is on); override 
 
     python3 -m http.server 8765 --bind 127.0.0.1 -d viz     # then open http://127.0.0.1:8765/index.html (#KAMI opens one entity)
 
-A copy is published at https://claude.ai/artifact/NThHrC4VAPJ583Jv4nZnJZ (private until shared); after regenerating or editing notes, republish the page with its `data/` files to update it.
+For the team it is deployed on Vercel at **https://kami-domain.vercel.app** (project `asphodel/kami-domain`, root directory `viz/`). Vercel Authentication is on for every URL, so only people logged into the Asphodel Vercel team can open it. Every push to `main` redeploys, so regenerate, commit `viz/data/` and push to update it.
 
 ## Live config values
 

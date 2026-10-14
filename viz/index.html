@@ -1,0 +1,535 @@
+<meta charset="utf-8">
+<title>Kami Domain Atlas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: overview map of typed entities in three bands; clicking one swaps the map for that entity's structure.
+   Nodes carry the layer (tinted fill), edges carry the relationship type (colour) and required-ness (solid / dashed). */
+:root {
+  --bg: #f2f4f1; --panel: #ffffff; --ink: #18211d; --muted: #5b6862; --line: #d6ddd8; --wash: #e9eeea;
+  --runtime: #1d7560; --hybrid: #9c6400; --registry: #4a52a3;
+  --r-ownership: #1f2a25; --r-registry: #3d6fb6; --r-directed: #b0482b; --r-attachment: #7a4fa6; --r-classifier: #a07a12; --r-keyed: #2e8a7a;
+  --warn: #b4232c;
+  --f-display: "IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
+  --f-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0f1513; --panel: #161f1c; --ink: #e5ebe7; --muted: #93a29b; --line: #2a3632; --wash: #1d2824;
+  --runtime: #4cc29f; --hybrid: #e2a83c; --registry: #939bf0;
+  --r-ownership: #e5ebe7; --r-registry: #7fa8ec; --r-directed: #f08a6b; --r-attachment: #c39af0; --r-classifier: #e8c25a; --r-keyed: #5fd0bb;
+  --warn: #f0717a; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0f1513; --panel: #161f1c; --ink: #e5ebe7; --muted: #93a29b; --line: #2a3632; --wash: #1d2824;
+  --runtime: #4cc29f; --hybrid: #e2a83c; --registry: #939bf0;
+  --r-ownership: #e5ebe7; --r-registry: #7fa8ec; --r-directed: #f08a6b; --r-attachment: #c39af0; --r-classifier: #e8c25a; --r-keyed: #5fd0bb;
+  --warn: #f0717a; color-scheme: dark }
+
+[hidden] { display: none !important; }
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--ink); font: 14px/1.5 var(--f-body); }
+.app { display: grid; grid-template-rows: auto 1fr; height: 100%; padding-inline: 16px; padding-block: 12px; gap: 10px; box-sizing: border-box; }
+header { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; }
+h1 { font: 600 22px/1.1 var(--f-display); margin: 0; }
+h1 small { display: block; font: 400 12px/1.3 var(--f-mono); color: var(--muted); }
+.controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-left: auto; }
+.search { position: relative; }
+.search input { font: 13px var(--f-body); color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; width: 230px; max-width: 70vw; }
+:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.results { position: absolute; top: 100%; left: 0; right: 0; z-index: 6; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; margin-top: 4px; max-height: 300px; overflow: auto; }
+.results button { display: flex; justify-content: space-between; gap: 8px; width: 100%; text-align: left; padding: 6px 10px; border: 0; background: none; color: var(--ink); font: 13px var(--f-body); cursor: pointer; }
+.results button:hover, .results button.on { background: var(--wash); }
+.results em { font: 11px var(--f-mono); color: var(--muted); font-style: normal; }
+.chip { font: 500 12px var(--f-body); border: 1px solid var(--line); background: var(--panel); color: var(--ink); border-radius: 999px; padding: 4px 10px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+.chip[aria-pressed="false"] { color: var(--muted); background: transparent; }
+.chip[aria-pressed="false"] .dot { opacity: .3; }
+.dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex: none; }
+.main { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 12px; min-height: 0; }
+.map { position: relative; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; min-height: 0; }
+.map svg { width: 100%; height: 100%; display: block; }
+.crumb { position: absolute; left: 12px; top: 10px; display: flex; gap: 8px; align-items: center; z-index: 3; font: 12px var(--f-mono); color: var(--muted); }
+.maptools { position: absolute; right: 10px; top: 10px; display: flex; gap: 6px; z-index: 3; }
+
+/* svg */
+.band { fill: var(--wash); opacity: .6; }
+.band-label { font: 500 11px var(--f-mono); letter-spacing: .08em; text-transform: uppercase; fill: var(--muted); }
+.node { cursor: pointer; }
+.node circle { stroke-width: 2.5; }
+.node .name { font: 500 11px var(--f-mono); fill: var(--ink); paint-order: stroke; stroke: var(--panel); stroke-width: 3.5px; pointer-events: none; }
+.node:hover circle, .node:focus-visible circle { stroke-width: 4; }
+.edge .line { fill: none; stroke-width: 1.6; }
+.edge .hit { fill: none; stroke: transparent; stroke-width: 12; cursor: help; }
+.edge.optional .line { stroke-dasharray: 6 5; }
+.edge .lbl { font: 10px var(--f-mono); paint-order: stroke; stroke: var(--panel); stroke-width: 3px; pointer-events: none; }
+.edge:hover .line { stroke-width: 3; }
+.zoomed-out .edge .lbl { display: none; }
+.card rect.box { fill: var(--panel); stroke: var(--line); stroke-width: 1.2; }
+.card.center rect.box { stroke-width: 2.5; }
+.card .title { font: 600 15px var(--f-display); fill: var(--ink); }
+.card .meta { font: 10.5px var(--f-mono); fill: var(--muted); }
+.card .field { font: 11px var(--f-mono); fill: var(--ink); }
+.card .field.shared { fill: var(--muted); }
+.card.link { cursor: pointer; }
+.card.link:hover rect.box { stroke: var(--ink); }
+.col-label { font: 500 10.5px var(--f-mono); letter-spacing: .08em; text-transform: uppercase; fill: var(--muted); }
+
+.legend { position: absolute; left: 12px; top: 10px; z-index: 2; display: grid; gap: 3px; font: 11px var(--f-mono); color: var(--ink);
+  background: color-mix(in srgb, var(--panel) 92%, transparent); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; pointer-events: none; max-width: calc(100% - 120px); }
+.legend .lg-title { font: 500 10px var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-top: 4px; }
+.legend .lg-title:first-child { margin-top: 0; }
+.legend span { display: flex; align-items: center; gap: 8px; }
+.legend .lg-note { color: var(--muted); }
+.legend svg { width: 28px; height: 8px; flex: none; }
+.map.focus .legend { top: 50px; }
+.tip { position: absolute; pointer-events: none; background: var(--panel); color: var(--ink); border: 1px solid var(--line); box-shadow: 0 6px 24px rgb(0 0 0 / .18); font: 12.5px/1.45 var(--f-body); padding: 10px 12px; border-radius: 8px; width: max-content; max-width: 340px; z-index: 5; }
+.tip h4 { margin: 0 0 4px; font: 600 15px var(--f-display); }
+.tip .row { display: grid; grid-template-columns: 88px minmax(0, 1fr); gap: 2px 8px; margin-top: 4px; }
+.tip .row b { font: 500 10.5px var(--f-mono); letter-spacing: .05em; text-transform: uppercase; color: var(--muted); padding-top: 2px; }
+.tip code { font: 11.5px var(--f-mono); word-break: break-word; }
+.tip ul { margin: 2px 0 0; padding-left: 16px; }
+
+aside { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; overflow: auto; min-height: 0; padding: 16px 18px; }
+aside h2 { font: 600 24px/1.1 var(--f-display); margin: 4px 0 6px; word-break: break-word; }
+.what { margin: 8px 0 0; max-width: 62ch; }
+.pill { font: 500 10.5px var(--f-mono); letter-spacing: .06em; text-transform: uppercase; padding: 2px 8px; border-radius: 4px; color: var(--panel); display: inline-block; }
+section.block { border-top: 1px solid var(--line); margin-top: 14px; padding-top: 10px; }
+section.block h3 { font: 500 11px var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 8px; }
+.kv { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 12px; font-size: 13px; }
+code { font: 12px var(--f-mono); word-break: break-word; }
+.k { font: 12px var(--f-mono); color: var(--muted); }
+.ent { font: 500 12px var(--f-mono); color: var(--ink); background: var(--wash); border: 1px solid var(--line); border-radius: 4px; padding: 1px 6px; cursor: pointer; }
+.ent:hover { border-color: var(--ink); }
+.tag { font: 10.5px var(--f-mono); color: var(--muted); border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; white-space: nowrap; }
+.tag.warn { color: var(--warn); border-color: currentColor; }
+.rel { display: grid; gap: 3px; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+.rel:last-child { border-bottom: 0; }
+.rel .head { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.swatch { width: 18px; height: 3px; border-radius: 2px; display: inline-block; }
+.muted { color: var(--muted); }
+.small { font-size: 12px; }
+.chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.cmp { font: 11.5px var(--f-mono); border: 1px solid var(--line); border-radius: 4px; padding: 0 6px; background: var(--bg); }
+.cmp.own { border-color: var(--ink); }
+.confirmed { margin: 8px 0 0; padding: 8px 10px; background: var(--wash); border-radius: 6px; font-size: 13px; }
+ul.plain { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; }
+details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--muted); }
+
+@media (max-width: 900px) {
+  .app { height: auto; }
+  .main { grid-template-columns: minmax(0, 1fr); }
+  .map { height: 66vh; }
+  .controls { margin-left: 0; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="app">
+  <header>
+    <h1>Kami Domain Atlas<small id="sourceline">Kamigotchi World · loading…</small></h1>
+    <div class="controls">
+      <div class="search">
+        <input id="q" type="search" placeholder="Find an entity, record, field or system" aria-label="Search" autocomplete="off">
+        <div class="results" id="results" hidden></div>
+      </div>
+      <button class="chip" id="f-runtime" aria-pressed="true"><span class="dot" style="background:var(--runtime)"></span>Runtime</button>
+      <button class="chip" id="f-hybrid" aria-pressed="true"><span class="dot" style="background:var(--hybrid)"></span>Hybrid</button>
+      <button class="chip" id="f-registry" aria-pressed="true"><span class="dot" style="background:var(--registry)"></span>Registry</button>
+    </div>
+  </header>
+  <div class="main">
+    <div class="map" id="map">
+      <div class="crumb" id="crumb" hidden><button class="chip" id="back">← All entities</button><span id="crumb-name"></span></div>
+      <div class="maptools"><button class="chip" id="fit">Fit</button></div>
+      <svg id="svg" role="img" aria-label="Map of Kamigotchi entities and their relationships"></svg>
+      <div class="legend" id="legend"></div>
+      <div class="tip" id="tip" hidden></div>
+    </div>
+    <aside id="panel" aria-live="polite"></aside>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
+<script>
+(async function () {
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const arr = v => v == null ? [] : Array.isArray(v) ? v : [v];
+  const LAYERS = ['runtime', 'hybrid', 'registry'];
+  const LAYER_NAME = { runtime: 'Runtime', hybrid: 'Hybrid', registry: 'Registry' };
+  const REL_NAME = { ownership: 'Ownership', registry: 'Registry reference', directed: 'Directed', attachment: 'Attachment', classifier: 'Classifier', keyed: 'Keyed sub-entity' };
+  const panel = document.getElementById('panel');
+
+  let model, systems, comps, notes = {};
+  try {
+    [model, systems, comps] = await Promise.all(['domain-model.json', 'systems.json', 'components.json']
+      .map(f => fetch('data/' + f).then(r => { if (!r.ok) throw new Error(f + ' ' + r.status); return r.json(); })));
+    try { notes = jsyaml.load(await (await fetch('data/notes.yaml')).text()) || {}; } catch (e) { notes = {}; }
+  } catch (e) {
+    panel.innerHTML = '<h2>Data did not load</h2><p class="muted">' + esc(e.message) + '. Rerun kami/kami-domain/generate.py and republish.</p>';
+    return;
+  }
+  const E = model.entities, NE = notes.entities || {}, NL = notes.links || {}, NS = notes.sub_entities || {};
+  const RT = model.relationship_types || {};
+
+  // ---------------- facts ----------------
+  const compUse = {};
+  for (const [n, e] of Object.entries(E)) for (const c of e.components || []) (compUse[c] = compUse[c] || []).push(n);
+  const uniqueFields = n => (E[n].components || []).filter(c => compUse[c].length === 1);
+  const changedBy = n => { const own = uniqueFields(n); return Object.keys(systems).filter(s => !s.startsWith('__') && (systems[s].writes || []).some(c => own.includes(c))).sort(); };
+
+  // every relationship, with notes applied
+  const rels = [];
+  for (const [n, e] of Object.entries(E)) for (const [comp, l] of Object.entries(e.links || {})) {
+    const o = NL[n + '.' + comp];
+    if (o && o.ignore) continue;
+    const to = (o && o.to ? arr(o.to).flatMap(t => String(t).split(/\s*\|\s*/)) : arr(l.to)).filter(Boolean);
+    const base = { from: n, comp, l, note: o && o.note, fromNotes: !!(o && o.to), unresolved: !to.length };
+    if (!to.length) rels.push({ ...base, to: null });
+    for (const t of to) rels.push({ ...base, to: t });
+  }
+  const relsOf = n => ({ out: rels.filter(r => r.from === n), in: rels.filter(r => r.to === n && r.from !== n) });
+  const subsOf = n => {
+    const own = Object.entries(E[n].sub_entities || {}).map(([ns, s]) => ({ ns, s, shared: false }));
+    const shared = Object.entries(model.shared_sub_entities || {}).filter(([, s]) => arr(s.held_by).includes(n)).map(([ns, s]) => ({ ns, s, shared: true }));
+    return own.concat(shared);
+  };
+
+  // ---------------- tooltip ----------------
+  const tip = document.getElementById('tip'), wrap = document.getElementById('map');
+  function placeTip(ev) {
+    const r = wrap.getBoundingClientRect(), w = tip.offsetWidth, h = tip.offsetHeight;
+    let x = ev.clientX - r.left + 14, y = ev.clientY - r.top + 14;
+    if (x + w > r.width - 8) x = Math.max(8, ev.clientX - r.left - w - 14);
+    if (y + h > r.height - 8) y = Math.max(8, r.height - h - 8);
+    tip.style.left = x + 'px'; tip.style.top = y + 'px';
+  }
+  const list = (xs, max = 8) => xs.length ? xs.slice(0, max).map(x => '<code>' + esc(x) + '</code>').join(', ') + (xs.length > max ? ` <span class="muted">+${xs.length - max} more</span>` : '') : '<span class="muted">none</span>';
+  function entityTip(n) {
+    const e = E[n], nt = NE[n] || {}, cb = changedBy(n);
+    return `<h4>${esc(n)}</h4><span class="pill" style="background:var(--${e.layer})">${esc(LAYER_NAME[e.layer])}</span>
+      ${nt.what ? `<div style="margin-top:6px">${esc(nt.what)}</div>` : ''}
+      <div class="row"><b>Created by</b><span>${list(arr(e.created_by))}</span></div>
+      <div class="row"><b>Changed by</b><span>${cb.length ? list(cb) : '<span class="muted">no field unique to it, so not isolable</span>'}</span></div>
+      <div class="row"><b>Structure</b><span>${(e.components || []).length} fields · ${subsOf(n).length} sub-entities · ${relsOf(n).out.length} out, ${relsOf(n).in.length} in</span></div>
+      <div class="muted small" style="margin-top:6px">Click to open its structure.</div>`;
+  }
+  function relTip(r) {
+    const l = r.l;
+    const dir = `<code>${esc(r.from)}</code> → <code>${esc(r.to || '?')}</code>`;
+    return `<h4>${esc(r.comp)}</h4>
+      <div>${dir} · ${esc(REL_NAME[l.type] || l.type)} · ${l.required ? 'required' : 'optional'}</div>
+      <div class="muted small" style="margin-top:2px">${esc(RT[l.type] || '')}</div>
+      <div class="row"><b>Stored on</b><span><code>${esc(l.stored_on)}</code>, as the value of <code>${esc(r.comp)}</code></span></div>
+      ${!l.required && l.only_when ? `<div class="row"><b>Only when</b><span>${l.only_when.map(c => '<code>' + esc(c) + '</code>').join('<br>')}</span></div>` : ''}
+      <div class="row"><b>Cardinality</b><span>${esc(l.cardinality || '')}</span></div>
+      ${'changes_after_creation' in l ? `<div class="row"><b>Lifecycle</b><span>${l.changes_after_creation ? 'can change after creation' : 'fixed at creation'}${l.removable ? '; can be removed' : ''}</span></div>` : ''}
+      <div class="row"><b>Navigate</b><span>up: ${esc(l.navigate?.up || '')}<br>down: ${esc(l.navigate?.down || '')}</span></div>
+      <div class="row"><b>Derived</b><span><ul>${arr(l.derived).map(d => '<li><code>' + esc(d) + '</code></li>').join('')}</ul>
+        ${r.fromNotes ? `<div>Target set in notes: ${esc(r.note || '')}</div>` : l.inferred ? '<div class="muted">Target inferred by tracing variable names through callers.</div>' : ''}
+        ${r.unresolved ? '<div style="color:var(--warn)">Target not resolved from the code.</div>' : ''}</span></div>`;
+  }
+  function subTip(x, parent) {
+    const s = x.s, keys = s.keys ? Object.entries(s.keys).map(([k, v]) => esc(k) + (v ? ' → ' + arr(v).map(esc).join('/') : '')).join(', ') : '';
+    return `<h4>${esc(x.ns)}</h4>${(NS[x.ns] || {}).what ? `<div>${esc(NS[x.ns].what)}</div>` : ''}
+      <div class="row"><b>Id</b><span><code>keccak256(${esc(s.id || x.ns)})</code></span></div>
+      ${keys ? `<div class="row"><b>Keys</b><span>${keys}</span></div>` : ''}
+      <div class="row"><b>Relation</b><span>${esc(REL_NAME.keyed)} of <code>${esc(parent)}</code>${x.shared ? ' (shared by ' + arr(s.held_by).map(esc).join(', ') + ')' : ''}; required by construction</span></div>
+      <div class="row"><b>Navigate</b><span>${esc(s.relation?.navigate?.down || 'compute the id from the parent')}</span></div>
+      <div class="row"><b>Placed by</b><span>${esc(s.parent_from || '')}</span></div>`;
+  }
+  const show = (html, ev) => { tip.innerHTML = html; tip.hidden = false; placeTip(ev); };
+  const hide = () => { tip.hidden = true; };
+
+  // ---------------- svg scaffold ----------------
+  const svg = d3.select('#svg');
+  const defs = svg.append('defs');
+  for (const t of Object.keys(REL_NAME)) defs.append('marker').attr('id', 'm-' + t).attr('viewBox', '0 0 10 10')
+    .attr('refX', 9).attr('refY', 5).attr('markerWidth', 7).attr('markerHeight', 7).attr('orient', 'auto-start-reverse')
+    .append('path').attr('d', 'M0 0L10 5L0 10z').style('fill', `var(--r-${t})`);
+  const root = svg.append('g');
+  const zoom = d3.zoom().scaleExtent([0.2, 3]).on('zoom', ev => { root.attr('transform', ev.transform); svg.classed('zoomed-out', ev.transform.k < 0.55); });
+  svg.call(zoom).on('dblclick.zoom', null);
+  const W = () => wrap.clientWidth, H = () => wrap.clientHeight;
+  let fitTarget = null;
+  function fit(dur = 450) {
+    const b = (fitTarget || root).node().getBBox(); if (!b.width) return;
+    const lw = (document.getElementById('legend').offsetWidth || 0) + 24;  // keep clear of the legend overlay
+    const aw = Math.max(200, W() - lw);
+    const s = Math.min(1.6, 0.92 / Math.max((b.width + 60) / aw, (b.height + 70) / H()));
+    svg.transition().duration(dur).call(zoom.transform, d3.zoomIdentity.translate(lw + aw / 2 - s * (b.x + b.width / 2), H() / 2 - s * (b.y + b.height / 2)).scale(s));
+  }
+
+  function legend(types, extra) {
+    const line = (stroke, dash) => `<svg viewBox="0 0 28 8" aria-hidden="true"><line x1="0" y1="4" x2="22" y2="4" stroke="${stroke}" stroke-width="2"${dash ? ' stroke-dasharray="4 3"' : ''}/><path d="M21 1L27 4L21 7z" fill="${stroke}"/></svg>`;
+    document.getElementById('legend').innerHTML =
+      '<span class="lg-title">Relationship type</span>'
+      + types.map(t => `<span>${line(`var(--r-${t})`)}${esc(REL_NAME[t])}</span>`).join('')
+      + '<span class="lg-title">Line</span>'
+      + `<span>${line('var(--muted)')}required</span><span>${line('var(--muted)', true)}optional</span>`
+      + `<span class="lg-note">A → B: A stores B's id or index</span>` + (extra ? `<span class="lg-note">${extra}</span>` : '');
+  }
+
+  function edgePath(sx, sy, tx, ty, rT, bend) {
+    const dx = tx - sx, dy = ty - sy, len = Math.hypot(dx, dy) || 1;
+    const ex = tx - dx / len * rT, ey = ty - dy / len * rT;
+    const mx = (sx + ex) / 2 - dy / len * bend, my = (sy + ey) / 2 + dx / len * bend;
+    return { d: `M${sx},${sy}Q${mx},${my} ${ex},${ey}`, lx: (sx + 2 * mx + ex) / 4, ly: (sy + 2 * my + ey) / 4 };
+  }
+
+  // ---------------- overview ----------------
+  const st = { layers: new Set(LAYERS), view: 'overview', sel: null };
+  let sim;
+  const BAND = 320, bandY = { runtime: 0, hybrid: 1, registry: 2 };
+  const radius = n => 12 + Math.sqrt(subsOf(n).length) * 3.2;
+
+  function overviewView() {
+    st.view = 'overview'; st.sel = null; hide();
+    document.getElementById('crumb').hidden = true; wrap.classList.remove('focus');
+    root.selectAll('*').remove();
+    const ids = Object.keys(E).filter(n => st.layers.has(E[n].layer));
+    const nodes = ids.map(id => ({ id, layer: E[id].layer }));
+    const byId = Object.fromEntries(nodes.map(n => [n.id, n]));
+    const er = rels.filter(r => r.to && byId[r.from] && byId[r.to] && r.from !== r.to);
+    const pairCount = {};
+    er.forEach(r => { const k = [r.from, r.to].sort().join('|'); r._i = pairCount[k] = (pairCount[k] || 0) + 1; });
+    const links = er.map(r => ({ source: r.from, target: r.to, r }));
+
+    const bands = root.append('g');
+    const content = root.append('g'); fitTarget = null;  // bands are sized to the nodes, so fit everything
+    const eg = content.append('g'), ng = content.append('g');
+    const edge = eg.selectAll('g').data(links).join('g').attr('class', d => 'edge ' + (d.r.l.required ? 'required' : 'optional'));
+    edge.append('path').attr('class', 'line').style('stroke', d => `var(--r-${d.r.l.type})`).attr('marker-end', d => `url(#m-${d.r.l.type})`);
+    edge.append('path').attr('class', 'hit');
+    edge.append('text').attr('class', 'lbl').attr('text-anchor', 'middle').style('fill', d => `var(--r-${d.r.l.type})`).text(d => d.r.comp);
+    edge.on('mouseenter mousemove', (ev, d) => show(relTip(d.r), ev)).on('mouseleave', hide);
+
+    const node = ng.selectAll('g').data(nodes).join('g').attr('class', 'node').attr('tabindex', 0).attr('role', 'button').attr('aria-label', d => d.id);
+    node.append('circle').attr('r', d => radius(d.id))
+      .style('fill', d => `color-mix(in srgb, var(--${d.layer}) 22%, var(--panel))`).style('stroke', d => `var(--${d.layer})`);
+    node.append('text').attr('class', 'name').attr('text-anchor', 'middle').attr('dy', d => radius(d.id) + 14).text(d => d.id);
+    node.on('mouseenter mousemove', (ev, d) => show(entityTip(d.id), ev)).on('mouseleave', hide)
+      .on('click', (ev, d) => { ev.stopPropagation(); focusView(d.id); })
+      .on('keydown', (ev, d) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); focusView(d.id); } })
+      .call(d3.drag().on('start', (ev, d) => { if (!ev.active) sim.alphaTarget(.2).restart(); d.fx = d.x; d.fy = d.y; })
+        .on('drag', (ev, d) => { d.fx = ev.x; d.fy = ev.y; }).on('end', (ev, d) => { if (!ev.active) sim.alphaTarget(0); d.fx = null; d.fy = null; }));
+
+    if (sim) sim.stop();
+    sim = d3.forceSimulation(nodes)
+      .force('link', d3.forceLink(links).id(d => d.id).distance(150).strength(0.18))
+      .force('charge', d3.forceManyBody().strength(-620).distanceMax(700))
+      .force('y', d3.forceY(d => bandY[d.layer] * BAND).strength(0.45))
+      .force('x', d3.forceX(0).strength(0.08))
+      .force('collide', d3.forceCollide(d => radius(d.id) + 34))
+      .stop();
+    for (let i = 0; i < 400; i++) sim.tick();  // settle before the first frame
+    const xs = nodes.map(d => d.x), x0 = Math.min(...xs) - 150, x1 = Math.max(...xs) + 150;
+    LAYERS.filter(l => st.layers.has(l)).forEach(l => {
+      bands.append('rect').attr('class', 'band').attr('x', x0).attr('width', x1 - x0).attr('y', bandY[l] * BAND - BAND / 2 + 10).attr('height', BAND - 20);
+      bands.append('text').attr('class', 'band-label').attr('x', x0 + 14).attr('y', bandY[l] * BAND - BAND / 2 + 32).text(LAYER_NAME[l]);
+    });
+    sim.on('tick', () => {
+        edge.each(function (d) {
+          const bend = 18 * (d.r._i - 1) + (d.r._i > 1 ? 10 : 6);
+          const p = edgePath(d.source.x, d.source.y, d.target.x, d.target.y, radius(d.target.id) + 4, bend);
+          const g = d3.select(this);
+          g.selectAll('path').attr('d', p.d);
+          g.select('text').attr('x', p.lx).attr('y', p.ly - 3);
+        });
+        node.attr('transform', d => `translate(${d.x},${d.y})`);
+      });
+    sim.alpha(0.02).restart();
+    legend(['ownership', 'registry', 'directed', 'attachment', 'classifier']);
+    overviewPanel();
+    try { history.replaceState(null, '', location.pathname); } catch (e) {}
+    setTimeout(() => fit(0), 30);
+  }
+
+  // ---------------- focus (drill-in) ----------------
+  function card(g, x, y, w, lines, opts) {
+    const c = g.append('g').attr('class', 'card' + (opts.center ? ' center' : '') + (opts.go ? ' link' : '')).attr('transform', `translate(${x},${y})`);
+    const h = 30 + lines.length * 16 + (opts.meta ? 16 : 0) + 6;
+    c.append('rect').attr('class', 'box').attr('x', -w / 2).attr('y', 0).attr('width', w).attr('height', h).attr('rx', 6)
+      .style('stroke', opts.stroke || null).style('fill', opts.fill || null);
+    c.append('text').attr('class', 'title').attr('x', -w / 2 + 12).attr('y', 21).text(opts.title);
+    let yy = 21;
+    if (opts.meta) { yy += 16; c.append('text').attr('class', 'meta').attr('x', -w / 2 + 12).attr('y', yy).text(opts.meta); }
+    lines.forEach(ln => { yy += 16; c.append('text').attr('class', 'field' + (ln.shared ? ' shared' : '')).attr('x', -w / 2 + 12).attr('y', yy).text(ln.text); });
+    if (opts.go) c.attr('tabindex', 0).attr('role', 'button').attr('aria-label', 'Open ' + opts.go)
+      .on('click', ev => { ev.stopPropagation(); focusView(opts.go); })
+      .on('keydown', ev => { if (ev.key === 'Enter') focusView(opts.go); });
+    if (opts.tip) c.on('mouseenter mousemove', ev => show(opts.tip(), ev)).on('mouseleave', hide);
+    return { g: c, x, y, w, h };
+  }
+  const trunc = (s, n) => s.length > n ? s.slice(0, n - 1) + '…' : s;
+
+  function focusView(n, sub) {
+    if (!E[n]) return;
+    st.view = 'focus'; st.sel = n; hide();
+    if (sim) sim.stop();
+    root.selectAll('*').remove(); fitTarget = null;
+    document.getElementById('crumb').hidden = false; wrap.classList.add('focus');
+    document.getElementById('crumb-name').textContent = n;
+    const e = E[n], { out, in: inn } = relsOf(n), subs = subsOf(n);
+    const eg = root.append('g'), cg = root.append('g');
+    const own = new Set(uniqueFields(n));
+    const idLine = Object.entries(e.id || {}).map(([k, v]) => `${k} id: ${v}`);
+    const fields = (e.components || []).map(c => ({ text: (own.has(c) ? '● ' : '○ ') + c + ((comps[c] || {}).type ? ' : ' + comps[c].type : ''), shared: !own.has(c) }));
+    const center = card(cg, 0, 0, 300, fields, { center: true, title: n, meta: trunc(idLine[0] || (e.index ? 'index: ' + e.index : 'id: not hashed'), 44),
+      stroke: `var(--${e.layer})`, tip: () => entityTip(n) });
+    const cx = 0, cyMid = center.h / 2;
+
+    const colX = 420, rowH = 70;
+    const place = (items, x, label) => {
+      if (!items.length) return [];
+      cg.append('text').attr('class', 'col-label').attr('x', x).attr('y', -34).attr('text-anchor', 'middle').text(label);
+      const top = cyMid - (items.length * rowH) / 2;
+      return items.map((r, i) => ({ r, x, y: top + i * rowH }));
+    };
+    const outs = place(out, colX, 'Stores a reference to');
+    const ins = place(inn, -colX, 'Referenced by');
+    const drawRel = (p, dir) => {
+      const other = dir === 'out' ? (p.r.to || 'unresolved') : p.r.from;
+      const isEnt = !!E[other];
+      const c = card(cg, p.x, p.y, 200, [], { title: other, meta: isEnt ? LAYER_NAME[E[other].layer] : (p.r.to ? 'not a game entity' : 'target not resolved'),
+        go: isEnt ? other : null, stroke: isEnt ? `var(--${E[other].layer})` : 'var(--line)', tip: isEnt ? () => entityTip(other) : null });
+      const midY = p.y + c.h / 2;
+      const [sx, sy, tx, ty] = dir === 'out' ? [cx + 150, cyMid, p.x - 100, midY] : [p.x + 100, midY, cx - 150, cyMid];
+      const path = edgePath(sx, sy, tx, ty, 2, 0);
+      const g = eg.append('g').attr('class', 'edge ' + (p.r.l.required ? 'required' : 'optional'));
+      g.append('path').attr('class', 'line').attr('d', path.d).style('stroke', `var(--r-${p.r.l.type})`).attr('marker-end', `url(#m-${p.r.l.type})`);
+      g.append('path').attr('class', 'hit').attr('d', path.d);
+      g.append('text').attr('class', 'lbl').attr('x', path.lx).attr('y', path.ly - 5).attr('text-anchor', 'middle')
+        .style('fill', `var(--r-${p.r.l.type})`).text(p.r.comp + (p.r.l.required ? '' : ' (optional)'));
+      g.on('mouseenter mousemove', ev => show(relTip(p.r), ev)).on('mouseleave', hide);
+    };
+    outs.forEach(p => drawRel(p, 'out'));
+    ins.forEach(p => drawRel(p, 'in'));
+
+    // sub-entities below, keyed from the parent
+    if (subs.length) {
+      const per = 3, w = 250, gapX = 24, top = Math.max(center.h, 0) + 110;
+      cg.append('text').attr('class', 'col-label').attr('x', 0).attr('y', top - 40).attr('text-anchor', 'middle').text('Sub-entities, keyed by this entity');
+      subs.forEach((x, i) => {
+        const col = i % per, row = Math.floor(i / per);
+        const cols = Math.min(per, subs.length - row * per);
+        const px = (col - (cols - 1) / 2) * (w + gapX);
+        const keyLine = x.s.keys ? 'keys: ' + Object.keys(x.s.keys).join(', ') : '';
+        const whatLine = (NS[x.ns] || {}).what || '';
+        const lines = [whatLine && { text: trunc(whatLine, 36) }, keyLine && { text: trunc(keyLine, 36), shared: true }].filter(Boolean);
+        const py = top + row * 108;
+        const c = card(cg, px, py, w, lines, { title: x.ns, meta: x.shared ? 'shared with ' + arr(x.s.held_by).filter(h => h !== n).join(', ') : '', stroke: `var(--r-keyed)`, tip: () => subTip(x, n) });
+        if (row === 0) {
+          const path = edgePath(0, center.h, px, py, 2, 0);
+          const g = eg.append('g').attr('class', 'edge required');
+          g.append('path').attr('class', 'line').attr('d', path.d).style('stroke', 'var(--r-keyed)').attr('marker-end', 'url(#m-keyed)');
+          g.append('path').attr('class', 'hit').attr('d', path.d);
+          g.on('mouseenter mousemove', ev => show(subTip(x, n), ev)).on('mouseleave', hide);
+        }
+        if (sub === x.ns) c.g.select('rect').style('stroke-width', 3);
+      });
+    }
+    const usedTypes = [...new Set(out.concat(inn).map(r => r.l.type))];
+    legend(usedTypes.concat(subs.length ? ['keyed'] : []), `● field unique to ${esc(n)} · ○ shared`);
+    focusPanel(n, sub);
+    try { history.replaceState(null, '', '#' + n); } catch (e) {}
+    setTimeout(() => fit(350), 30);
+  }
+
+  // ---------------- panel ----------------
+  const entBtn = n => E[n] ? `<button class="ent" data-go="${esc(n)}">${esc(n)}</button>` : `<code>${esc(n)}</code>`;
+  function overviewPanel() {
+    const counts = LAYERS.map(l => [l, Object.values(E).filter(e => e.layer === l).length]);
+    const nSub = Object.values(E).reduce((a, e) => a + Object.keys(e.sub_entities || {}).length, 0) + Object.keys(model.shared_sub_entities || {}).length;
+    panel.innerHTML = `<h2>Kamigotchi’s entities</h2>
+      <p class="what">Every entity type the contracts create, generated from the compiler’s view of the code, with descriptions and corrections from the team’s notes. Hover an entity for who creates and changes it; click it for its fields, sub-entities and relationships. Hover an edge to see how the relationship was derived.</p>
+      <section class="block"><h3>In this model</h3><div class="kv">
+        ${counts.map(([l, c]) => `<span class="k">${esc(LAYER_NAME[l])}</span><span>${c} entity types</span>`).join('')}
+        <span class="k">Relationships</span><span>${rels.length} stored references</span>
+        <span class="k">Sub-entities</span><span>${nSub} records keyed under a parent</span>
+      </div></section>
+      <section class="block"><h3>Relationship types</h3><ul class="plain">${Object.keys(REL_NAME).map(t =>
+        `<li><span class="swatch" style="background:var(--r-${t})"></span> <b>${esc(REL_NAME[t])}</b> <span class="muted">${rels.filter(r => r.l.type === t).length || ''}</span><div class="muted small">${esc(RT[t] || '')}</div></li>`).join('')}</ul>
+        <p class="muted small" style="margin-top:8px">Arrows run from the entity that stores the reference to the one it references. Solid lines are set every time the entity is created; dashed lines only under a condition.</p></section>
+      <section class="block"><h3>Start with</h3><div class="chips">${['ACCOUNT', 'KAMI', 'HARVEST', 'NODE', 'ITEM', 'QUEST'].filter(x => E[x]).map(entBtn).join(' ')}</div></section>
+      ${arr(notes.open_questions).length ? `<section class="block"><h3>Open questions</h3><ul class="plain">${arr(notes.open_questions).map(q => '<li class="muted small">' + esc(q) + '</li>').join('')}</ul></section>` : ''}`;
+  }
+  function relRow(r, dir) {
+    const l = r.l, other = dir === 'out' ? r.to : r.from;
+    return `<div class="rel"><div class="head"><span class="swatch" style="background:var(--r-${l.type})"></span>
+      <code>${esc(r.comp)}</code> ${dir === 'out' ? '→' : '←'} ${other ? entBtn(other) : '<span class="tag warn">unresolved</span>'}
+      <span class="tag">${esc(REL_NAME[l.type])}</span><span class="tag">${l.required ? 'required' : 'optional'}</span>
+      ${r.fromNotes ? '<span class="tag">from notes</span>' : l.inferred ? '<span class="tag">inferred</span>' : ''}</div>
+      <div class="muted small">${esc(l.cardinality || '')}${'changes_after_creation' in l ? ' · ' + (l.changes_after_creation ? 'can change after creation' : 'fixed at creation') : ''}${l.removable ? ' · removable' : ''}</div>
+      <div class="muted small">down: ${esc(l.navigate?.down || '')}</div>
+      ${r.note ? `<div class="small">${esc(r.note)}</div>` : ''}</div>`;
+  }
+  function focusPanel(n, sub) {
+    const e = E[n], nt = NE[n] || {}, { out, in: inn } = relsOf(n), subs = subsOf(n), cb = changedBy(n);
+    panel.innerHTML = `<span class="pill" style="background:var(--${e.layer})">${esc(LAYER_NAME[e.layer])}</span>
+      <h2>${esc(n)}</h2>
+      ${nt.what ? `<p class="what">${esc(nt.what)}</p>` : '<p class="what muted">No description in notes yet.</p>'}
+      ${arr(nt.confirmed).length ? `<div class="confirmed"><b>Confirmed</b><ul class="plain">${arr(nt.confirmed).map(c => '<li>' + esc(c) + '</li>').join('')}</ul></div>` : ''}
+      <section class="block"><h3>Identity</h3><div class="kv">
+        ${Object.entries(e.id || {}).map(([k, v]) => `<span class="k">${esc(k)} id</span><code>keccak256(${esc(v)})</code>`).join('') || '<span class="k">id</span><span class="muted">not from a hashed namespace</span>'}
+        ${e.index ? `<span class="k">index</span><code>${esc(e.index)}</code>` : ''}
+        <span class="k">created in</span><span>${arr(e.created_in).map(x => '<code>' + esc(x) + '</code>').join(', ')}</span>
+        <span class="k">created by</span><span>${arr(e.created_by).map(x => '<code>' + esc(x) + '</code>').join(', ') || '<span class="muted">none</span>'}</span>
+        <span class="k">changed by</span><span>${cb.map(x => '<code>' + esc(x) + '</code>').join(', ') || '<span class="muted">not isolable</span>'}</span>
+      </div></section>
+      ${out.length ? `<section class="block"><h3>Stores a reference to (${out.length})</h3>${out.map(r => relRow(r, 'out')).join('')}</section>` : ''}
+      ${inn.length ? `<section class="block"><h3>Referenced by (${inn.length})</h3>${inn.map(r => relRow(r, 'in')).join('')}</section>` : ''}
+      ${subs.length ? `<section class="block"><h3>Sub-entities (${subs.length})</h3><ul class="plain">${subs.map(x => `<li><code>keccak256(${esc(x.s.id || x.ns)})</code>${x.shared ? ' <span class="tag">shared</span>' : ''}<div class="muted small">${esc((NS[x.ns] || {}).what || '')}</div></li>`).join('')}</ul></section>` : ''}
+      <section class="block"><h3>Fields set at creation (${(e.components || []).length})</h3><div class="chips">${arr(e.components).map(c =>
+        `<span class="cmp ${compUse[c].length === 1 ? 'own' : ''}" title="${esc((comps[c] || {}).type || '')}">${esc(c)}</span>`).join('')}</div>
+        <p class="muted small" style="margin:6px 0 0">Outlined: no other entity type uses it.</p></section>`;
+    panel.scrollTop = 0;
+  }
+  panel.addEventListener('click', ev => { const b = ev.target.closest('[data-go]'); if (b) focusView(b.dataset.go); });
+
+  // ---------------- search ----------------
+  const q = document.getElementById('q'), res = document.getElementById('results');
+  const index = [];
+  for (const [n, e] of Object.entries(E)) {
+    index.push({ label: n, kind: LAYER_NAME[e.layer].toLowerCase(), go: n });
+    for (const ns of Object.keys(e.sub_entities || {})) index.push({ label: ns, kind: 'sub-entity of ' + n, go: n, sub: ns });
+    for (const s of arr(e.created_by)) index.push({ label: s, kind: 'creates ' + n, go: n });
+  }
+  for (const [ns, s] of Object.entries(model.shared_sub_entities || {})) for (const h of arr(s.held_by)) if (E[h]) index.push({ label: ns, kind: 'shared, on ' + h, go: h, sub: ns });
+  for (const c of Object.keys(compUse)) index.push({ label: c, kind: compUse[c].length === 1 ? 'field of ' + compUse[c][0] : 'field on ' + compUse[c].length + ' entities', go: compUse[c][0] });
+  let hits = [], hi = 0;
+  const renderHits = () => { res.hidden = !hits.length; res.innerHTML = hits.map((h, i) => `<button class="${i === hi ? 'on' : ''}" data-i="${i}">${esc(h.label)}<em>${esc(h.kind)}</em></button>`).join(''); };
+  q.addEventListener('input', () => {
+    const t = q.value.trim().toLowerCase(); hi = 0;
+    hits = t ? index.filter(x => x.label.toLowerCase().includes(t)).sort((a, b) => a.label.toLowerCase().indexOf(t) - b.label.toLowerCase().indexOf(t)).slice(0, 12) : [];
+    renderHits();
+  });
+  q.addEventListener('keydown', ev => {
+    if (ev.key === 'ArrowDown') { hi = Math.min(hi + 1, hits.length - 1); renderHits(); ev.preventDefault(); }
+    if (ev.key === 'ArrowUp') { hi = Math.max(hi - 1, 0); renderHits(); ev.preventDefault(); }
+    if (ev.key === 'Enter' && hits[hi]) pick(hits[hi]);
+    if (ev.key === 'Escape') { hits = []; renderHits(); }
+  });
+  res.addEventListener('click', ev => { const b = ev.target.closest('[data-i]'); if (b) pick(hits[+b.dataset.i]); });
+  const pick = h => { hits = []; renderHits(); q.value = ''; focusView(h.go, h.sub); };
+  document.addEventListener('click', ev => { if (!ev.target.closest('.search')) { hits = []; renderHits(); } });
+  document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && st.view === 'focus' && document.activeElement !== q) overviewView(); });
+
+  // ---------------- controls ----------------
+  const press = (id, on) => document.getElementById(id).setAttribute('aria-pressed', on ? 'true' : 'false');
+  for (const l of LAYERS) document.getElementById('f-' + l).addEventListener('click', () => {
+    if (st.layers.has(l) && st.layers.size > 1) st.layers.delete(l); else st.layers.add(l);
+    LAYERS.forEach(x => press('f-' + x, st.layers.has(x)));
+    overviewView();
+  });
+  document.getElementById('back').addEventListener('click', overviewView);
+  document.getElementById('fit').addEventListener('click', () => fit());
+  svg.on('click', ev => { if (ev.target === svg.node()) hide(); });
+  window.addEventListener('resize', () => setTimeout(() => fit(0), 100));
+
+  // ---------------- go ----------------
+  document.getElementById('sourceline').textContent = `Kamigotchi World · ${Object.keys(E).length} entity types · ${rels.length} relationships · ${Object.keys(systems).length} systems · generated from the contracts`;
+  const start = decodeURIComponent((location.hash || '').slice(1));
+  if (E[start]) focusView(start); else overviewView();
+})();
+</script>

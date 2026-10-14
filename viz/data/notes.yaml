@@ -4,7 +4,7 @@
 # DRAFT descriptions by Claude from the code, 2026-10-14. Confirmed by Acheron 2026-10-14 where marked.
 
 terms:
-  top-level entity: "Has an EntityType (30 of them)."
+  top-level entity: "Has an EntityType (31), or is an untyped shape (CONDITION, ROOM_GATE, COMMIT): created from the World's id counter with several fields but no EntityType."
   sub-entity: "No EntityType. Its id is keccak256(namespace, keys...), so it lives under a parent and there is one per key."
   layer: "registry = entry made by admin/registry systems; runtime = made by playing; hybrid = one type used for both a registry entry and a player's instance of it (IsRegistry marks the registry entry)"
   links: "Runtime entities point at registry entries by index (IndexItem, IndexRoom, ...) and at other runtime entities by entity id (IDOwns*, IdHolder, IdSource, IdTarget)."
@@ -43,6 +43,9 @@ entities:
   BONUS: {what: "A bonus a skill, item or node can grant."}
   ALLOCATION: {what: "A reward or grant attached to a quest, goal, item or node."}
   REFERENCE: {what: "A lookup pointer attached to an anchor."}
+  CONDITION: {what: "A requirement or objective (type, logic, index, value) attached to whatever requires it: harvesting a node, using an item, accepting or completing a quest, buying a listing, upgrading a skill, crafting. The game's universal condition record; it has no EntityType."}
+  ROOM_GATE: {what: "A condition guarding movement into a room, optionally only when coming from a specific room. No EntityType."}
+  COMMIT: {what: "A pending random roll (commit-reveal) that resolves at a future block: gacha mints and rerolls, sacrifices, droptable rewards from items, quests, goals and scavenging. No EntityType; removed once revealed."}
 
 links:   # for links the generator left unresolved (to: null)
   FRIENDSHIP.IdTarget: {to: ACCOUNT, note: "the other account"}
@@ -54,6 +57,10 @@ links:   # for links the generator left unresolved (to: null)
   QUEST.IDAnchor: {ignore: true, note: "set on the quest's objective snapshots (snapshot.anchor), not on the quest"}
   FRIENDSHIP.IDAnchor: {ignore: true, note: "set on the friendship counters (friendship.ptr), not on the friendship"}
   TRAIT.IDAnchor: {ignore: true, note: "set on the trait-type reverse lookup (registry.trait.type)"}
+  CONDITION.IDAnchor: {to: "NODE | ITEM | QUEST | GOAL | LISTING | AUCTION | SKILL | RECIPE", note: "the registry entry that requires it; chat requirements anchor to a room's chat"}
+  ROOM_GATE.IDTo: {to: ROOM, note: "the room being entered, through the room.gate.to(roomIndex) index"}
+  ROOM_GATE.IDFrom: {to: ROOM, note: "the room being left, when the gate applies only from there (0 otherwise)"}
+  ROOM_GATE.IdSource: {to: ROOM, note: "the source room's index, stored for the client"}
 
 sub_entities:   # descriptions; the parent comes from the generated model unless given here
   faction.reputation: {what: "reputation with a faction"}
@@ -77,6 +84,7 @@ sub_entities:   # descriptions; the parent comes from the generated model unless
   goal.reward: {what: "the rewards of one tier"}
 
 open_questions:
+  - "CONDITION, ROOM_GATE and COMMIT have no EntityType. Should the contracts type them, so on-chain state describes itself the way the other 31 do?"
   - "EQUIPMENT: the code comment says the holder can be a kami or an account, but every caller the generator traced passes a kami. Is account equipment planned?"
   - "sacrifice.log and droptable.item.log: the generator could not trace the holder. Account, kami, or both?"
   - "has.flag: the generator places it under ACCOUNT, but items also carry flags (IDOwnsFlag). Which entities have flags?"

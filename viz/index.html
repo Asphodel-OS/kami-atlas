@@ -200,6 +200,17 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
     if (!to.length) rels.push({ ...base, to: null });
     for (const t of to) rels.push({ ...base, to: t });
   }
+  const anchorUsers = {};  // anchor key -> [{from, comp}] of records that point at it
+  for (const r of rels) for (const d of arr(r.l.derived)) {
+    const m = String(d).match(/through anchor keys (.+)$/);
+    if (m) for (const ns of m[1].split(/,\s*/)) {
+      anchorUsers[ns] = anchorUsers[ns] || [];
+      if (!anchorUsers[ns].some(u => u.from === r.from && u.comp === r.comp)) anchorUsers[ns].push({ from: r.from, comp: r.comp });
+    }
+  }
+  const subKindLine = x => x.s.kind === 'anchor key'
+    ? 'anchor key' + (anchorUsers[x.ns] ? ' ← ' + anchorUsers[x.ns].map(u => u.from + '.' + u.comp).join(', ') : arr(x.s.pointed_at_by).length ? ' ← ' + arr(x.s.pointed_at_by).join(', ') : '')
+    : 'record' + (x.s.shape ? ' (a ' + x.s.shape + ')' : '') + (arr(x.s.fields).length ? ': ' + arr(x.s.fields).join(', ') : '');
   const relsOf = n => ({ out: rels.filter(r => r.from === n), in: rels.filter(r => r.to === n && r.from !== n) });
   const subsOf = n => {
     const own = Object.entries(E[n].sub_entities || {}).map(([ns, s]) => ({ ns, s, shared: false }));
@@ -254,7 +265,8 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
   function subTip(x, parent) {
     const s = x.s, keys = s.keys ? Object.entries(s.keys).map(([k, v]) => esc(k) + (v ? ' → ' + arr(v).map(esc).join('/') : '')).join(', ') : '';
     return `<h4>${esc(x.ns)}</h4>${(NS[x.ns] || {}).what ? `<div>${esc(NS[x.ns].what)}</div>` : ''}
-      <div class="row"><b>Id</b><span><code>keccak256(${esc(s.id || x.ns)})</code></span></div>
+      <div class="row"><b>Kind</b><span>${esc(subKindLine(x))}</span></div>
+      <div class="row"><b>Id</b><span><code>${esc(String(s.id || x.ns).startsWith('address(') ? s.id : 'keccak256(' + (s.id || x.ns) + ')')}</code></span></div>
       ${keys ? `<div class="row"><b>Keys</b><span>${keys}</span></div>` : ''}
       <div class="row"><b>Relation</b><span>${esc(REL_NAME.keyed)} of <code>${esc(parent)}</code>${x.shared ? ' (shared by ' + arr(s.held_by).map(esc).join(', ') + ')' : ''}; required by construction</span></div>
       <div class="row"><b>Navigate</b><span>${esc(s.relation?.navigate?.down || 'compute the id from the parent')}</span></div>
@@ -467,7 +479,7 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
     const own = new Set(uniqueFields(n));
     const idLine = Object.entries(e.id || {}).map(([k, v]) => `${k} id: ${v}`);
     const fields = (e.components || []).map(c => ({ text: (own.has(c) ? '● ' : '○ ') + c + ((comps[c] || {}).type ? ' : ' + comps[c].type : ''), shared: !own.has(c) }));
-    const center = card(cg, 0, 0, 300, fields, { center: true, title: n, meta: trunc(idLine[0] || (e.index ? 'index: ' + e.index : 'id: not hashed'), 44),
+    const center = card(cg, 0, 0, 300, fields, { center: true, title: n + (e.extends ? ' (extends ' + e.extends + ')' : ''), meta: trunc(idLine[0] || (e.index ? 'index: ' + e.index : 'id: not hashed'), 44),
       stroke: `var(--${e.layer})`, tip: () => entityTip(n) });
     const cx = 0, cyMid = center.h / 2;
 
@@ -508,9 +520,10 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
         const px = (col - (cols - 1) / 2) * (w + gapX);
         const keyLine = x.s.keys ? 'keys: ' + Object.keys(x.s.keys).join(', ') : '';
         const whatLine = (NS[x.ns] || {}).what || '';
-        const lines = [whatLine && { text: trunc(whatLine, 36) }, keyLine && { text: trunc(keyLine, 36), shared: true }].filter(Boolean);
+        const lines = [{ text: trunc(subKindLine(x), 36) }, whatLine && { text: trunc(whatLine, 36), shared: true }, keyLine && { text: trunc(keyLine, 36), shared: true }].filter(Boolean);
         const py = top + row * 108;
         const c = card(cg, px, py, w, lines, { title: x.ns, meta: x.shared ? 'shared with ' + arr(x.s.held_by).filter(h => h !== n).join(', ') : '', stroke: `var(--r-keyed)`, tip: () => subTip(x, n) });
+        if (x.s.kind === 'anchor key') c.g.select('rect').style('stroke-dasharray', '5 4');
         if (row === 0) {
           const path = edgePath(0, center.h, px, py, 2, 0);
           const g = eg.append('g').attr('class', 'edge required');
@@ -586,6 +599,7 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
     panel.innerHTML = `<span class="pill" style="background:var(--${e.layer})">${esc(LAYER_NAME[e.layer])}</span>
       <h2>${esc(n)}</h2>
       ${nt.what ? `<p class="what">${esc(nt.what)}</p>` : '<p class="what muted">No description in notes yet.</p>'}
+      ${e.extends ? `<p class="small">Built on ${entBtn(e.extends)}: it has the same fields plus its own.</p>` : ''}
       ${arr(nt.confirmed).length ? `<div class="confirmed"><b>Confirmed</b><ul class="plain">${arr(nt.confirmed).map(c => '<li>' + esc(c) + '</li>').join('')}</ul></div>` : ''}
       <section class="block"><h3>Identity</h3><div class="kv">
         ${Object.entries(e.id || {}).map(([k, v]) => `<span class="k">${esc(k)} id</span><code>keccak256(${esc(v)})</code>`).join('') || '<span class="k">id</span><span class="muted">not from a hashed namespace</span>'}
@@ -596,7 +610,7 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
       </div></section>
       ${out.length ? `<section class="block"><h3>Stores a reference to (${out.length})</h3>${out.map(r => relRow(r, 'out')).join('')}</section>` : ''}
       ${inn.length ? `<section class="block"><h3>Referenced by (${inn.length})</h3>${inn.map(r => relRow(r, 'in')).join('')}</section>` : ''}
-      ${subs.length ? `<section class="block"><h3>Sub-entities (${subs.length})</h3><ul class="plain">${subs.map(x => `<li><code>keccak256(${esc(x.s.id || x.ns)})</code>${x.shared ? ' <span class="tag">shared</span>' : ''}<div class="muted small">${esc((NS[x.ns] || {}).what || '')}</div></li>`).join('')}</ul></section>` : ''}
+      ${subs.length ? `<section class="block"><h3>Sub-entities (${subs.length})</h3><ul class="plain">${subs.map(x => `<li><code>${esc(x.ns)}</code> <span class="tag">${esc(x.s.kind || 'record')}</span>${x.s.shape ? ` <span class="tag">${esc(x.s.shape)}</span>` : ''}${x.shared ? ' <span class="tag">shared</span>' : ''}<div class="muted small">${esc(subKindLine(x))}</div>${(NS[x.ns] || {}).what ? `<div class="muted small">${esc(NS[x.ns].what)}</div>` : ''}</li>`).join('')}</ul></section>` : ''}
       <section class="block"><h3>Fields set at creation (${(e.components || []).length})</h3><div class="chips">${arr(e.components).map(c =>
         `<span class="cmp ${compUse[c].length === 1 ? 'own' : ''}" title="${esc((comps[c] || {}).type || '')}">${esc(c)}</span>`).join('')}</div>
         <p class="muted small" style="margin:6px 0 0">Outlined: no other entity type uses it.</p></section>`;

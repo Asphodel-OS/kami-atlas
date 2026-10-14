@@ -64,6 +64,11 @@ h1 small { display: block; font: 400 12px/1.3 var(--f-mono); color: var(--muted)
 .edge .lbl { font: 10px var(--f-mono); paint-order: stroke; stroke: var(--panel); stroke-width: 3px; pointer-events: none; }
 .edge:hover .line { stroke-width: 3; }
 .zoomed-out .edge .lbl { display: none; }
+.far .node .name { display: none; }
+.faded { opacity: .1; transition: opacity .12s; }
+.node.pinned circle { stroke-dasharray: 3 2; }
+.hint { position: absolute; right: 12px; bottom: 10px; font: 11px var(--f-mono); color: var(--muted); background: color-mix(in srgb, var(--panel) 90%, transparent); padding: 3px 6px; border-radius: 4px; pointer-events: none; text-align: right; }
+.maptools .chip { min-width: 30px; justify-content: center; }
 .card rect.box { fill: var(--panel); stroke: var(--line); stroke-width: 1.2; }
 .card.center rect.box { stroke-width: 2.5; }
 .card .title { font: 600 15px var(--f-display); fill: var(--ink); }
@@ -140,7 +145,8 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
   <div class="main">
     <div class="map" id="map">
       <div class="crumb" id="crumb" hidden><button class="chip" id="back">← All entities</button><span id="crumb-name"></span></div>
-      <div class="maptools"><button class="chip" id="fit">Fit</button></div>
+      <div class="maptools"><button class="chip" id="zin" aria-label="Zoom in">+</button><button class="chip" id="zout" aria-label="Zoom out">−</button><button class="chip" id="fit">Fit</button></div>
+      <div class="hint" id="hint">scroll or drag to pan · pinch or ⌘/Ctrl+scroll to zoom · drag a node to pin it, double-click to release · + − 0 keys</div>
       <svg id="svg" role="img" aria-label="Map of Kamigotchi entities and their relationships"></svg>
       <div class="legend" id="legend"></div>
       <div class="tip" id="tip" hidden></div>
@@ -248,8 +254,25 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
     .attr('refX', 9).attr('refY', 5).attr('markerWidth', 7).attr('markerHeight', 7).attr('orient', 'auto-start-reverse')
     .append('path').attr('d', 'M0 0L10 5L0 10z').style('fill', `var(--r-${t})`);
   const root = svg.append('g');
-  const zoom = d3.zoom().scaleExtent([0.2, 3]).on('zoom', ev => { root.attr('transform', ev.transform); svg.classed('zoomed-out', ev.transform.k < 0.55); });
+  const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const ms = d => reduceMotion ? 0 : d;
+  // Trackpad two-finger scroll pans; pinch (ctrlKey), ⌘/Ctrl+scroll and a notched mouse wheel zoom around the pointer.
+  const isZoomWheel = ev => ev.ctrlKey || ev.metaKey || ev.deltaMode === 1 || (ev.deltaX === 0 && Math.abs(ev.deltaY) >= 50 && Number.isInteger(ev.deltaY));
+  const zoom = d3.zoom().scaleExtent([0.15, 4])
+    .filter(ev => ev.type === 'wheel' ? isZoomWheel(ev) : (!ev.ctrlKey || ev.type === 'touchstart') && !ev.button)
+    .wheelDelta(ev => -ev.deltaY * (ev.deltaMode === 1 ? 0.05 : ev.deltaMode ? 1 : 0.002) * (ev.ctrlKey && !ev.metaKey ? 6 : 1))
+    .on('zoom', ev => {
+      root.attr('transform', ev.transform);
+      svg.classed('zoomed-out', ev.transform.k < 0.6).classed('far', ev.transform.k < 0.35);
+    });
   svg.call(zoom).on('dblclick.zoom', null);
+  svg.node().addEventListener('wheel', ev => {
+    if (isZoomWheel(ev)) return;
+    ev.preventDefault();
+    const k = d3.zoomTransform(svg.node()).k;
+    zoom.translateBy(svg, -ev.deltaX / k, -ev.deltaY / k);
+  }, { passive: false });
+  const zoomBy = f => svg.transition().duration(ms(200)).call(zoom.scaleBy, f);
   const W = () => wrap.clientWidth, H = () => wrap.clientHeight;
   let fitTarget = null;
   function fit(dur = 450) {
@@ -257,7 +280,7 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
     const lw = (document.getElementById('legend').offsetWidth || 0) + 24;  // keep clear of the legend overlay
     const aw = Math.max(200, W() - lw);
     const s = Math.min(1.6, 0.92 / Math.max((b.width + 60) / aw, (b.height + 70) / H()));
-    svg.transition().duration(dur).call(zoom.transform, d3.zoomIdentity.translate(lw + aw / 2 - s * (b.x + b.width / 2), H() / 2 - s * (b.y + b.height / 2)).scale(s));
+    svg.transition().duration(ms(dur)).call(zoom.transform, d3.zoomIdentity.translate(lw + aw / 2 - s * (b.x + b.width / 2), H() / 2 - s * (b.y + b.height / 2)).scale(s));
   }
 
   function legend(types, extra) {
@@ -302,17 +325,39 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
     edge.append('path').attr('class', 'line').style('stroke', d => `var(--r-${d.r.l.type})`).attr('marker-end', d => `url(#m-${d.r.l.type})`);
     edge.append('path').attr('class', 'hit');
     edge.append('text').attr('class', 'lbl').attr('text-anchor', 'middle').style('fill', d => `var(--r-${d.r.l.type})`).text(d => d.r.comp);
-    edge.on('mouseenter mousemove', (ev, d) => show(relTip(d.r), ev)).on('mouseleave', hide);
+    edge.on('mouseenter', (ev, d) => { show(relTip(d.r), ev); edge.classed('faded', e => e !== d); node.classed('faded', n => n.id !== d.source.id && n.id !== d.target.id); })
+      .on('mousemove', ev => placeTip(ev))
+      .on('mouseleave', () => { hide(); edge.classed('faded', false); node.classed('faded', false); });
 
     const node = ng.selectAll('g').data(nodes).join('g').attr('class', 'node').attr('tabindex', 0).attr('role', 'button').attr('aria-label', d => d.id);
     node.append('circle').attr('r', d => radius(d.id))
       .style('fill', d => `color-mix(in srgb, var(--${d.layer}) 22%, var(--panel))`).style('stroke', d => `var(--${d.layer})`);
     node.append('text').attr('class', 'name').attr('text-anchor', 'middle').attr('dy', d => radius(d.id) + 14).text(d => d.id);
-    node.on('mouseenter mousemove', (ev, d) => show(entityTip(d.id), ev)).on('mouseleave', hide)
-      .on('click', (ev, d) => { ev.stopPropagation(); focusView(d.id); })
+    const near = id => { const s = new Set([id]); links.forEach(l => { if (l.source.id === id) s.add(l.target.id); if (l.target.id === id) s.add(l.source.id); }); return s; };
+    const highlight = id => {
+      if (!id) { node.classed('faded', false); edge.classed('faded', false); return; }
+      const s = near(id);
+      node.classed('faded', d => !s.has(d.id));
+      edge.classed('faded', d => d.source.id !== id && d.target.id !== id);
+    };
+    const flyTo = d => {
+      hide(); highlight(null);
+      const k = 1.8;
+      svg.transition().duration(ms(320)).call(zoom.transform, d3.zoomIdentity.translate(W() / 2 - k * d.x, H() / 2 - k * d.y).scale(k))
+        .on('end', () => focusView(d.id));
+      if (reduceMotion) focusView(d.id);
+    };
+    let dragging = false;
+    node.on('mouseenter', (ev, d) => { if (!dragging) { highlight(d.id); show(entityTip(d.id), ev); } })
+      .on('mousemove', (ev, d) => { if (!dragging) placeTip(ev); })
+      .on('mouseleave', () => { if (!dragging) { highlight(null); hide(); } })
+      .on('click', (ev, d) => { ev.stopPropagation(); if (ev.defaultPrevented) return; flyTo(d); })
+      .on('dblclick', (ev, d) => { ev.stopPropagation(); d.fx = null; d.fy = null; d3.select(ev.currentTarget).classed('pinned', false); sim.alpha(0.3).restart(); })
       .on('keydown', (ev, d) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); focusView(d.id); } })
-      .call(d3.drag().on('start', (ev, d) => { if (!ev.active) sim.alphaTarget(.2).restart(); d.fx = d.x; d.fy = d.y; })
-        .on('drag', (ev, d) => { d.fx = ev.x; d.fy = ev.y; }).on('end', (ev, d) => { if (!ev.active) sim.alphaTarget(0); d.fx = null; d.fy = null; }));
+      .call(d3.drag().clickDistance(4)
+        .on('start', (ev, d) => { dragging = true; hide(); if (!ev.active) sim.alphaTarget(.15).restart(); d.fx = d.x; d.fy = d.y; })
+        .on('drag', (ev, d) => { d.fx = ev.x; d.fy = ev.y; })
+        .on('end', function (ev, d) { dragging = false; if (!ev.active) sim.alphaTarget(0); d3.select(this).classed('pinned', true); }));  // stays where dropped
 
     if (sim) sim.stop();
     sim = d3.forceSimulation(nodes)
@@ -524,6 +569,15 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
   });
   document.getElementById('back').addEventListener('click', overviewView);
   document.getElementById('fit').addEventListener('click', () => fit());
+  document.getElementById('zin').addEventListener('click', () => zoomBy(1.35));
+  document.getElementById('zout').addEventListener('click', () => zoomBy(1 / 1.35));
+  document.addEventListener('keydown', ev => {
+    if (ev.target.closest && ev.target.closest('input')) return;
+    if (ev.key === '+' || ev.key === '=') { zoomBy(1.35); ev.preventDefault(); }
+    else if (ev.key === '-' || ev.key === '_') { zoomBy(1 / 1.35); ev.preventDefault(); }
+    else if (ev.key === '0') { fit(); ev.preventDefault(); }
+    else if (ev.key === '/') { q.focus(); ev.preventDefault(); }
+  });
   svg.on('click', ev => { if (ev.target === svg.node()) hide(); });
   window.addEventListener('resize', () => setTimeout(() => fit(0), 100));
 

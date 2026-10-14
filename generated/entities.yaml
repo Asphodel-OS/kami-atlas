@@ -6,6 +6,7 @@ entity_types:
     checked_in: [LibAccount.getByName, LibAccount.getByOwner, LibAccount.isAccount]
     made_by: "player actions"
     created_by_systems: [AccountRegister]
+    created_by_players: [AccountRegister]
     links_set_at_creation:
       IndexAccount: ["getAndUpdateTotalAccs(components)  (in LibAccount.create)"]
       IndexRoom: ["1  (in LibAccount.create)"]
@@ -15,6 +16,7 @@ entity_types:
     checked_in: []
     made_by: "admin/registry setup"
     created_by_systems: [_GoalRegistry, _ItemRegistry, _NodeRegistry, _QuestRegistry]
+    created_by_players: []
     links_set_at_creation:
       IDAnchor: ["anchorID  (in LibAllo.createBase)"]
       IdSource: ["sourceID  (in LibAllo.createBase)"]
@@ -24,6 +26,7 @@ entity_types:
     checked_in: [LibAuctionRegistry.isInstance]
     made_by: "admin/registry setup"
     created_by_systems: [_AuctionRegistry]
+    created_by_players: []
     links_set_at_creation:
       IndexCurrency: ["params.payItemIndex  (in LibAuctionRegistry.create)"]
       IndexItem: ["params.itemIndex  (in LibAuctionRegistry.create)"]
@@ -33,15 +36,35 @@ entity_types:
     checked_in: []
     made_by: "admin/registry setup"
     created_by_systems: [_ItemRegistry, _NodeRegistry, _SkillRegistry]
+    created_by_players: []
     links_set_at_creation:
       IDAnchor: ["anchorID  (in LibBonus.regCreate)"]
       IdSource: ["sourceID  (in LibBonus.regCreate)"]
+  COMMIT:
+    created_in: [LibCommit.commit]
+    components_at_creation: [BlockReveal, IdHolder, Type]
+    checked_in: []
+    made_by: "player actions"
+    created_by_systems: [AccountUseItem, GoalClaim, KamiCastItem, KamiGachaMint, KamiGachaReroll, KamiSacrificeCommit, KamiUseItem, QuestComplete, ScavengeClaim, SkillRespec]
+    created_by_players: [AccountUseItem, GoalClaim, KamiCastItem, KamiGachaMint, KamiGachaReroll, KamiSacrificeCommit, KamiUseItem, QuestComplete, ScavengeClaim, SkillRespec]
+    links_set_at_creation:
+      IdHolder: ["holderID  (in LibCommit.commit(uint256,uint256,string))"]
+  CONDITION:
+    created_in: [LibConditional.createFor]
+    components_at_creation: [For, IDAnchor, Index, LogicType, Type, Value]
+    checked_in: []
+    made_by: "admin/registry setup"
+    created_by_systems: [Chat, _AuctionRegistry, _GoalRegistry, _ItemRegistry, _ListingRegistry, _NodeRegistry, _QuestRegistry, _RecipeRegistry, _SkillRegistry]
+    created_by_players: []
+    links_set_at_creation:
+      IDAnchor: ["pointerID  (in LibConditional.createFor)"]
   EQUIPMENT:
     created_in: [LibEquipment.createInstance]
     components_at_creation: [EntityType, For, IDOwnsEquipment, IndexItem]
     checked_in: [LibEquipment.getEquipped]
     made_by: "player actions"
     created_by_systems: [KamiEquip]
+    created_by_players: [KamiEquip]
     links_set_at_creation:
       IDOwnsEquipment: ["holderID  (in LibEquipment.createInstance)"]
       IndexItem: ["itemIndex  (in LibEquipment.createInstance)"]
@@ -51,6 +74,7 @@ entity_types:
     checked_in: []
     made_by: "admin/registry setup"
     created_by_systems: [_FactionRegistry]
+    created_by_players: []
     links_set_at_creation:
       IndexFaction: ["index  (in LibFaction.create)"]
   FRIENDSHIP:
@@ -59,6 +83,7 @@ entity_types:
     checked_in: [LibFriend.checkIsFriendship, LibFriend.getFriendship]
     made_by: "player actions"
     created_by_systems: [FriendAccept, FriendBlock, FriendRequest]
+    created_by_players: [FriendAccept, FriendBlock, FriendRequest]
     links_set_at_creation:
       IDAnchor: ["genCounterPtr(targetID, \"REQUEST\")  (in LibFriend.updateInReqCounter)", "pointers  (in LibFriend.updateFriendCounter)"]
       IdSource: ["accID  (in LibFriend.create)", "accID  (in LibFriend.accept)"]
@@ -69,6 +94,7 @@ entity_types:
     checked_in: [LibGoal.getByIndex]
     made_by: "admin/registry setup"
     created_by_systems: [_GoalRegistry]
+    created_by_players: []
     links_set_at_creation:
       IndexRoom: ["roomIndex  (in LibGoal.create)"]
   HARVEST:
@@ -77,6 +103,7 @@ entity_types:
     checked_in: [LibHarvest.getForKami, LibHarvest.isHarvest]
     made_by: "player actions"
     created_by_systems: [HarvestStart]
+    created_by_players: [HarvestStart]
     links_set_at_creation:
       IdHolder: ["kamiID  (in LibHarvest.create)"]
       IdSource: ["nodeID  (in LibHarvest.create)"]
@@ -122,6 +149,40 @@ entity_types:
       - _DistributeItem
       - _PoolRegistry
       - _SnapshotT2
+    created_by_players:
+      - AccountUseItem
+      - AuctionBuy
+      - Craft
+      - DroptableReveal
+      - GachaBuyTicket
+      - GoalClaim
+      - HarvestCollect
+      - HarvestLiquidate
+      - HarvestStop
+      - ItemTransfer
+      - Kami721Unstake
+      - KamiCastItem
+      - KamiEquip
+      - KamiGachaReroll
+      - KamiMarketAcceptOffer
+      - KamiMarketBuy
+      - KamiMarketList
+      - KamiSacrificeCommit
+      - KamiSacrificeReveal
+      - KamiSend
+      - KamiUnequip
+      - KamiUseItem
+      - ListingBuy
+      - ListingSell
+      - Pool
+      - QuestComplete
+      - ScavengeClaim
+      - SkillRespec
+      - TokenPortal
+      - TradeCancel
+      - TradeComplete
+      - TradeCreate
+      - TradeExecute
     links_set_at_creation:
       IDOwnsInventory: ["holderID  (in LibInventory.create(uint256,uint256,uint32))", "holderID  (in LibInventory.createFor(uint256,uint32))", "holderID  (in LibInventory.createFor(uint256,uint32[]))"]
       IndexItem:
@@ -134,14 +195,16 @@ entity_types:
     checked_in: [LibItem.verifyType]
     made_by: "admin/registry setup"
     created_by_systems: [_ItemRegistry]
+    created_by_players: []
     links_set_at_creation:
       IndexItem: ["index  (in LibItem.createItem)"]
   KAMI:
     created_in: [LibKamiCreate.create]
     components_at_creation: [EntityType, Experience, Harmony, Health, IDOwnsKami, IndexKami, Level, MediaURI, Name, Power, SkillPoint, Slots, State, Violence]
-    checked_in: [LibKami.getByIndex, LibKami.getByName, LibKami.verifyIsKami, LibSetter.incInv]
+    checked_in: [LibConditional.parseTargetShape, LibKami.getByIndex, LibKami.getByName, LibKami.verifyIsKami, LibSetter.incInv]
     made_by: "player actions"
     created_by_systems: [KamiGachaMint]
+    created_by_players: [KamiGachaMint]
     links_set_at_creation:
       IDOwnsKami: ["GACHA_ID  (in LibKamiCreate.setBase)"]
       IndexKami: ["index  (in LibKamiCreate.setBase)"]
@@ -151,14 +214,16 @@ entity_types:
     checked_in: []
     made_by: "player actions"
     created_by_systems: [KamiMarketOffer]
+    created_by_players: [KamiMarketOffer]
     links_set_at_creation:
       IDOwnsKamiOrder: ["accID  (in LibKamiMarket.createCollectionOffer)"]
   KAMI_LISTING:
     created_in: [LibKamiMarket.createListing]
     components_at_creation: [EntityType, IDOwnsKamiOrder, IndexKamiListing, State, TimeEnd, TimeStart, Value, Values]
-    checked_in: []
+    checked_in: [_KamiMarketRegistrySystem.rebuildListingIndex]
     made_by: "player actions"
     created_by_systems: [KamiMarketList]
+    created_by_players: [KamiMarketList]
     links_set_at_creation:
       IDOwnsKamiOrder: ["accID  (in LibKamiMarket.createListing)"]
       IndexKamiListing: ["kamiIndex  (in LibKamiMarket.createListing)"]
@@ -168,6 +233,7 @@ entity_types:
     checked_in: []
     made_by: "player actions"
     created_by_systems: [KamiMarketOffer]
+    created_by_players: [KamiMarketOffer]
     links_set_at_creation:
       IDOwnsKamiOrder: ["accID  (in LibKamiMarket.createOffer)"]
       IndexKami: ["kamiIndex  (in LibKamiMarket.createOffer)"]
@@ -177,6 +243,7 @@ entity_types:
     checked_in: [LibListingRegistry.get]
     made_by: "admin/registry setup"
     created_by_systems: [_ListingRegistry]
+    created_by_players: []
     links_set_at_creation:
       IndexCurrency: ["currencyIndex  (in LibListingRegistry.create)"]
       IndexItem: ["itemIndex  (in LibListingRegistry.create)"]
@@ -187,6 +254,7 @@ entity_types:
     checked_in: [LibNode.getByIndex]
     made_by: "admin/registry setup"
     created_by_systems: [_NodeRegistry]
+    created_by_players: []
     links_set_at_creation:
       IndexItem: ["node.item  (in LibNode.create)"]
       IndexNode: ["node.index  (in LibNode.create)"]
@@ -197,6 +265,7 @@ entity_types:
     checked_in: [LibNPC.get]
     made_by: "admin/registry setup"
     created_by_systems: [_NPCRegistry]
+    created_by_players: []
     links_set_at_creation:
       IndexNPC: ["index  (in LibNPC.create)"]
       IndexRoom: ["roomIndex  (in LibNPC.setRoomIndex)"]
@@ -206,12 +275,14 @@ entity_types:
     checked_in: [LibPoolRegistry.get]
     made_by: "admin/registry setup"
     created_by_systems: [_PoolRegistry]
+    created_by_players: []
   POOL_SHARE:
     created_in: [LibPool.mintShares]
     components_at_creation: [EntityType, IDType, IdHolder, Value]
     checked_in: []
     made_by: both
     created_by_systems: [Pool, _PoolRegistry]
+    created_by_players: [Pool]
     links_set_at_creation:
       IDType: ["poolID  (in LibPool.mintShares)"]
       IdHolder: ["holderID  (in LibPool.mintShares)"]
@@ -221,6 +292,7 @@ entity_types:
     checked_in: [LibQuest.getAccQuestIndex, LibQuest.verifyIsQuest, LibQuestRegistry.getByIndex]
     made_by: both
     created_by_systems: [QuestAccept, _QuestRegistry]
+    created_by_players: [QuestAccept]
     links_set_at_creation:
       IDAnchor: ["genSnapshotAnchor(questID)  (in LibQuest.snapshotObjective)"]
       IDOwnsQuest: ["accID  (in LibQuest.assign)"]
@@ -231,6 +303,7 @@ entity_types:
     checked_in: []
     made_by: "admin/registry setup"
     created_by_systems: [_RecipeRegistry]
+    created_by_players: []
     links_set_at_creation:
       IndexRecipe: ["index  (in LibRecipe.create)"]
   REFERENCE:
@@ -239,6 +312,7 @@ entity_types:
     checked_in: []
     made_by: "admin/registry setup"
     created_by_systems: [_GoalRegistry, _ItemRegistry]
+    created_by_players: []
     links_set_at_creation:
       IDAnchor: ["anchorID  (in LibReference._create)"]
   RELATIONSHIP:
@@ -247,6 +321,7 @@ entity_types:
     checked_in: [LibRelationshipRegistry.isRelationship]
     made_by: both
     created_by_systems: [RelationshipAdvance, _RelationshipRegistry]
+    created_by_players: [RelationshipAdvance]
     links_set_at_creation:
       IDOwnsRelationship: ["accID  (in LibRelationship.create)"]
       IndexNPC: ["npcIndex  (in LibRelationshipRegistry.create)", "npcIndex  (in LibRelationship.create)"]
@@ -257,20 +332,34 @@ entity_types:
     checked_in: [LibRoom.getByIndex, LibRoom.queryByLocation]
     made_by: "admin/registry setup"
     created_by_systems: [_RoomRegistry]
+    created_by_players: []
     links_set_at_creation:
       IndexRoom: ["index  (in LibRoom.create)"]
+  ROOM_GATE:
+    created_in: [LibRoom.createGate]
+    components_at_creation: [For, IDFrom, IDTo, IdSource, Index, LogicType, Type, Value]
+    checked_in: []
+    made_by: "admin/registry setup"
+    created_by_systems: [_RoomRegistry]
+    created_by_players: []
+    links_set_at_creation:
+      IDFrom: ["genGateSourcePtr(sourceIndex)  (in LibRoom.createGate)", "0  (in LibRoom.createGate)"]
+      IDTo: ["genGateAtPtr(roomIndex)  (in LibRoom.createGate)"]
+      IdSource: ["sourceIndex  (in LibRoom.createGate)"]
   SCAVENGE:
     created_in: [LibScavenge.create]
     components_at_creation: [Affinity, EntityType, Index, IsRegistry, Type, Value]
     checked_in: [LibScavenge.verifyIsScavenge]
     made_by: "admin/registry setup"
     created_by_systems: [_NodeRegistry]
+    created_by_players: []
   SKILL:
     created_in: [LibSkill.assign, LibSkill.upgradeFor, LibSkillRegistry.create]
     components_at_creation: [Cost, Description, EntityType, For, IDAnchor, IDOwnsSkill, IDType, IdSource, IndexSkill, IsRegistry, Level, Max, MediaURI, Name, SkillPoint, Subtype, Time, Type, Value]
     checked_in: [LibSkill.get, LibSkillRegistry.getByIndex]
     made_by: both
     created_by_systems: [SkillUpgrade, _SkillRegistry]
+    created_by_players: [SkillUpgrade]
     links_set_at_creation:
       IDOwnsSkill: ["targetID  (in LibSkill.assign)", "targetID  (in LibSkill.upgradeFor)"]
       IndexSkill: ["skillIndex  (in LibSkill.assign)", "skillIndex  (in LibSkill.upgradeFor)", "skillIndex  (in LibSkillRegistry.create)"]
@@ -280,6 +369,7 @@ entity_types:
     checked_in: []
     made_by: "player actions"
     created_by_systems: [HarvestStart]
+    created_by_players: [HarvestStart]
     links_set_at_creation:
       IDOwnsTax: ["payerID  (in LibTax.create)"]
       IdTarget: ["recipientID  (in LibTax.create)"]
@@ -289,6 +379,7 @@ entity_types:
     checked_in: []
     made_by: "player actions"
     created_by_systems: [TokenPortal]
+    created_by_players: [TokenPortal]
     links_set_at_creation:
       IDOwnsWithdrawal: ["accID  (in LibTokenPortal.createReceipt)"]
       IndexItem: ["itemIndex  (in LibTokenPortal.createReceipt)"]
@@ -298,6 +389,7 @@ entity_types:
     checked_in: [LibTrade.verifyIsTrade]
     made_by: "player actions"
     created_by_systems: [TradeCreate]
+    created_by_players: [TradeCreate]
     links_set_at_creation:
       IDOwnsTrade: ["accID  (in LibTrade.create)"]
       IdTarget: ["targetID  (in LibTrade.create)"]
@@ -307,6 +399,7 @@ entity_types:
     checked_in: [LibTraitRegistry.getByIndex]
     made_by: "admin/registry setup"
     created_by_systems: [_TraitRegistry]
+    created_by_players: []
     links_set_at_creation:
       IDAnchor: ["genReverseMappingPtr(_type)  (in LibTraitRegistry.setReverseMappingPtr)"]
 id_namespaces:

@@ -46,6 +46,7 @@
     "Value"
    ],
    "owns": [
+    "COMMIT",
     "INVENTORY",
     "KAMI",
     "KAMI_COLLECTION_OFFER",
@@ -194,6 +195,50 @@
      }
     }
    }
+  },
+  "COMMIT": {
+   "layer": "runtime",
+   "created_by": [
+    "AccountUseItem",
+    "GoalClaim",
+    "KamiCastItem",
+    "KamiGachaMint",
+    "KamiGachaReroll",
+    "KamiSacrificeCommit",
+    "KamiUseItem",
+    "QuestComplete",
+    "ScavengeClaim",
+    "SkillRespec"
+   ],
+   "created_in": [
+    "LibCommit.commit"
+   ],
+   "typed": false,
+   "id": {
+    "instance": "world.getUniqueEntityId() (a counter, no hashed id)"
+   },
+   "links": {
+    "IdHolder": {
+     "to": "ACCOUNT",
+     "type": "ownership",
+     "stored_on": "COMMIT",
+     "required": true,
+     "cardinality": "many COMMIT per ACCOUNT",
+     "navigate": {
+      "up": "read IdHolder on COMMIT",
+      "down": "reverse lookup on IdHolder (indexed)"
+     },
+     "derived": [
+      "IdHolder = holderID in LibCommit.commit(uint256,uint256,string) (traced through callers)"
+     ],
+     "inferred": true
+    }
+   },
+   "components": [
+    "BlockReveal",
+    "IdHolder",
+    "Type"
+   ]
   },
   "EQUIPMENT": {
    "layer": "runtime",
@@ -1387,6 +1432,55 @@
     "Value"
    ]
   },
+  "CONDITION": {
+   "layer": "registry",
+   "created_by": [
+    "Chat",
+    "_AuctionRegistry",
+    "_GoalRegistry",
+    "_ItemRegistry",
+    "_ListingRegistry",
+    "_NodeRegistry",
+    "_QuestRegistry",
+    "_RecipeRegistry",
+    "_SkillRegistry"
+   ],
+   "created_in": [
+    "LibConditional.createFor"
+   ],
+   "typed": false,
+   "id": {
+    "instance": "world.getUniqueEntityId() (a counter, no hashed id)"
+   },
+   "links": {
+    "IDAnchor": {
+     "to": null,
+     "type": "attachment",
+     "stored_on": "CONDITION",
+     "required": true,
+     "cardinality": "many CONDITION per referenced entity",
+     "navigate": {
+      "up": "read IDAnchor on CONDITION",
+      "down": "reverse lookup on IDAnchor (indexed)"
+     },
+     "derived": [
+      "IDAnchor = pointerID in LibConditional.createFor (not resolved)"
+     ],
+     "inferred": true,
+     "unresolved_from": [
+      "pointerID"
+     ]
+    }
+   },
+   "components": [
+    "For",
+    "IDAnchor",
+    "Index",
+    "LogicType",
+    "Type",
+    "Value"
+   ]
+  },
   "FACTION": {
    "layer": "registry",
    "created_by": [
@@ -1954,39 +2048,99 @@
     "IndexRoom",
     "Location",
     "Name"
+   ]
+  },
+  "ROOM_GATE": {
+   "layer": "registry",
+   "created_by": [
+    "_RoomRegistry"
    ],
-   "sub_entities": {
-    "room.gate.from": {
-     "id": "room.gate.from(index)",
-     "keys": {
-      "index": null
+   "created_in": [
+    "LibRoom.createGate"
+   ],
+   "typed": false,
+   "id": {
+    "instance": "world.getUniqueEntityId() (a counter, no hashed id)"
+   },
+   "links": {
+    "IDFrom": {
+     "to": null,
+     "type": "directed",
+     "stored_on": "ROOM_GATE",
+     "required": false,
+     "only_when": [
+      "not (sourceIndex != 0)",
+      "sourceIndex != 0"
+     ],
+     "changes_after_creation": false,
+     "removable": true,
+     "cardinality": "many ROOM_GATE per referenced entity",
+     "navigate": {
+      "up": "read IDFrom on ROOM_GATE",
+      "down": "reverse lookup on IDFrom (indexed)"
      },
-     "parent_from": "defined in LibRoom",
-     "relation": {
-      "type": "keyed",
-      "required": true,
-      "navigate": {
-       "down": "compute room.gate.from(index) from the parent",
-       "up": "from the key values"
-      }
-     }
+     "derived": [
+      "IDFrom = genGateSourcePtr(sourceIndex) in LibRoom.createGate (not resolved)",
+      "IDFrom = 0 in LibRoom.createGate (not resolved)"
+     ],
+     "inferred": true,
+     "unresolved_from": [
+      "0",
+      "genGateSourcePtr(sourceIndex)"
+     ]
     },
-    "room.gate.to": {
-     "id": "room.gate.to(index)",
-     "keys": {
-      "index": "ROOM"
+    "IDTo": {
+     "to": null,
+     "type": "directed",
+     "stored_on": "ROOM_GATE",
+     "required": true,
+     "changes_after_creation": false,
+     "removable": true,
+     "cardinality": "many ROOM_GATE per referenced entity",
+     "navigate": {
+      "up": "read IDTo on ROOM_GATE",
+      "down": "reverse lookup on IDTo (indexed)"
      },
-     "parent_from": "defined in LibRoom",
-     "relation": {
-      "type": "keyed",
-      "required": true,
-      "navigate": {
-       "down": "compute room.gate.to(index) from the parent",
-       "up": "from the key values"
-      }
-     }
+     "derived": [
+      "IDTo = genGateAtPtr(roomIndex) in LibRoom.createGate (not resolved)"
+     ],
+     "inferred": true,
+     "unresolved_from": [
+      "genGateAtPtr(roomIndex)"
+     ]
+    },
+    "IdSource": {
+     "to": null,
+     "type": "directed",
+     "stored_on": "ROOM_GATE",
+     "required": false,
+     "only_when": [
+      "sourceIndex != 0"
+     ],
+     "cardinality": "many ROOM_GATE per referenced entity",
+     "navigate": {
+      "up": "read IdSource on ROOM_GATE",
+      "down": "reverse lookup on IdSource (indexed)"
+     },
+     "derived": [
+      "IdSource = sourceIndex in LibRoom.createGate (not resolved)"
+     ],
+     "inferred": true,
+     "unresolved_from": [
+      "sourceIndex"
+     ]
     }
-   }
+   },
+   "components": [
+    "For",
+    "IDFrom",
+    "IDTo",
+    "IdSource",
+    "Index",
+    "LogicType",
+    "Type",
+    "Value"
+   ]
   },
   "SCAVENGE": {
    "layer": "registry",
@@ -2204,6 +2358,36 @@
     }
    }
   },
+  "room.gate.from": {
+   "id": "room.gate.from(index)",
+   "keys": {
+    "index": null
+   },
+   "parent_from": "no single parent",
+   "relation": {
+    "type": "keyed",
+    "required": true,
+    "navigate": {
+     "down": "compute room.gate.from(index) from the parent",
+     "up": "from the key values"
+    }
+   }
+  },
+  "room.gate.to": {
+   "id": "room.gate.to(index)",
+   "keys": {
+    "index": "ROOM"
+   },
+   "parent_from": "no single parent",
+   "relation": {
+    "type": "keyed",
+    "required": true,
+    "navigate": {
+     "down": "compute room.gate.to(index) from the parent",
+     "up": "from the key values"
+    }
+   }
+  },
   "sacrifice.log": {
    "id": "sacrifice.log(holderID, dtID)",
    "keys": {
@@ -2254,6 +2438,72 @@
      "up": "from the key values"
     }
    }
+  }
+ },
+ "singletons": {
+  "NEWBIE_VENDOR_TWAP": {
+   "id": "keccak256(\"newbie.vendor.twap\")",
+   "constant": "TWAP_ENTITY",
+   "defined_in": "src/systems/_NewbieVendorRegistrySystem.sol",
+   "used_in": [
+    "LibTWAP",
+    "_NewbieVendorRegistrySystem"
+   ]
+  },
+  "NEWBIE_VENDOR": {
+   "id": "keccak256(\"newbie.vendor\")",
+   "constant": "VENDOR_ENTITY",
+   "defined_in": "src/systems/_NewbieVendorRegistrySystem.sol",
+   "used_in": [
+    "NewbieVendorBuySystem",
+    "_NewbieVendorRegistrySystem"
+   ]
+  },
+  "DROPTABLE_SACRIFICE_NORMAL": {
+   "id": "keccak256(\"droptable.sacrifice.normal\")",
+   "constant": "SACRIFICE_DT_NORMAL",
+   "defined_in": "src/libraries/LibSacrifice.sol",
+   "used_in": [
+    "LibSacrifice",
+    "_SacrificeRegistrySystem"
+   ]
+  },
+  "DROPTABLE_SACRIFICE_UNCOMMON": {
+   "id": "keccak256(\"droptable.sacrifice.uncommon\")",
+   "constant": "SACRIFICE_DT_UNCOMMON_PITY",
+   "defined_in": "src/libraries/LibSacrifice.sol",
+   "used_in": [
+    "LibSacrifice",
+    "_SacrificeRegistrySystem"
+   ]
+  },
+  "DROPTABLE_SACRIFICE_RARE": {
+   "id": "keccak256(\"droptable.sacrifice.rare\")",
+   "constant": "SACRIFICE_DT_RARE_PITY",
+   "defined_in": "src/libraries/LibSacrifice.sol",
+   "used_in": [
+    "LibSacrifice",
+    "_SacrificeRegistrySystem"
+   ]
+  },
+  "KAMI_MARKET_LISTING_INDEX": {
+   "id": "keccak256(\"kami.market.listing.index\")",
+   "constant": "ACTIVE_LISTING_INDEX_ENTITY",
+   "defined_in": "src/libraries/LibKamiMarketIndex.sol",
+   "used_in": [
+    "LibKamiMarket",
+    "LibKamiMarketIndex"
+   ]
+  },
+  "GACHA_POOL": {
+   "id": "keccak256(\"gacha.id\")",
+   "constant": "GACHA_ID",
+   "defined_in": "src/libraries/LibGacha.sol",
+   "used_in": [
+    "LibGacha",
+    "LibKamiCreate",
+    "_721BatchMinterSystem"
+   ]
   }
  }
 }

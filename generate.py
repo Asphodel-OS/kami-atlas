@@ -468,7 +468,13 @@ def rel_type(comp):
     return 'directed'
 
 
-def derive_domain(ix, ents, creators, ns_struct, systems, indexed=None):
+SHAPE_NAMES = {'LibConditional': 'CONDITION', 'LibRoom.createGate': 'ROOM_GATE', 'LibCommit': 'COMMIT',
+               'LibKill._logBounty': 'KILL_BOUNTY_LOG'}  # names for untyped shapes; others default to the library name
+SINGLETON_NAMES = {'gacha.id': 'GACHA_POOL'}
+ADMIN_MODIFIERS = {'onlyAdmin', 'onlyOwner', 'onlyCommManager', 'onlyLocal'}  # entry points players can't call
+
+
+def derive_domain(ix, ents, creators, ns_struct, systems, indexed=None, untyped=(), singletons=None):
     indexed = indexed or {}
     """Top-level entities, their links and sub-entities, inferred from the code. `inferred` marks name-based guesses."""
     callers = defaultdict(list)  # callee fid -> [(caller fid, args)]
@@ -536,7 +542,7 @@ def derive_domain(ix, ents, creators, ns_struct, systems, indexed=None):
     id_of, ns_used = {}, set()
     def layer_of(et):
         rec = ents[et]
-        player = [n for n in rec.get('created_by_systems', []) if not n.startswith('_')]
+        player = rec.get('created_by_players', [])
         return 'hybrid' if 'IsRegistry' in rec['components_at_creation'] and player else 'runtime' if player else 'registry'
 
     def id_candidates(et, exact):
@@ -579,8 +585,11 @@ def derive_domain(ix, ents, creators, ns_struct, systems, indexed=None):
     for et, rec in ents.items():
         by = rec.get('created_by_systems', [])
         e = {'layer': layer_of(et), 'created_by': by, 'created_in': rec['created_in']}
+        if et in untyped: e['typed'] = False
         if id_of[et]:
             e['id'] = {k: '%s(%s)' % (v, ', '.join(ns_struct[v][0][1])) for k, v in id_of[et].items()}
+        elif et in untyped:
+            e['id'] = {'instance': 'world.getUniqueEntityId() (a counter, no hashed id)'}
         links = {}
         sets = [x for c in creators[et] for x in link_sets(c)]
         comp_users = defaultdict(int)
@@ -678,7 +687,9 @@ def derive_domain(ix, ents, creators, ns_struct, systems, indexed=None):
             sub['held_by'] = runtime_holders or None
             shared[ns] = {k: v for k, v in sub.items() if v is not None}
     order = sorted(model, key=lambda k: ({'runtime': 0, 'hybrid': 1, 'registry': 2}[model[k]['layer']], k))
-    return {'relationship_types': REL_TYPES, 'entities': {k: model[k] for k in order}, 'shared_sub_entities': shared}
+    model_out = {'relationship_types': REL_TYPES, 'entities': {k: model[k] for k in order}, 'shared_sub_entities': shared}
+    if singletons: model_out['singletons'] = singletons
+    return model_out
 
 
 def main():
@@ -691,6 +702,7 @@ def main():
 
     # systems
     systems, comp_w, comp_r, reach_roots, sys_entry_fids = {}, defaultdict(set), defaultdict(set), set(), defaultdict(list)
+    player_entry_fids = defaultdict(list)
     for path in sorted(p for p in ix.units if p.startswith('src/systems/') and p.endswith('System.sol')):
         name = os.path.basename(path)[:-len('System.sol')]
         raw = ix.src[path].decode()
@@ -713,6 +725,9 @@ def main():
             for k, v in s['keys'].items(): keys[k] |= v
             traces[e] = steps(ix, fns[e]['id'])
             sys_entry_fids[name].append(fns[e]['id'])
+            mods = {m['modifierName'].get('name') for m in fns[e].get('modifiers', []) if m.get('modifierName')}
+            if not name.startswith('_') and not (mods & ADMIN_MODIFIERS):
+                player_entry_fids[name].append(fns[e]['id'])
             todo += called(ix, fns[e]['id'])
         while todo:  # the system contract's own helpers (e.g. _collect) live in its file; library calls go to functions/
             x = todo.pop(0)
@@ -773,7 +788,7 @@ def main():
     # entity types: where LibEntityType.set("X") is called, and what that creator writes
     entities = defaultdict(lambda: {'created_in': set(), 'components_at_creation': set(), 'checked_in': set()})
     for fid, (c, f, path) in ix.fn.items():
-        for st in ix.events(fid):
+        for st in flat_events(ix.events(fid)):
             if st[0] != 'call' or not st[2]: continue
             callee = ix.name(st[1])
             if callee in ('LibEntityType.set', 'LibEntityType.checkAndSet'):
@@ -782,6 +797,32 @@ def main():
                 e['components_at_creation'] |= {x for x in ix.summary(fid)['writes'] if not x.startswith('@')}
             elif callee.startswith('LibEntityType.') and callee != 'LibEntityType.remove':
                 entities[st[2][0]]['checked_in'].add(ix.name(fid))
+    # untyped shapes: library functions that take an id from the World's counter and write components, with no EntityType
+    untyped = set()
+    for fid, (c, f, path) in ix.fn.items():
+        if not path.startswith('src/libraries/'): continue
+        evs = list(flat_events(ix.events(fid)))
+        if not any(st[0] == 'call' and ix.name(st[1]).endswith('.getUniqueEntityId') for st in evs): continue
+        if any(st[0] == 'call' and ix.name(st[1]).startswith('LibEntityType.') and 'set' in ix.name(st[1]).lower() for st in evs): continue
+        writes = {x for x in ix.summary(fid)['writes'] if not x.startswith('@')}
+        if not writes: continue
+        name = SHAPE_NAMES.get(ix.name(fid)) or SHAPE_NAMES.get(c) or re.sub(r'^Lib', '', c).upper()
+        entities[name]['created_in'].add(ix.name(fid))
+        entities[name]['components_at_creation'] |= writes
+        untyped.add(name)
+
+    # singletons: entities at a fixed id, uint256 constant X = uint256(keccak256("name"))
+    singletons = {}
+    for path, raw in ix.src.items():
+        if not path.startswith(('src/libraries/', 'src/systems/')): continue
+        for m in re.finditer(rb'uint256\s+(?:internal\s+)?constant\s+(\w+)\s*=\s*uint256\(\s*keccak256\(\s*"([a-z][\w.]*)"\s*\)\s*\)', raw):
+            const, lit = m.group(1).decode(), m.group(2).decode()
+            if lit.startswith(('system.', 'component.')): continue
+            name = SINGLETON_NAMES.get(lit, lit.upper().replace('.', '_'))
+            used = sorted({os.path.basename(p_)[:-4] for p_, r_ in ix.src.items() if p_.startswith(('src/libraries/', 'src/systems/'))
+                           and re.search(rb'\b' + const.encode() + rb'\b', r_)})
+            singletons[name] = {'id': 'keccak256("%s")' % lit, 'constant': const, 'defined_in': path, 'used_in': used}
+
     ents = {k: {kk: sorted(vv) for kk, vv in v.items()} for k, v in sorted(entities.items())}
     creators = {k: [f for f in ix.fn if ix.name(f) in v['created_in']] for k, v in ents.items()}
 
@@ -797,15 +838,17 @@ def main():
         closure_cache[fid] = seen_
         return seen_
     sys_reach = {n: set().union(*[closure(f) for f in fids]) for n, fids in sys_entry_fids.items()}
+    player_reach = {n: set().union(*[closure(f) for f in fids]) for n, fids in player_entry_fids.items()}
 
     # entities: who creates them, and what their link components (ID*/Id*/Index*) are set from
     LINK = re.compile(r'^(ID|Id|Index)[A-Z]')
     for et, rec in ents.items():
         by = sorted({n for n, r in sys_reach.items() if any(c in r for c in creators[et])
                      and 'production' not in (systems[n].get('skip_env') or [])})  # leave out local-only setup
-        player = [n for n in by if not n.startswith('_')]
+        player = [n for n in by if any(c in player_reach.get(n, ()) for c in creators[et])]  # through a non-admin entry point
         rec['made_by'] = 'player actions' if player and len(player) == len(by) else 'admin/registry setup' if not player else 'both'
         rec['created_by_systems'] = by
+        rec['created_by_players'] = player
         links = defaultdict(list)
         for c in creators[et]:
             for z in sorted(closure(c), key=ix.key):
@@ -830,7 +873,12 @@ def main():
             ns_struct[m.group(1).decode()].append((ofid, [x.strip() for x in keyargs.split(',') if x.strip()]))
     id_ns = {k: sorted(v) for k, v in sorted(namespaces.items())}
 
-    model = derive_domain(ix, ents, creators, ns_struct, systems, {c['comp']: bool(c.get('indexed')) for c in deploy['components']})
+    # untyped shapes reachable from no deployed system are dead code: leave them out
+    for et in list(untyped):
+        if not any(any(c in r for c in creators[et]) for n, r in sys_reach.items() if not n.startswith('__')):
+            untyped.discard(et); ents.pop(et); creators.pop(et)
+    model = derive_domain(ix, ents, creators, ns_struct, systems, {c['comp']: bool(c.get('indexed')) for c in deploy['components']},
+                          untyped, singletons)
 
     # function table: every library function reachable from a system, written once
     reach, todo = set(), list(reach_roots)

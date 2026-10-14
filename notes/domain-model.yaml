@@ -5,7 +5,7 @@
 
 terms:
   top-level entity: "Has an EntityType (31), or is an untyped shape (CONDITION, ROOM_GATE, COMMIT): created from the World's id counter with several fields but no EntityType."
-  sub-entity: "No EntityType. Its id is keccak256(namespace, keys...), so it lives under a parent and there is one per key."
+  sub-entity: "No EntityType. Its id is keccak256(namespace, keys...), so it lives under a parent and there is one per key. Either a record (components are stored at the id) or an anchor key (nothing is stored at the id; other records point at it to form a group, e.g. a node's requirements are CONDITIONs whose IDAnchor is node.requirement(nodeIndex))."
   layer: "registry = entry made by admin/registry systems; runtime = made by playing; hybrid = one type used for both a registry entry and a player's instance of it (IsRegistry marks the registry entry)"
   links: "Runtime entities point at registry entries by index (IndexItem, IndexRoom, ...) and at other runtime entities by entity id (IDOwns*, IdHolder, IdSource, IdTarget)."
 
@@ -53,13 +53,9 @@ links:   # for links the generator left unresolved (to: null)
   TAX.IdTarget: {to: "any", note: "whoever receives the cut: a front-end or guild's entity"}
   SKILL.IDOwnsSkill: {to: KAMI, note: "DRAFT: skills are upgraded on kamis; check whether accounts can hold skills"}
   ALLOCATION.IDAnchor: {to: "QUEST | GOAL | ITEM | NODE", note: "the registry entry the reward is attached to"}
-  REFERENCE.IDAnchor: {to: "any", note: "the entity the pointer is attached to"}
   QUEST.IDAnchor: {ignore: true, note: "set on the quest's objective snapshots (snapshot.anchor), not on the quest"}
   FRIENDSHIP.IDAnchor: {ignore: true, note: "set on the friendship counters (friendship.ptr), not on the friendship"}
   TRAIT.IDAnchor: {ignore: true, note: "set on the trait-type reverse lookup (registry.trait.type)"}
-  CONDITION.IDAnchor: {to: "NODE | ITEM | QUEST | GOAL | LISTING | AUCTION | SKILL | RECIPE", note: "the registry entry that requires it; chat requirements anchor to a room's chat"}
-  ROOM_GATE.IDTo: {to: ROOM, note: "the room being entered, through the room.gate.to(roomIndex) index"}
-  ROOM_GATE.IDFrom: {to: ROOM, note: "the room being left, when the gate applies only from there (0 otherwise)"}
   ROOM_GATE.IdSource: {to: ROOM, note: "the source room's index, stored for the client"}
 
 sub_entities:   # descriptions; the parent comes from the generated model unless given here
@@ -78,8 +74,14 @@ sub_entities:   # descriptions; the parent comes from the generated model unless
   is.score: {what: "leaderboard score per epoch, any holder"}
   has.flag: {what: "a boolean flag on an entity"}
   is.config: {what: "a global config value (see config.py)"}
-  room.gate.from: {what: "index of the gates leading out of a room"}
-  room.gate.to: {what: "index of the gates leading into a room"}
+  room.gate.from: {what: "anchor key grouping the gates that apply when leaving a given room"}
+  room.gate.to: {what: "anchor key grouping the gates guarding entry to a room"}
+  SOULBOUND: {what: "a temporary lock on a kami: Value holds the expiry time. Set for 3 days when a kami is bought from the newbie vendor."}
+  operator.cache: {what: "lookup from an operator wallet to its account, keyed by the wallet address; rewritten when the operator changes"}
+  goal.objective: {what: "a goal's objective, stored as a CONDITION at a hashed id"}
+  node.requirement: {what: "anchor key grouping the CONDITIONs required to harvest a node"}
+  listing.buy: {what: "buy-side pricing: rate, decay, period, scale"}
+  listing.sell: {what: "sell-side pricing: rate, decay, period, scale"}
   goal.tier: {what: "a goal's reward tiers"}
   goal.reward: {what: "the rewards of one tier"}
 

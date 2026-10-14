@@ -1,0 +1,9 @@
+# Notes on components, keyed by component name. Written by people; generate.py never edits this file.
+Health:
+  # DRAFT (Claude, from code 2026-10-14): review and correct
+  meaning: "A Kami's hit points. Stat fields: base, shift, boost, sync. total = (1000 + boost) x (base + shift) / 1000 (floored at 0, bonuses included); sync = current HP."
+  units: "HP points; boost in thousandths (+100 = +10%)"
+  invariants:
+    - "each sync clamps current HP to [0, total]; a lower total (e.g. a bonus ending) only takes effect at the next sync"
+    - "current HP 0 means 'starving': the Kami cannot start, collect or liquidate"
+    - "a Kami killed in a liquidation has state DEAD and current HP 0"

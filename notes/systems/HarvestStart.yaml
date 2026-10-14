@@ -1,0 +1,25 @@
+HarvestStart:
+  # DRAFT (Claude, from code 2026-10-14): review and correct
+  summary: "Put a resting Kami to work harvesting a node in the player's current room."
+  caller: "player, through their account's operator address"
+  preconditions:
+    - "the node exists"
+    - "the Kami belongs to the caller's account"
+    - "the Kami is RESTING and not on cooldown"
+    - "after syncing, the Kami's health is above 0"
+    - "the account is in the same room as the node"
+    - "the Kami meets the node's requirements"
+  effects:
+    - "sync the Kami's stats, apply the node's bonuses, sync again"
+    - "create the Kami's harvest entity if it has none, else point it at this node"
+    - "replace any previous tax on the harvest with (taxerID, taxAmt), if taxAmt > 0"
+    - "harvest becomes ACTIVE with start, last and intensity-reset times = now"
+    - "Kami becomes HARVESTING; cooldown restarts; cooldown bonuses are consumed"
+  invariants:
+    - "a Kami has at most one harvest entity, reused across nodes"
+    - "only a healthy, resting Kami can start harvesting"
+    - "harvest tax is at most 2000 (20%, in basis points); LibTax.create reverts above that"
+  notes:
+    - "the harvest tax (taxerID, taxAmt) is for third-party front-ends and for guilds or groups to take a cut of harvests (confirmed by Acheron 2026-10-14)"
+  open_questions:
+    - "the source comment says 'one harvest on a node per character': is that still enforced anywhere?"

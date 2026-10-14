@@ -1,0 +1,20 @@
+HarvestCollect:
+  # DRAFT (Claude, from code 2026-10-14): review and correct
+  summary: "Claim what a harvesting Kami has produced so far, without stopping the harvest."
+  caller: "player, through their account's operator address"
+  preconditions:
+    - "the id is a harvest, and its Kami belongs to the caller's account"
+    - "the Kami is HARVESTING and not on cooldown"
+    - "after syncing, the Kami's health is above 0"
+    - "the account is in the Kami's room"
+  effects:
+    - "the harvest's balance is reset to 0 and paid out in the node's item: tax recipients first, the rest to the account"
+    - "the Kami gains experience equal to the amount claimed"
+    - "cooldown restarts; cooldown and harvest-action bonuses reset"
+    - "the node's scavenge progress increases by the amount claimed"
+    - "score COLLECT and harvest logs record the amount"
+  invariants:
+    - "amount paid to account + tax paid = harvest balance before the claim"
+    - "XP is credited on the full output, before tax: XP tracks work done (confirmed by Acheron 2026-10-14)"
+  open_questions:
+    - "executeAllowFailure returns 0 instead of reverting: which client paths rely on it (batch collect)?"

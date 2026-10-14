@@ -1,0 +1,22 @@
+HarvestLiquidate:
+  # DRAFT (Claude, from code 2026-10-14): review and correct
+  summary: "A harvesting Kami kills a weakened Kami on the same node and takes part of its harvest."
+  caller: "player, through their account's operator address"
+  preconditions:
+    - "the target is an active harvest"
+    - "the killer belongs to the caller, is HARVESTING, not on cooldown, and healthy after syncing"
+    - "killer and victim harvest the same node, and the account is in that node's room"
+    - "the victim's current health is below the killer's liquidation threshold"
+  effects:
+    - "bounty = the victim harvest's balance"
+    - "salvage (a share of the bounty, scaled by the victim's power) goes to the victim's owner in the node's item"
+    - "spoils (a share of what's left, scaled by the killer's power) are added to the killer's harvest balance"
+    - "the killer takes recoil damage, gets the kill reward, and its cooldown restarts"
+    - "the victim becomes DEAD with health 0; its harvest stops and its bonuses reset"
+    - "the kill is logged; score LIQUIDATE +1 for the account"
+  invariants:
+    - "salvage <= bounty, and spoils <= bounty - salvage"
+    - "a dead Kami cannot harvest, collect or liquidate until revived"
+    - "bounty - salvage - spoils is burned: a deliberate MUSU sink (confirmed by Acheron 2026-10-14)"
+  open_questions:
+    - "the kill log still writes 0 for karma (TODO in code): can that field be removed?"

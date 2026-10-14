@@ -1,0 +1,82 @@
+# Notes on generated/domain-model.yaml: what the code can't say. The structure (entities, layers, ids, links,
+# owners, sub-entities) is generated; this file adds descriptions, resolves links the generator could not, and
+# records confirmed facts. The visualizer merges the two.
+# DRAFT descriptions by Claude from the code, 2026-10-14. Confirmed by Acheron 2026-10-14 where marked.
+
+terms:
+  top-level entity: "Has an EntityType (30 of them)."
+  sub-entity: "No EntityType. Its id is keccak256(namespace, keys...), so it lives under a parent and there is one per key."
+  layer: "registry = entry made by admin/registry systems; runtime = made by playing; hybrid = one type used for both a registry entry and a player's instance of it (IsRegistry marks the registry entry)"
+  links: "Runtime entities point at registry entries by index (IndexItem, IndexRoom, ...) and at other runtime entities by entity id (IDOwns*, IdHolder, IdSource, IdTarget)."
+
+entities:
+  ACCOUNT: {what: "A player: owner and operator addresses, a room, stamina, a name."}
+  KAMI:
+    what: "A pet: stats, level, experience, skill points, a state (RESTING, HARVESTING, DEAD...)."
+    confirmed: ["Owner is GACHA_POOL (GACHA_ID) while the kami sits in the gacha pool, then an ACCOUNT. (Acheron)", "Kamis hold no inventory but can have equipment. (Acheron)"]
+  HARVEST: {what: "A kami working a node: accrued bounty (Value) and timing. Exactly one per kami, reused across nodes."}
+  TAX: {what: "A cut of a harvest paid to a third party, at most 20%.", confirmed: ["For third-party front-ends and guilds or groups. (Acheron)"]}
+  EQUIPMENT: {what: "An item equipped on a kami in a slot; one per kami per slot.", confirmed: ["Kamis can have equipment assigned. (Acheron)"]}
+  INVENTORY: {what: "How many of one item a holder has: an account, a pool's reserves, or a trade's escrow."}
+  TRADE: {what: "A player-to-player item trade; offered items sit in an inventory held by the trade."}
+  KAMI_LISTING: {what: "A kami listed for sale."}
+  KAMI_OFFER: {what: "An offer on a specific kami."}
+  KAMI_COLLECTION_OFFER: {what: "An offer on any kami (Max = how many)."}
+  FRIENDSHIP: {what: "A friend request, friendship or block between two accounts (State)."}
+  TOKEN_RECEIPT: {what: "A token-portal withdrawal waiting out its delay (config PORTAL_TOKEN_EXPORT_DELAY)."}
+  POOL_SHARE: {what: "A holder's share of an item pool."}
+  QUEST: {what: "Registry: a quest with objectives, requirements and rewards. Instance: an account's accepted quest."}
+  SKILL: {what: "Registry: a skill in the tree. Instance: points a kami has put into it."}
+  RELATIONSHIP: {what: "Registry: a relationship stage with an NPC. Instance: an account's progress in it."}
+  ROOM: {what: "A place in the world. Nodes, NPCs, goals and accounts are located by room index."}
+  NODE: {what: "A harvestable spot in a room; yields one item and has a scavenge bar."}
+  SCAVENGE: {what: "A scavenge bar on a node: points needed and the reward."}
+  ITEM: {what: "An item registry entry: requirements, what using it does, what it grants."}
+  RECIPE: {what: "A crafting recipe: inputs, outputs, requirements."}
+  NPC: {what: "A non-player character in a room; may run a shop and have relationships."}
+  LISTING: {what: "An NPC shop entry: an item for sale and its currency."}
+  AUCTION: {what: "An item auction priced in a currency item."}
+  POOL: {what: "An AMM pool between two items."}
+  GOAL: {what: "A community goal in a room, with reward tiers by contribution."}
+  FACTION: {what: "A faction players build reputation with."}
+  TRAIT: {what: "A kami trait (body, hand, face, color, background) and its stats."}
+  BONUS: {what: "A bonus a skill, item or node can grant."}
+  ALLOCATION: {what: "A reward or grant attached to a quest, goal, item or node."}
+  REFERENCE: {what: "A lookup pointer attached to an anchor."}
+
+links:   # for links the generator left unresolved (to: null)
+  FRIENDSHIP.IdTarget: {to: ACCOUNT, note: "the other account"}
+  TRADE.IdTarget: {to: ACCOUNT, note: "the counterparty, if the trade is addressed to one"}
+  TAX.IdTarget: {to: "any", note: "whoever receives the cut: a front-end or guild's entity"}
+  SKILL.IDOwnsSkill: {to: KAMI, note: "DRAFT: skills are upgraded on kamis; check whether accounts can hold skills"}
+  ALLOCATION.IDAnchor: {to: "QUEST | GOAL | ITEM | NODE", note: "the registry entry the reward is attached to"}
+  REFERENCE.IDAnchor: {to: "any", note: "the entity the pointer is attached to"}
+  QUEST.IDAnchor: {ignore: true, note: "set on the quest's objective snapshots (snapshot.anchor), not on the quest"}
+  FRIENDSHIP.IDAnchor: {ignore: true, note: "set on the friendship counters (friendship.ptr), not on the friendship"}
+  TRAIT.IDAnchor: {ignore: true, note: "set on the trait-type reverse lookup (registry.trait.type)"}
+
+sub_entities:   # descriptions; the parent comes from the generated model unless given here
+  faction.reputation: {what: "reputation with a faction"}
+  goal.contribution: {what: "what an account has put into a goal"}
+  friendship.ptr: {what: "per-account counters by friendship state"}
+  sacrifice.pity: {what: "pity counter for kami sacrifice rolls"}
+  sacrifice.log: {what: "latest sacrifice result per droptable"}
+  droptable.item.log: {what: "latest droptable result per holder"}
+  scavenge.instance: {what: "a holder's scavenge points on a node"}
+  bonus.instance: {what: "an active bonus on a holder (account or kami)"}
+  bonus.type: {what: "a holder's running total for one bonus type"}
+  bonus.ending.type: {what: "a holder's bonuses that end on the same trigger (UPON_HARVEST_ACTION, ...)"}
+  quest.objective.snapshot: {what: "progress baseline taken when a quest is accepted"}
+  is.data: {what: "stat counters, any holder"}
+  is.score: {what: "leaderboard score per epoch, any holder"}
+  has.flag: {what: "a boolean flag on an entity"}
+  is.config: {what: "a global config value (see config.py)"}
+  room.gate.from: {what: "index of the gates leading out of a room"}
+  room.gate.to: {what: "index of the gates leading into a room"}
+  goal.tier: {what: "a goal's reward tiers"}
+  goal.reward: {what: "the rewards of one tier"}
+
+open_questions:
+  - "EQUIPMENT: the code comment says the holder can be a kami or an account, but every caller the generator traced passes a kami. Is account equipment planned?"
+  - "sacrifice.log and droptable.item.log: the generator could not trace the holder. Account, kami, or both?"
+  - "has.flag: the generator places it under ACCOUNT, but items also carry flags (IDOwnsFlag). Which entities have flags?"

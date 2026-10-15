@@ -100,7 +100,29 @@ h1 small { display: block; font: 400 12px/1.3 var(--f-mono); color: var(--muted)
 .tip code { font: 11.5px var(--f-mono); word-break: break-word; }
 .tip ul { margin: 2px 0 0; padding-left: 16px; }
 
-aside { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; overflow: auto; min-height: 0; padding: 16px 18px; }
+aside { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
+.sidetabs { display: flex; align-items: center; gap: 4px; padding: 8px 10px 0; border-bottom: 1px solid var(--line); }
+.sidetabs [role="tab"] { font: 500 12.5px var(--f-body); color: var(--muted); background: none; border: 0; border-bottom: 2px solid transparent; padding: 6px 10px 8px; cursor: pointer; }
+.sidetabs [role="tab"][aria-selected="true"] { color: var(--ink); border-bottom-color: var(--ink); }
+.sidetabs .collapse { margin-left: auto; font: 14px var(--f-mono); color: var(--muted); background: none; border: 1px solid var(--line); border-radius: 6px; width: 28px; height: 26px; cursor: pointer; margin-bottom: 6px; }
+.sidetabs .collapse:hover { color: var(--ink); border-color: var(--ink); }
+.sidebody { overflow: auto; padding: 16px 18px; flex: 1; min-height: 0; }
+.main.collapsed { grid-template-columns: minmax(0, 1fr); }
+.main.collapsed aside { display: none; }
+.set-group { display: grid; gap: 8px; border-top: 1px solid var(--line); padding-top: 12px; margin-top: 12px; }
+.set-group:first-child { border-top: 0; padding-top: 0; margin-top: 0; }
+.set-group h3 { font: 500 11px var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0; }
+.set-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.set-row label { font-size: 13px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+.set-range { display: grid; grid-template-columns: 96px minmax(0, 1fr) 40px; gap: 8px; align-items: center; font-size: 13px; }
+.set-range input { width: 100%; accent-color: var(--ink); }
+.set-range output { font: 12px var(--f-mono); color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; }
+.seg button { font: 500 12px var(--f-body); color: var(--muted); background: none; border: 0; padding: 4px 10px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--wash); color: var(--ink); }
+.lbl-off .edge .lbl { display: none !important; }
+.lbl-on .edge .lbl { display: inline !important; }
+.names-off .node .name { display: none; }
 aside h2 { font: 600 24px/1.1 var(--f-display); margin: 4px 0 6px; word-break: break-word; }
 .what { margin: 8px 0 0; max-width: 62ch; }
 .pill { font: 500 10.5px var(--f-mono); letter-spacing: .06em; text-transform: uppercase; padding: 2px 8px; border-radius: 4px; color: var(--panel); display: inline-block; }
@@ -127,6 +149,7 @@ ul.plain { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; }
 details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--muted); }
 
 @media (max-width: 900px) {
+  aside { max-height: 75vh; }
   .app { height: auto; }
   .main { grid-template-columns: minmax(0, 1fr); }
   .map { height: 66vh; }
@@ -143,21 +166,46 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
         <input id="q" type="search" placeholder="Find an entity, record, field or system" aria-label="Search" autocomplete="off">
         <div class="results" id="results" hidden></div>
       </div>
-      <button class="chip" id="f-runtime" aria-pressed="true"><span class="dot" style="background:var(--runtime)"></span>Runtime</button>
-      <button class="chip" id="f-hybrid" aria-pressed="true"><span class="dot" style="background:var(--hybrid)"></span>Hybrid</button>
-      <button class="chip" id="f-registry" aria-pressed="true"><span class="dot" style="background:var(--registry)"></span>Registry</button>
     </div>
   </header>
   <div class="main">
     <div class="map" id="map">
       <div class="crumb" id="crumb" hidden><button class="chip" id="back">← All entities</button><span id="crumb-name"></span></div>
-      <div class="maptools"><button class="chip" id="zin" aria-label="Zoom in">+</button><button class="chip" id="zout" aria-label="Zoom out">−</button><button class="chip" id="fit">Fit</button></div>
+      <div class="maptools"><button class="chip" id="expand" hidden title="Show the panel (])">⟨ Panel</button><button class="chip" id="zin" aria-label="Zoom in">+</button><button class="chip" id="zout" aria-label="Zoom out">−</button><button class="chip" id="fit">Fit</button></div>
       <div class="hint" id="hint">drag to pan · scroll to zoom · drag a node to pin it, double-click to release · + − 0 keys</div>
       <svg id="svg" role="img" aria-label="Map of Kamigotchi entities and their relationships"></svg>
       <div class="legend" id="legend"></div>
       <div class="tip" id="tip" hidden></div>
     </div>
-    <aside id="panel" aria-live="polite"></aside>
+    <aside id="side" aria-label="Side panel">
+      <div class="sidetabs" role="tablist">
+        <button role="tab" id="tab-details" aria-selected="true" aria-controls="panel">Details</button>
+        <button role="tab" id="tab-settings" aria-selected="false" aria-controls="settings">Settings</button>
+        <button class="collapse" id="collapse" aria-label="Collapse the panel" title="Collapse the panel (])">⟩</button>
+      </div>
+      <div class="sidebody" id="panel" role="tabpanel" aria-live="polite"></div>
+      <div class="sidebody" id="settings" role="tabpanel" hidden>
+        <div class="set-group"><h3>Layers</h3><div class="set-row">
+          <button class="chip" id="f-runtime" aria-pressed="true"><span class="dot" style="background:var(--runtime)"></span>Runtime</button>
+          <button class="chip" id="f-hybrid" aria-pressed="true"><span class="dot" style="background:var(--hybrid)"></span>Hybrid</button>
+          <button class="chip" id="f-registry" aria-pressed="true"><span class="dot" style="background:var(--registry)"></span>Registry</button>
+        </div></div>
+        <div class="set-group"><h3>Relationship types</h3><div class="set-row" id="set-rels"></div></div>
+        <div class="set-group"><h3>Labels</h3>
+          <div class="set-row"><span class="small muted" style="width:88px">Edge labels</span><span class="seg" id="set-lbl"><button data-v="auto">Auto</button><button data-v="on">Always</button><button data-v="off">Off</button></span></div>
+          <div class="set-row"><label><input type="checkbox" id="set-names"> Entity names</label></div>
+        </div>
+        <div class="set-group"><h3>Layout</h3>
+          <div class="set-range"><label for="set-spacing">Spacing</label><input type="range" id="set-spacing" min="0.5" max="2" step="0.1"><output id="out-spacing"></output></div>
+          <div class="set-range"><label for="set-link">Link length</label><input type="range" id="set-link" min="70" max="280" step="10"><output id="out-link"></output></div>
+          <div class="set-row"><button class="chip" id="set-reheat">Reheat layout</button><button class="chip" id="set-unpin">Unpin all</button></div>
+        </div>
+        <div class="set-group"><h3>Overlays</h3><div class="set-row">
+          <label><input type="checkbox" id="set-legend"> Legend</label><label><input type="checkbox" id="set-hint"> Controls hint</label>
+        </div></div>
+        <div class="set-group"><div class="set-row"><button class="chip" id="set-reset">Reset settings</button><span class="muted small">Saved in this browser.</span></div></div>
+      </div>
+    </aside>
   </div>
 </div>
 
@@ -327,7 +375,11 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
   }
 
   // ---------------- overview ----------------
-  const st = { layers: new Set(LAYERS), view: 'overview', sel: null };
+  const DEFAULTS = { layers: LAYERS.slice(), rel: Object.keys(REL_NAME), edgeLabels: 'auto', names: true, spacing: 1, linkLen: 150, legend: true, hint: true, collapsed: false };
+  const loadSettings = () => { try { return Object.assign({}, DEFAULTS, JSON.parse(localStorage.getItem('atlas.settings.v1') || '{}')); } catch (e) { return Object.assign({}, DEFAULTS); } };
+  const cfg = loadSettings();
+  const saveSettings = () => { try { localStorage.setItem('atlas.settings.v1', JSON.stringify(Object.assign(cfg, { layers: [...st.layers], rel: [...st.rel] }))); } catch (e) {} };
+  const st = { layers: new Set(cfg.layers.filter(l => LAYERS.includes(l)).length ? cfg.layers : LAYERS), rel: new Set(cfg.rel), view: 'overview', sel: null };
   let sim;
   const BAND = 320, bandY = { runtime: 0, hybrid: 1, registry: 2 };
   const radius = n => E[n] ? 12 + Math.sqrt(subsOf(n).length) * 3.2 : 12;
@@ -342,7 +394,7 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
     // singletons that an entity points at (the gacha pool) join the map beside their referrers
     for (const r of rels) if (r.to && SG[r.to] && ids.includes(r.from) && !nodes.some(n => n.id === r.to)) nodes.push({ id: r.to, layer: E[r.from].layer, singleton: true });
     const byId = Object.fromEntries(nodes.map(n => [n.id, n]));
-    const er = rels.filter(r => r.to && byId[r.from] && byId[r.to] && r.from !== r.to);
+    const er = rels.filter(r => r.to && byId[r.from] && byId[r.to] && r.from !== r.to && st.rel.has(r.l.type));
     const pairCount = {};
     er.forEach(r => { const k = [r.from, r.to].sort().join('|'); r._i = pairCount[k] = (pairCount[k] || 0) + 1; });
     const links = er.map(r => ({ source: r.from, target: r.to, r }));
@@ -413,8 +465,8 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
 
     if (sim) sim.stop();
     sim = d3.forceSimulation(nodes)
-      .force('link', d3.forceLink(links).id(d => d.id).distance(150).strength(0.18))
-      .force('charge', d3.forceManyBody().strength(-620).distanceMax(700))
+      .force('link', d3.forceLink(links).id(d => d.id).distance(cfg.linkLen).strength(0.18))
+      .force('charge', d3.forceManyBody().strength(-620 * cfg.spacing).distanceMax(700 * Math.max(1, cfg.spacing)))
       .force('y', d3.forceY(d => bandY[d.layer] * BAND).strength(0.45))
       .force('x', d3.forceX(0).strength(0.08))
       .force('collide', d3.forceCollide(d => radius(d.id) + 34))
@@ -463,12 +515,14 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
 
   function focusView(n, sub) {
     if (!E[n]) return;
-    st.view = 'focus'; st.sel = n; hide();
+    st.view = 'focus'; st.sel = n; hide(); showTab('details');
     if (sim) sim.stop();
     root.selectAll('*').remove(); fitTarget = null;
     document.getElementById('crumb').hidden = false; wrap.classList.add('focus');
     document.getElementById('crumb-name').textContent = n;
-    const e = E[n], { out, in: inn } = relsOf(n), subs = subsOf(n);
+    const e = E[n], ro = relsOf(n);
+    const out = ro.out.filter(r => st.rel.has(r.l.type)), inn = ro.in.filter(r => st.rel.has(r.l.type));
+    const subs = st.rel.has('keyed') ? subsOf(n) : [];
     const eg = root.append('g'), cg = root.append('g');
     const own = new Set(uniqueFields(n));
     const idLine = Object.entries(e.id || {}).map(([k, v]) => `${k} id: ${v}`);
@@ -611,7 +665,7 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
     panel.scrollTop = 0;
   }
   panel.addEventListener('click', ev => {
-    const s_ = ev.target.closest('[data-sys]'); if (s_) { overviewView(s_.dataset.sys); return; }
+    const s_ = ev.target.closest('[data-sys]'); if (s_) { showTab('details'); overviewView(s_.dataset.sys); return; }
     const b = ev.target.closest('[data-go]'); if (b) focusView(b.dataset.go);
   });
 
@@ -640,7 +694,7 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
     if (ev.key === 'Escape') { hits = []; renderHits(); }
   });
   res.addEventListener('click', ev => { const b = ev.target.closest('[data-i]'); if (b) pick(hits[+b.dataset.i]); });
-  const pick = h => { hits = []; renderHits(); q.value = ''; if (h.system) overviewView(h.system); else focusView(h.go, h.sub); };
+  const pick = h => { hits = []; renderHits(); q.value = ''; if (h.system) { showTab('details'); overviewView(h.system); } else focusView(h.go, h.sub); };
   document.addEventListener('click', ev => { if (!ev.target.closest('.search')) { hits = []; renderHits(); } });
   document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && (st.view === 'focus' || st.system) && document.activeElement !== q) overviewView(); });
 
@@ -649,8 +703,76 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
   for (const l of LAYERS) document.getElementById('f-' + l).addEventListener('click', () => {
     if (st.layers.has(l) && st.layers.size > 1) st.layers.delete(l); else st.layers.add(l);
     LAYERS.forEach(x => press('f-' + x, st.layers.has(x)));
-    overviewView(st.system);
+    saveSettings(); overviewView(st.system);
   });
+  // side panel: tabs and collapse
+  const side = document.querySelector('.main'), tabD = document.getElementById('tab-details'), tabS = document.getElementById('tab-settings');
+  const setsEl = document.getElementById('settings');
+  function showTab(t) {
+    tabD.setAttribute('aria-selected', t === 'details'); tabS.setAttribute('aria-selected', t === 'settings');
+    panel.hidden = t !== 'details'; setsEl.hidden = t !== 'settings';
+  }
+  tabD.addEventListener('click', () => showTab('details'));
+  tabS.addEventListener('click', () => showTab('settings'));
+  function setCollapsed(c) {
+    cfg.collapsed = c; saveSettings();
+    side.classList.toggle('collapsed', c);
+    document.getElementById('expand').hidden = !c;
+    setTimeout(() => fit(0), 30);
+  }
+  document.getElementById('collapse').addEventListener('click', () => setCollapsed(true));
+  document.getElementById('expand').addEventListener('click', () => setCollapsed(false));
+  document.addEventListener('keydown', ev => {
+    if (ev.key === ']' && !(ev.target.closest && ev.target.closest('input'))) { setCollapsed(!cfg.collapsed); ev.preventDefault(); }
+  });
+
+  // settings
+  const relChips = document.getElementById('set-rels');
+  relChips.innerHTML = Object.keys(REL_NAME).map(t => `<button class="chip" data-rel="${t}" aria-pressed="${st.rel.has(t)}"><span class="dot" style="background:var(--r-${t})"></span>${esc(REL_NAME[t])}</button>`).join('');
+  const redraw = () => { if (st.view === 'focus' && st.sel) focusView(st.sel); else overviewView(st.system); };
+  relChips.addEventListener('click', ev => {
+    const b = ev.target.closest('[data-rel]'); if (!b) return;
+    const t = b.dataset.rel;
+    if (st.rel.has(t)) st.rel.delete(t); else st.rel.add(t);
+    b.setAttribute('aria-pressed', st.rel.has(t)); saveSettings(); redraw();
+  });
+  function applyLabels() {
+    svg.classed('lbl-off', cfg.edgeLabels === 'off').classed('lbl-on', cfg.edgeLabels === 'on').classed('names-off', !cfg.names);
+    document.querySelectorAll('#set-lbl button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === cfg.edgeLabels));
+    document.getElementById('set-names').checked = cfg.names;
+  }
+  document.getElementById('set-lbl').addEventListener('click', ev => { const b = ev.target.closest('[data-v]'); if (!b) return; cfg.edgeLabels = b.dataset.v; saveSettings(); applyLabels(); });
+  document.getElementById('set-names').addEventListener('change', ev => { cfg.names = ev.target.checked; saveSettings(); applyLabels(); });
+  const ranges = [['set-spacing', 'out-spacing', 'spacing', v => v.toFixed(1) + '×'], ['set-link', 'out-link', 'linkLen', v => String(v)]];
+  for (const [id, outId, key, fmt] of ranges) {
+    const el = document.getElementById(id), out = document.getElementById(outId);
+    el.value = cfg[key]; out.textContent = fmt(+cfg[key]);
+    el.addEventListener('input', () => { out.textContent = fmt(+el.value); });
+    el.addEventListener('change', () => { cfg[key] = +el.value; saveSettings(); if (st.view === 'overview') overviewView(st.system); });
+  }
+  document.getElementById('set-reheat').addEventListener('click', () => { if (sim && st.view === 'overview') sim.alpha(0.8).restart(); });
+  document.getElementById('set-unpin').addEventListener('click', () => {
+    if (st.view !== 'overview') return;
+    d3.selectAll('#svg .node').each(d => { if (d) { d.fx = null; d.fy = null; } }).classed('pinned', false);
+    if (sim) sim.alpha(0.3).restart();
+  });
+  function applyOverlays() {
+    document.getElementById('legend').hidden = !cfg.legend; document.getElementById('hint').hidden = !cfg.hint;
+    document.getElementById('set-legend').checked = cfg.legend; document.getElementById('set-hint').checked = cfg.hint;
+  }
+  document.getElementById('set-legend').addEventListener('change', ev => { cfg.legend = ev.target.checked; saveSettings(); applyOverlays(); });
+  document.getElementById('set-hint').addEventListener('change', ev => { cfg.hint = ev.target.checked; saveSettings(); applyOverlays(); });
+  document.getElementById('set-reset').addEventListener('click', () => {
+    Object.assign(cfg, DEFAULTS); st.layers = new Set(LAYERS); st.rel = new Set(DEFAULTS.rel);
+    LAYERS.forEach(x => press('f-' + x, true));
+    relChips.querySelectorAll('[data-rel]').forEach(b => b.setAttribute('aria-pressed', 'true'));
+    ranges.forEach(([id, outId, key, fmt]) => { document.getElementById(id).value = cfg[key]; document.getElementById(outId).textContent = fmt(+cfg[key]); });
+    saveSettings(); applyLabels(); applyOverlays(); setCollapsed(false); redraw();
+  });
+  LAYERS.forEach(x => press('f-' + x, st.layers.has(x)));
+  applyLabels(); applyOverlays();
+  if (cfg.collapsed) setCollapsed(true);
+
   document.getElementById('back').addEventListener('click', () => overviewView());
   document.getElementById('fit').addEventListener('click', () => fit());
   document.getElementById('zin').addEventListener('click', () => zoomBy(1.35));

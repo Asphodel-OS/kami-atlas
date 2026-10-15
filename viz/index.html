@@ -85,13 +85,22 @@ h1 small { display: block; font: 400 12px/1.3 var(--f-mono); color: var(--muted)
 .card.link:hover rect.box { stroke: var(--ink); }
 .col-label { font: 500 10.5px var(--f-mono); letter-spacing: .08em; text-transform: uppercase; fill: var(--muted); }
 
-.legend { position: absolute; left: 12px; top: 10px; z-index: 2; display: grid; gap: 3px; font: 11px var(--f-mono); color: var(--ink);
-  background: color-mix(in srgb, var(--panel) 92%, transparent); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; pointer-events: none; max-width: calc(100% - 120px); }
+.legend { position: absolute; left: 12px; top: 10px; z-index: 2; font: 11px var(--f-mono); color: var(--ink); pointer-events: none;
+  background: color-mix(in srgb, var(--panel) 92%, transparent); border: 1px solid var(--line); border-radius: 8px; max-width: calc(100% - 120px); }
+.lg-head { pointer-events: auto; display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; padding: 6px 10px;
+  font: 500 10px var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); background: none; border: 0; cursor: pointer; }
+.lg-head:hover { color: var(--ink); }
+.lg-head svg { width: 10px !important; height: 10px !important; transition: transform var(--dur, .3s) var(--ease, ease); }
+.legend.collapsed .lg-head svg { transform: rotate(-90deg); }
+.lg-body { display: grid; grid-template-rows: 1fr; transition: grid-template-rows var(--dur, .3s) var(--ease, ease); }
+.legend.collapsed .lg-body { grid-template-rows: 0fr; }
+.lg-inner { min-height: 0; overflow: hidden; display: grid; gap: 3px; padding: 0 10px 8px; }
+.legend.collapsed .lg-inner { padding-bottom: 0; }
 .legend .lg-title { font: 500 10px var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-top: 4px; }
-.legend .lg-title:first-child { margin-top: 0; }
+.legend .lg-inner > .lg-title:first-child { margin-top: 0; }
 .legend span { display: flex; align-items: center; gap: 8px; }
 .legend .lg-note { color: var(--muted); }
-.legend svg { width: 28px; height: 8px; flex: none; }
+.legend .lg-inner svg { width: 28px; height: 8px; flex: none; }
 .map.focus .legend { top: 50px; }
 .tip { position: absolute; pointer-events: none; background: var(--panel); color: var(--ink); border: 1px solid var(--line); box-shadow: 0 6px 24px rgb(0 0 0 / .18); font: 12.5px/1.45 var(--f-body); padding: 10px 12px; border-radius: 8px; width: max-content; max-width: 340px; z-index: 5; }
 .tip h4 { margin: 0 0 4px; font: 600 15px var(--f-display); }
@@ -192,7 +201,11 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
       <div class="maptools"><button class="chip" id="zin" aria-label="Zoom in">+</button><button class="chip" id="zout" aria-label="Zoom out">−</button><button class="chip" id="fit">Fit</button></div>
       <div class="hint" id="hint">drag to pan · scroll to zoom · the cursor snaps to the nearest entity: click to open, drag to pin, double-click to release · + − 0 keys</div>
       <svg id="svg" role="img" aria-label="Map of Kamigotchi entities and their relationships"></svg>
-      <div class="legend" id="legend"></div>
+      <div class="legend" id="legend">
+        <button class="lg-head" id="lg-toggle" aria-expanded="true" aria-controls="legend-body" title="Collapse the legend (L)">Legend
+          <svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <div class="lg-body"><div class="lg-inner" id="legend-body"></div></div>
+      </div>
       <div class="tip" id="tip" hidden></div>
     </div>
     <button class="sidehandle" id="sidehandle" aria-controls="side" aria-expanded="true" title="Hide the sidebar (])">
@@ -379,7 +392,7 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
   function fit(dur = 450) {
     const b = (fitTarget || root).node().getBBox(); if (!b.width) return;
     const lg = document.getElementById('legend'), side_ = document.getElementById('side');
-    const lw = (lg.hidden ? 0 : lg.offsetWidth) + 24;  // keep clear of the legend overlay
+    const lw = (lg.hidden || cfg.legendCollapsed ? 0 : lg.offsetWidth) + 24;  // keep clear of the legend overlay
     const wide = window.matchMedia('(min-width: 901px)').matches;
     const rw = !cfg.collapsed && wide ? side_.offsetWidth + 24 : 0;  // and of the sidebar
     const aw = Math.max(200, W() - lw - rw);
@@ -389,7 +402,7 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
 
   function legend(types, extra, shapes) {
     const line = (stroke, dash) => `<svg viewBox="0 0 28 8" aria-hidden="true"><line x1="0" y1="4" x2="22" y2="4" stroke="${stroke}" stroke-width="2"${dash ? ' stroke-dasharray="4 3"' : ''}/><path d="M21 1L27 4L21 7z" fill="${stroke}"/></svg>`;
-    document.getElementById('legend').innerHTML =
+    document.getElementById('legend-body').innerHTML =
       '<span class="lg-title">Relationship type</span>'
       + types.map(t => `<span>${line(`var(--r-${t})`)}${esc(REL_NAME[t])}</span>`).join('')
       + '<span class="lg-title">Line</span>'
@@ -411,7 +424,7 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
   }
 
   // ---------------- overview ----------------
-  const DEFAULTS = { layers: LAYERS.slice(), rel: Object.keys(REL_NAME), edgeLabels: 'auto', names: true, spacing: 1, linkLen: 150, legend: true, hint: true, collapsed: false,
+  const DEFAULTS = { layers: LAYERS.slice(), rel: Object.keys(REL_NAME), edgeLabels: 'auto', names: true, spacing: 1, linkLen: 150, legend: true, legendCollapsed: false, hint: true, collapsed: false,
     lensMode: 'fisheye', lensStrength: 2.5, lensRadius: 170, lensFollow: 0.18, pushOn: true, pushStrength: 3, snapOn: true, snapDist: 26 };
   const loadSettings = () => { try { return Object.assign({}, DEFAULTS, JSON.parse(localStorage.getItem('atlas.settings.v1') || '{}')); } catch (e) { return Object.assign({}, DEFAULTS); } };
   const cfg = loadSettings();
@@ -886,6 +899,18 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
     fit(instant ? 0 : 320);                      // the map re-centres in step with the slide
   }
   handle.addEventListener('click', () => setCollapsed(!cfg.collapsed));
+  const lgEl = document.getElementById('legend'), lgBtn = document.getElementById('lg-toggle');
+  function setLegendCollapsed(c, instant) {
+    cfg.legendCollapsed = c; saveSettings();
+    lgEl.classList.toggle('collapsed', c);
+    lgBtn.setAttribute('aria-expanded', String(!c));
+    lgBtn.title = c ? 'Show the legend (L)' : 'Collapse the legend (L)';
+    fit(instant ? 0 : 320);
+  }
+  lgBtn.addEventListener('click', () => setLegendCollapsed(!cfg.legendCollapsed));
+  document.addEventListener('keydown', ev => {
+    if ((ev.key === 'l' || ev.key === 'L') && !ev.metaKey && !ev.ctrlKey && !(ev.target.closest && ev.target.closest('input'))) { setLegendCollapsed(!cfg.legendCollapsed); ev.preventDefault(); }
+  });
   document.addEventListener('keydown', ev => {
     if (ev.key === ']' && !(ev.target.closest && ev.target.closest('input'))) { setCollapsed(!cfg.collapsed); ev.preventDefault(); }
   });
@@ -946,11 +971,12 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
     LAYERS.forEach(x => press('f-' + x, true));
     relChips.querySelectorAll('[data-rel]').forEach(b => b.setAttribute('aria-pressed', 'true'));
     ranges.forEach(([id, outId, key, fmt]) => { document.getElementById(id).value = cfg[key]; document.getElementById(outId).textContent = fmt(+cfg[key]); });
-    saveSettings(); applyLabels(); applyOverlays(); applyCursor(); setCollapsed(false); redraw();
+    saveSettings(); applyLabels(); applyOverlays(); applyCursor(); setLegendCollapsed(false, true); setCollapsed(false); redraw();
   });
   LAYERS.forEach(x => press('f-' + x, st.layers.has(x)));
   applyLabels(); applyOverlays(); applyCursor();
   if (cfg.collapsed) setCollapsed(true, true);
+  if (cfg.legendCollapsed) setLegendCollapsed(true, true);
 
   document.getElementById('back').addEventListener('click', () => overviewView());
   document.getElementById('fit').addEventListener('click', () => fit());

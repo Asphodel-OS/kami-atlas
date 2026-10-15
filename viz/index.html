@@ -224,34 +224,32 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
       </div>
       <div class="sidebody" id="panel" role="tabpanel" aria-live="polite"></div>
       <div class="sidebody" id="settings" role="tabpanel" hidden>
-        <div class="set-group"><h3>Cursor effects</h3>
-          <div class="set-row"><span class="small muted" style="width:88px">Lens</span><span class="seg" id="set-lens"><button data-v="fisheye">Fisheye</button><button data-v="soft">Soft</button><button data-v="hyperbolic">Hyperbolic</button><button data-v="off">Off</button></span></div>
-          <div class="set-range"><label for="set-lstr">Strength</label><input type="range" id="set-lstr" min="0" max="8" step="0.1"><output id="out-lstr"></output></div>
-          <div class="set-range"><label for="set-lrad">Radius</label><input type="range" id="set-lrad" min="60" max="400" step="10"><output id="out-lrad"></output></div>
-          <div class="set-range"><label for="set-lfol">Follow</label><input type="range" id="set-lfol" min="0.05" max="1" step="0.01"><output id="out-lfol"></output></div>
-          <div class="set-row"><label><input type="checkbox" id="set-push"> Repulsion</label></div>
-          <div class="set-range"><label for="set-pstr">Push</label><input type="range" id="set-pstr" min="0.5" max="8" step="0.1"><output id="out-pstr"></output></div>
-          <div class="set-row"><label><input type="checkbox" id="set-snap"> Snap to nearest entity</label></div>
-          <div class="set-range"><label for="set-sdist">Snap distance</label><input type="range" id="set-sdist" min="8" max="60" step="1"><output id="out-sdist"></output></div>
-        </div>
         <div class="set-group"><h3>Layers</h3><div class="set-row">
           <button class="chip" id="f-runtime" aria-pressed="true"><span class="dot" style="background:var(--runtime)"></span>Runtime</button>
           <button class="chip" id="f-hybrid" aria-pressed="true"><span class="dot" style="background:var(--hybrid)"></span>Hybrid</button>
           <button class="chip" id="f-registry" aria-pressed="true"><span class="dot" style="background:var(--registry)"></span>Registry</button>
         </div></div>
         <div class="set-group"><h3>Relationship types</h3><div class="set-row" id="set-rels"></div></div>
-        <div class="set-group"><h3>Labels</h3>
+        <div class="set-group"><h3>Display</h3>
           <div class="set-row"><span class="small muted" style="width:88px">Edge labels</span><span class="seg" id="set-lbl"><button data-v="auto">Auto</button><button data-v="on">Always</button><button data-v="off">Off</button></span></div>
           <div class="set-row"><label><input type="checkbox" id="set-names"> Entity names</label></div>
+          <div class="set-row"><span class="small muted" style="width:88px">Overlays</span><label><input type="checkbox" id="set-legend"> Legend</label><label><input type="checkbox" id="set-hint"> Controls hint</label></div>
         </div>
         <div class="set-group"><h3>Layout</h3>
           <div class="set-range"><label for="set-spacing">Spacing</label><input type="range" id="set-spacing" min="0.5" max="2" step="0.1"><output id="out-spacing"></output></div>
           <div class="set-range"><label for="set-link">Link length</label><input type="range" id="set-link" min="70" max="280" step="10"><output id="out-link"></output></div>
           <div class="set-row"><button class="chip" id="set-reheat">Reheat layout</button><button class="chip" id="set-unpin">Unpin all</button></div>
         </div>
-        <div class="set-group"><h3>Overlays</h3><div class="set-row">
-          <label><input type="checkbox" id="set-legend"> Legend</label><label><input type="checkbox" id="set-hint"> Controls hint</label>
-        </div></div>
+        <div class="set-group"><h3>Cursor effects</h3>
+          <div class="set-row"><label><input type="checkbox" id="set-snap"> Snap to nearest entity</label></div>
+          <div class="set-range"><label for="set-sdist">Snap distance</label><input type="range" id="set-sdist" min="8" max="60" step="1"><output id="out-sdist"></output></div>
+          <div class="set-row"><span class="small muted" style="width:88px">Lens</span><span class="seg" id="set-lens"><button data-v="fisheye">Fisheye</button><button data-v="soft">Soft</button><button data-v="hyperbolic">Hyperbolic</button><button data-v="off">Off</button></span></div>
+          <div class="set-range"><label for="set-lstr">Strength</label><input type="range" id="set-lstr" min="0" max="8" step="0.1"><output id="out-lstr"></output></div>
+          <div class="set-range"><label for="set-lrad">Radius</label><input type="range" id="set-lrad" min="60" max="400" step="10"><output id="out-lrad"></output></div>
+          <div class="set-range"><label for="set-lfol">Follow</label><input type="range" id="set-lfol" min="0.05" max="1" step="0.01"><output id="out-lfol"></output></div>
+          <div class="set-row"><label><input type="checkbox" id="set-push"> Repulsion</label></div>
+          <div class="set-range"><label for="set-pstr">Push</label><input type="range" id="set-pstr" min="0.5" max="8" step="0.1"><output id="out-pstr"></output></div>
+        </div>
         <div class="set-group"><div class="set-row"><button class="chip" id="set-reset">Reset settings</button><span class="muted small">Saved in this browser.</span></div></div>
       </div>
     </aside>

@@ -18,6 +18,7 @@ notes/                       written by people; the generator never touches it
   domain-model.yaml          entity descriptions, links the code can't resolve, confirmed facts, open questions
 viz/                         the Kami Domain Atlas (interactive map); viz/data/ is written by generate.py
 generate.py                  builds generated/ and viz/data/ from the contracts
+dev.py                       local dev server for the atlas, with live reload
 config.py                    reads live config values from Yominet
 .cache/                      compiler output with syntax trees (about 90 MB; safe to delete)
 ```
@@ -55,9 +56,11 @@ Reads `kami/kamigotchi/packages/contracts` (whatever branch it is on); override 
 
 `generated/domain-model.yaml` (and `.json`) is derived from the code: the 31 typed entities with their layer (runtime, registry, or hybrid), id, links, owners and sub-entities. Links the generator resolved by tracing variable names are marked `inferred`; links it could not resolve have `to: null`. `notes/domain-model.yaml` adds what the code can't say: descriptions, the unresolved links, confirmed facts and open questions. The generator reports any entity without a description and any unresolved link not settled in notes.
 
-`viz/index.html` is the Kami Domain Atlas. It reads `viz/data/`, which each generator run rewrites, and merges the notes in the browser. Run it locally with:
+`viz/index.html` is the Kami Domain Atlas. It reads `viz/data/`, which each generator run rewrites, and merges the notes in the browser. For local work, run the dev server:
 
-    python3 -m http.server 8765 --bind 127.0.0.1 -d viz     # then open http://127.0.0.1:8765/index.html (#KAMI opens one entity)
+    python3 dev.py     # http://127.0.0.1:8765/index.html  (#KAMI opens one entity, #sys.HarvestStart one system)
+
+It reloads the page whenever `viz/` changes, keeping the current view, and reruns `generate.py --no-build` first when `notes/` or `generate.py` change (about a second). Contract changes still need a full `python3 generate.py`.
 
 For the team it is deployed on Vercel at **https://kami-domain.vercel.app** (project `asphodel/kami-domain`, root directory `viz/`). Vercel Authentication is on for every URL, so only people logged into the Asphodel Vercel team can open it. Every push to `main` redeploys, so regenerate, commit `viz/data/` and push to update it.
 

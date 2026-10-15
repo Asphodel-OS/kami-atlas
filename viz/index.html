@@ -101,18 +101,28 @@ h1 small { display: block; font: 400 12px/1.3 var(--f-mono); color: var(--muted)
 .tip ul { margin: 2px 0 0; padding-left: 16px; }
 
 /* the sidebar floats over the map instead of taking space from it */
-aside { position: absolute; top: 12px; right: 12px; bottom: 12px; width: min(380px, calc(100% - 24px)); z-index: 4;
+/* the sidebar floats over the map, slides in and out from the right, and carries its handle with it */
+.main { --side-w: min(380px, calc(100% - 24px)); --ease: cubic-bezier(.22, .9, .24, 1); --dur: .32s; }
+aside { position: absolute; top: 12px; right: 12px; bottom: 12px; width: var(--side-w); z-index: 4;
   background: color-mix(in srgb, var(--panel) 96%, transparent); border: 1px solid var(--line); border-radius: 10px;
-  box-shadow: 0 10px 32px rgb(0 0 0 / .22); display: flex; flex-direction: column; overflow: hidden; }
-.main:not(.collapsed) .maptools { right: 404px; }
-.main:not(.collapsed) .hint { right: 404px; }
+  box-shadow: 0 10px 32px rgb(0 0 0 / .22); display: flex; flex-direction: column; overflow: hidden;
+  transform: none; opacity: 1; visibility: visible; transition: transform var(--dur) var(--ease), opacity .2s ease, visibility 0s; }
+.main.collapsed aside { transform: translateX(calc(100% + 24px)); opacity: 0; visibility: hidden;
+  transition: transform var(--dur) var(--ease), opacity .24s ease .06s, visibility 0s var(--dur); }
+.sidehandle { position: absolute; top: 58px; right: calc(12px + var(--side-w)); z-index: 5; width: 22px; height: 52px; padding: 0;
+  display: grid; place-items: center; cursor: pointer; color: var(--muted);
+  background: color-mix(in srgb, var(--panel) 96%, transparent); border: 1px solid var(--line); border-right: 0; border-radius: 8px 0 0 8px;
+  box-shadow: -6px 6px 18px rgb(0 0 0 / .14); transition: right var(--dur) var(--ease), color .15s; }
+.sidehandle:hover { color: var(--ink); }
+.sidehandle svg { width: 12px; height: 12px; transition: transform var(--dur) var(--ease); }
+.main.collapsed .sidehandle { right: 1px; }
+.main.collapsed .sidehandle svg { transform: rotate(180deg); }
+.maptools, .hint { transition: right var(--dur) var(--ease); }
+.main:not(.collapsed) .maptools, .main:not(.collapsed) .hint { right: calc(12px + var(--side-w) + 34px); }
 .sidetabs { display: flex; align-items: center; gap: 4px; padding: 8px 10px 0; border-bottom: 1px solid var(--line); }
 .sidetabs [role="tab"] { font: 500 12.5px var(--f-body); color: var(--muted); background: none; border: 0; border-bottom: 2px solid transparent; padding: 6px 10px 8px; cursor: pointer; }
 .sidetabs [role="tab"][aria-selected="true"] { color: var(--ink); border-bottom-color: var(--ink); }
-.sidetabs .collapse { margin-left: auto; font: 14px var(--f-mono); color: var(--muted); background: none; border: 1px solid var(--line); border-radius: 6px; width: 28px; height: 26px; cursor: pointer; margin-bottom: 6px; }
-.sidetabs .collapse:hover { color: var(--ink); border-color: var(--ink); }
 .sidebody { overflow: auto; padding: 16px 18px; flex: 1; min-height: 0; }
-.main.collapsed aside { display: none; }
 .set-group { display: grid; gap: 8px; border-top: 1px solid var(--line); padding-top: 12px; margin-top: 12px; }
 .set-group:first-child { border-top: 0; padding-top: 0; margin-top: 0; }
 .set-group h3 { font: 500 11px var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0; }
@@ -154,6 +164,11 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
 
 @media (max-width: 900px) {
   aside { top: auto; left: 12px; width: auto; height: 55%; }
+  .main.collapsed aside { transform: translateY(calc(100% + 24px)); }
+  .sidehandle { top: auto; right: 12px; bottom: calc(12px + 55%); width: 52px; height: 22px; border: 1px solid var(--line); border-bottom: 0; border-radius: 8px 8px 0 0; transition: bottom var(--dur) var(--ease); }
+  .main.collapsed .sidehandle { right: 12px; bottom: 1px; }
+  .sidehandle svg { transform: rotate(90deg); }
+  .main.collapsed .sidehandle svg { transform: rotate(-90deg); }
   .main:not(.collapsed) .maptools, .main:not(.collapsed) .hint { right: 10px; }
   .main:not(.collapsed) .hint { display: none; }
   .controls { margin-left: 0; }
@@ -174,17 +189,19 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
   <div class="main">
     <div class="map" id="map">
       <div class="crumb" id="crumb" hidden><button class="chip" id="back">← All entities</button><span id="crumb-name"></span></div>
-      <div class="maptools"><button class="chip" id="expand" hidden title="Show the panel (])">⟨ Panel</button><button class="chip" id="zin" aria-label="Zoom in">+</button><button class="chip" id="zout" aria-label="Zoom out">−</button><button class="chip" id="fit">Fit</button></div>
+      <div class="maptools"><button class="chip" id="zin" aria-label="Zoom in">+</button><button class="chip" id="zout" aria-label="Zoom out">−</button><button class="chip" id="fit">Fit</button></div>
       <div class="hint" id="hint">drag to pan · scroll to zoom · the cursor snaps to the nearest entity: click to open, drag to pin, double-click to release · + − 0 keys</div>
       <svg id="svg" role="img" aria-label="Map of Kamigotchi entities and their relationships"></svg>
       <div class="legend" id="legend"></div>
       <div class="tip" id="tip" hidden></div>
     </div>
-    <aside id="side" aria-label="Side panel">
+    <button class="sidehandle" id="sidehandle" aria-controls="side" aria-expanded="true" title="Hide the sidebar (])">
+      <svg viewBox="0 0 12 12" aria-hidden="true"><path d="M4 2l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <aside id="side" aria-label="Sidebar">
       <div class="sidetabs" role="tablist">
         <button role="tab" id="tab-details" aria-selected="true" aria-controls="panel">Details</button>
         <button role="tab" id="tab-settings" aria-selected="false" aria-controls="settings">Settings</button>
-        <button class="collapse" id="collapse" aria-label="Collapse the panel" title="Collapse the panel (])">⟩</button>
       </div>
       <div class="sidebody" id="panel" role="tabpanel" aria-live="polite"></div>
       <div class="sidebody" id="settings" role="tabpanel" hidden>
@@ -859,14 +876,16 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
   }
   tabD.addEventListener('click', () => showTab('details'));
   tabS.addEventListener('click', () => showTab('settings'));
-  function setCollapsed(c) {
+  const handle = document.getElementById('sidehandle');
+  function setCollapsed(c, instant) {
     cfg.collapsed = c; saveSettings();
     side.classList.toggle('collapsed', c);
-    document.getElementById('expand').hidden = !c;
-    setTimeout(() => fit(0), 30);
+    handle.setAttribute('aria-expanded', String(!c));
+    handle.title = c ? 'Show the sidebar (])' : 'Hide the sidebar (])';
+    document.getElementById('side').inert = c;  // collapsed panel can't take focus
+    fit(instant ? 0 : 320);                      // the map re-centres in step with the slide
   }
-  document.getElementById('collapse').addEventListener('click', () => setCollapsed(true));
-  document.getElementById('expand').addEventListener('click', () => setCollapsed(false));
+  handle.addEventListener('click', () => setCollapsed(!cfg.collapsed));
   document.addEventListener('keydown', ev => {
     if (ev.key === ']' && !(ev.target.closest && ev.target.closest('input'))) { setCollapsed(!cfg.collapsed); ev.preventDefault(); }
   });
@@ -931,7 +950,7 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
   });
   LAYERS.forEach(x => press('f-' + x, st.layers.has(x)));
   applyLabels(); applyOverlays(); applyCursor();
-  if (cfg.collapsed) setCollapsed(true);
+  if (cfg.collapsed) setCollapsed(true, true);
 
   document.getElementById('back').addEventListener('click', () => overviewView());
   document.getElementById('fit').addEventListener('click', () => fit());

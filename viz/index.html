@@ -99,7 +99,10 @@ h1 small { display: block; font: 400 12px/1.3 var(--f-mono); color: var(--muted)
 .legend .lg-title { font: 600 10px var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--ink); margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
 .legend .lg-sub { font: 10.5px var(--f-mono); color: var(--muted); margin: 10px 0 3px; }
 .legend .lg-title + .lg-sub, .legend .lg-sub + .lg-sub { margin-top: 3px; }
+.legend .lg-row[data-hl] { pointer-events: auto; cursor: default; margin-inline: -4px; padding: 1px 4px; border-radius: 4px; }
+.legend .lg-row[data-hl]:hover { background: color-mix(in srgb, var(--ink) 9%, transparent); }
 .legend .lg-title + .lg-row { margin-top: 5px; }
+.lg-off { opacity: .08 !important; transition: opacity .12s; }
 .legend .lg-row { display: grid; grid-template-columns: 28px auto minmax(0, 1fr); align-items: center; gap: 0 8px; line-height: 1.35; }
 .legend .lg-row b { font-weight: 500; white-space: nowrap; }
 .legend .lg-row i { font-style: normal; color: var(--muted); font-size: 10.5px; }
@@ -414,33 +417,40 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
     const line = (stroke, dash) => sw(`<line x1="1" y1="5" x2="21" y2="5" stroke="${stroke}" stroke-width="2"${dash ? ' stroke-dasharray="4 3"' : ''}/><path d="M20 1.5L27 5L20 8.5z" fill="${stroke}"/>`);
     const dot = (fill, stroke, dash, r = 3.6) => sw(`<circle cx="10" cy="5" r="${r}" fill="${fill}" stroke="${stroke}" stroke-width="1.5"${dash ? ' stroke-dasharray="2 1.5"' : ''}/>`);
     const box = dash => sw(`<rect x="3" y="1.5" width="16" height="7" rx="2" fill="none" stroke="var(--r-keyed)" stroke-width="1.3"${dash ? ' stroke-dasharray="3 2"' : ''}/>`);
-    const row = (icon, name, gloss) => `<span class="lg-row">${icon}<b>${esc(name)}</b>${gloss ? `<i>${esc(gloss)}</i>` : ''}</span>`;
+    const row = (icon, name, gloss, hl) => `<span class="lg-row"${hl ? ` data-hl="${hl}"` : ''}>${icon}<b>${esc(name)}</b>${gloss ? `<i>${esc(gloss)}</i>` : ''}</span>`;
     const sub = t => `<span class="lg-sub">${esc(t)}</span>`;
     const isMap = view === 'map';
     const tint = l => `color-mix(in srgb, var(--${l}) 22%, var(--panel))`;
     document.getElementById('legend-body').innerHTML =
       '<span class="lg-title">Entities</span>'
       + sub(isMap ? 'colour = layer' : 'card outline = layer')
-      + LAYERS.map(l => row(dot(tint(l), `var(--${l})`), LAYER_NAME[l], LAYER_GLOSS[l])).join('')
+      + LAYERS.map(l => row(dot(tint(l), `var(--${l})`), LAYER_NAME[l], LAYER_GLOSS[l], 'layer:' + l)).join('')
       + (isMap ? sub('outline')
-        + row(dot('none', 'var(--muted)'), 'Typed', 'has an EntityType')
-        + row(dot('none', 'var(--muted)', true), 'Untyped shape', 'no EntityType')
-        + row(sw('<path d="M10,1L14,5L10,9L6,5Z" fill="none" stroke="var(--muted)" stroke-width="1.3"/>'), 'Singleton', 'one entity, fixed id')
+        + row(dot('none', 'var(--muted)'), 'Typed', 'has an EntityType', 'shape:typed')
+        + row(dot('none', 'var(--muted)', true), 'Untyped shape', 'no EntityType', 'shape:untyped')
+        + row(sw('<path d="M10,1L14,5L10,9L6,5Z" fill="none" stroke="var(--muted)" stroke-width="1.3"/>'), 'Singleton', 'one entity, fixed id', 'shape:singleton')
         + row(sw(`<circle cx="6" cy="5" r="2.2" fill="none" stroke="var(--muted)" stroke-width="1.2"/><circle cx="17" cy="5" r="4" fill="none" stroke="var(--muted)" stroke-width="1.2"/>`), 'Size', 'more sub-entities') : '')
       + '<span class="lg-title">References</span>'
       + sub('A → B: A stores B’s id or index')
       + sub('colour = relationship type')
-      + types.map(t => row(line(`var(--r-${t})`), REL_NAME[t], REL_GLOSS[t] + (REL_COMP[t] ? ` · ${REL_COMP[t]}` : ''))).join('')
+      + types.map(t => row(line(`var(--r-${t})`), REL_NAME[t], REL_GLOSS[t] + (REL_COMP[t] ? ` · ${REL_COMP[t]}` : ''), 'rel:' + t)).join('')
       + sub('line')
-      + row(line('var(--muted)'), 'Required', 'set whenever it’s created')
-      + row(line('var(--muted)', true), 'Optional', 'set only under a condition')
+      + row(line('var(--muted)'), 'Required', 'set whenever it’s created', 'req:required')
+      + row(line('var(--muted)', true), 'Optional', 'set only under a condition', 'req:optional')
       + sub('edge label = the component that stores it')
       + (!isMap && view ? '<span class="lg-title">Fields & records</span>'
-        + row(sw('<circle cx="10" cy="5" r="3" fill="var(--ink)"/>'), 'Own field', `only ${view} has it`)
-        + row(sw('<circle cx="10" cy="5" r="3" fill="none" stroke="var(--muted)" stroke-width="1.3"/>'), 'Shared field', 'other entities have it too')
-        + row(box(false), 'Record', 'sub-entity with stored fields')
-        + row(box(true), 'Anchor key', 'groups records that point at it') : '');
+        + row(sw('<circle cx="10" cy="5" r="3" fill="var(--ink)"/>'), 'Own field', `only ${view} has it`, 'field:own')
+        + row(sw('<circle cx="10" cy="5" r="3" fill="none" stroke="var(--muted)" stroke-width="1.3"/>'), 'Shared field', 'other entities have it too', 'field:shared')
+        + row(box(false), 'Record', 'sub-entity with stored fields', 'sub:record')
+        + row(box(true), 'Anchor key', 'groups records that point at it', 'sub:anchor') : '');
   }
+
+  // hovering a legend row dims every tagged graph element (data-k) that lacks the row's key
+  const legendHL = k => root.selectAll('[data-k]').classed('lg-off', function () { return !!k && !this.getAttribute('data-k').split(' ').includes(k); });
+  const lgBody = document.getElementById('legend-body');
+  lgBody.addEventListener('mouseover', ev => { const r = ev.target.closest('.lg-row[data-hl]'); legendHL(r ? r.dataset.hl : null); });
+  lgBody.addEventListener('mouseleave', () => legendHL(null));
+  const relKeys = r => ['rel:' + r.l.type, 'req:' + (r.l.required ? 'required' : 'optional')];
 
   function edgePath(sx, sy, tx, ty, rT, bend) {
     const dx = tx - sx, dy = ty - sy, len = Math.hypot(dx, dy) || 1;
@@ -494,6 +504,10 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
     node.filter(d => d.singleton).append('path').attr('d', 'M0,-12L12,0L0,12L-12,0Z')
       .style('fill', 'var(--panel)').style('stroke', 'var(--muted)');
     node.append('text').attr('class', 'name').attr('text-anchor', 'middle').attr('dy', d => radius(d.id) + 14).text(d => d.id);
+    const nk = Object.fromEntries(nodes.map(d => [d.id, new Set(d.singleton ? ['shape:singleton'] : ['layer:' + d.layer, E[d.id].typed === false ? 'shape:untyped' : 'shape:typed'])]));
+    links.forEach(l => relKeys(l.r).forEach(k => { nk[l.r.from].add(k); nk[l.r.to].add(k); }));
+    node.attr('data-k', d => [...nk[d.id]].join(' '));
+    edge.attr('data-k', d => { const a = byId[d.r.from], b = byId[d.r.to]; return relKeys(d.r).concat(!a.singleton && !b.singleton && a.layer === b.layer ? ['layer:' + a.layer] : []).join(' '); });
     const role = {};
     if (st.system) {
       const sy = systems[st.system] || {}, w = new Set(sy.writes || []), rd = new Set(sy.reads || []);
@@ -698,14 +712,14 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
 
   // ---------------- focus (drill-in) ----------------
   function card(g, x, y, w, lines, opts) {
-    const c = g.append('g').attr('class', 'card' + (opts.center ? ' center' : '') + (opts.go ? ' link' : '')).attr('transform', `translate(${x},${y})`);
+    const c = g.append('g').attr('class', 'card' + (opts.center ? ' center' : '') + (opts.go ? ' link' : '')).attr('transform', `translate(${x},${y})`).attr('data-k', opts.k || null);
     const h = 30 + lines.length * 16 + (opts.meta ? 16 : 0) + 6;
     c.append('rect').attr('class', 'box').attr('x', -w / 2).attr('y', 0).attr('width', w).attr('height', h).attr('rx', 6)
       .style('stroke', opts.stroke || null).style('fill', opts.fill || null);
     c.append('text').attr('class', 'title').attr('x', -w / 2 + 12).attr('y', 21).text(opts.title);
     let yy = 21;
     if (opts.meta) { yy += 16; c.append('text').attr('class', 'meta').attr('x', -w / 2 + 12).attr('y', yy).text(opts.meta); }
-    lines.forEach(ln => { yy += 16; c.append('text').attr('class', 'field' + (ln.shared ? ' shared' : '')).attr('x', -w / 2 + 12).attr('y', yy).text(ln.text); });
+    lines.forEach(ln => { yy += 16; c.append('text').attr('class', 'field' + (ln.shared ? ' shared' : '')).attr('x', -w / 2 + 12).attr('y', yy).attr('data-k', ln.k || null).text(ln.text); });
     if (opts.go) c.attr('tabindex', 0).attr('role', 'button').attr('aria-label', 'Open ' + opts.go)
       .on('click', ev => { ev.stopPropagation(); focusView(opts.go); })
       .on('keydown', ev => { if (ev.key === 'Enter') focusView(opts.go); });
@@ -727,9 +741,11 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
     const eg = root.append('g'), cg = root.append('g');
     const own = new Set(uniqueFields(n));
     const idLine = Object.entries(e.id || {}).map(([k, v]) => `${k} id: ${v}`);
-    const fields = (e.components || []).map(c => ({ text: (own.has(c) ? '● ' : '○ ') + c + ((comps[c] || {}).type ? ' : ' + comps[c].type : ''), shared: !own.has(c) }));
+    const fields = (e.components || []).map(c => ({ text: (own.has(c) ? '● ' : '○ ') + c + ((comps[c] || {}).type ? ' : ' + comps[c].type : ''), shared: !own.has(c), k: own.has(c) ? 'field:own' : 'field:shared' }));
+    const subK = x => 'rel:keyed req:required sub:' + (x.s.kind === 'anchor key' ? 'anchor' : 'record');
+    const centerK = new Set(['layer:' + e.layer, 'field:own', 'field:shared', ...out.concat(inn).flatMap(relKeys), ...subs.map(subK).join(' ').split(' ').filter(Boolean)]);
     const center = card(cg, 0, 0, 300, fields, { center: true, title: n + (e.extends ? ' (extends ' + e.extends + ')' : ''), meta: trunc(idLine[0] || (e.index ? 'index: ' + e.index : 'id: not hashed'), 44),
-      stroke: `var(--${e.layer})`, tip: () => entityTip(n) });
+      stroke: `var(--${e.layer})`, tip: () => entityTip(n), k: [...centerK].join(' ') });
     const cx = 0, cyMid = center.h / 2;
 
     const colX = 420, rowH = 70;
@@ -745,11 +761,13 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
       const other = dir === 'out' ? (p.r.to || 'unresolved') : p.r.from;
       const isEnt = !!E[other];
       const c = card(cg, p.x, p.y, 200, [], { title: other, meta: isEnt ? LAYER_NAME[E[other].layer] : (p.r.to ? 'not a game entity' : 'target not resolved'),
-        go: isEnt ? other : null, stroke: isEnt ? `var(--${E[other].layer})` : 'var(--line)', tip: isEnt ? () => entityTip(other) : null });
+        go: isEnt ? other : null, stroke: isEnt ? `var(--${E[other].layer})` : 'var(--line)', tip: isEnt ? () => entityTip(other) : null,
+        k: relKeys(p.r).concat(isEnt ? ['layer:' + E[other].layer] : []).join(' ') });
       const midY = p.y + c.h / 2;
       const [sx, sy, tx, ty] = dir === 'out' ? [cx + 150, cyMid, p.x - 100, midY] : [p.x + 100, midY, cx - 150, cyMid];
       const path = edgePath(sx, sy, tx, ty, 2, 0);
-      const g = eg.append('g').attr('class', 'edge ' + (p.r.l.required ? 'required' : 'optional'));
+      const g = eg.append('g').attr('class', 'edge ' + (p.r.l.required ? 'required' : 'optional'))
+        .attr('data-k', relKeys(p.r).concat(isEnt && E[other].layer === e.layer ? ['layer:' + e.layer] : []).join(' '));
       g.append('path').attr('class', 'line').attr('d', path.d).style('stroke', `var(--r-${p.r.l.type})`).attr('marker-end', `url(#m-${p.r.l.type})`);
       g.append('path').attr('class', 'hit').attr('d', path.d);
       g.append('text').attr('class', 'lbl').attr('x', path.lx).attr('y', path.ly - 5).attr('text-anchor', 'middle')
@@ -771,11 +789,11 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
         const whatLine = (NS[x.ns] || {}).what || '';
         const lines = [{ text: trunc(subKindLine(x), 36) }, whatLine && { text: trunc(whatLine, 36), shared: true }, keyLine && { text: trunc(keyLine, 36), shared: true }].filter(Boolean);
         const py = top + row * 108;
-        const c = card(cg, px, py, w, lines, { title: x.ns, meta: x.shared ? 'shared with ' + arr(x.s.held_by).filter(h => h !== n).join(', ') : '', stroke: `var(--r-keyed)`, tip: () => subTip(x, n) });
+        const c = card(cg, px, py, w, lines, { title: x.ns, meta: x.shared ? 'shared with ' + arr(x.s.held_by).filter(h => h !== n).join(', ') : '', stroke: `var(--r-keyed)`, tip: () => subTip(x, n), k: subK(x) });
         if (x.s.kind === 'anchor key') c.g.select('rect').style('stroke-dasharray', '5 4');
         if (row === 0) {
           const path = edgePath(0, center.h, px, py, 2, 0);
-          const g = eg.append('g').attr('class', 'edge required');
+          const g = eg.append('g').attr('class', 'edge required').attr('data-k', subK(x));
           g.append('path').attr('class', 'line').attr('d', path.d).style('stroke', 'var(--r-keyed)').attr('marker-end', 'url(#m-keyed)');
           g.append('path').attr('class', 'hit').attr('d', path.d);
           g.on('mouseenter mousemove', ev => show(subTip(x, n), ev)).on('mouseleave', hide);

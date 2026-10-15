@@ -884,6 +884,17 @@ def source_rev():
         return 'unknown'
 
 
+def source_web():
+    """The contracts' GitHub web URL and their path in that repo, so the atlas can link to the exact commit."""
+    try:
+        url = subprocess.run(['git', 'remote', 'get-url', 'origin'], cwd=ROOT, capture_output=True, text=True).stdout.strip()
+        top = subprocess.run(['git', 'rev-parse', '--show-toplevel'], cwd=ROOT, capture_output=True, text=True).stdout.strip()
+    except OSError:
+        return None, None
+    m = re.match(r'(?:git@github\.com:|https://github\.com/)([^/]+/[^/]+?)(?:\.git)?$', url)
+    return ('https://github.com/' + m.group(1) if m else None), (os.path.relpath(ROOT, top) if top else None)
+
+
 def main():
     if '--no-build' not in sys.argv: build()
     ix = Index(load_units())
@@ -1074,7 +1085,8 @@ def main():
     for et in list(untyped):
         if not any(any(c in r for c in creators[et]) for n, r in sys_reach.items() if not n.startswith('__')):
             untyped.discard(et); ents.pop(et); creators.pop(et)
-    model_meta = {'contracts': os.path.relpath(ROOT, os.path.dirname(HERE)), 'commit': source_rev()}
+    repo, repo_path = source_web()
+    model_meta = {'contracts': os.path.relpath(ROOT, os.path.dirname(HERE)), 'commit': source_rev(), 'repo': repo, 'repo_path': repo_path}
     model = derive_domain(ix, ents, creators, ns_struct, systems, {c['comp']: bool(c.get('indexed')) for c in deploy['components']},
                           untyped, singletons, ns_kind, gen_ns)
 

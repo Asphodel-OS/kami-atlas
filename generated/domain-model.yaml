@@ -2,6 +2,8 @@
 source:
   contracts: kamigotchi/packages/contracts
   commit: "2c358a667e6a"
+  repo: "https://github.com/Asphodel-OS/kamigotchi"
+  repo_path: packages/contracts
 relationship_types:
   ownership: "The holder belongs to the referenced entity (IDOwns*, IdHolder)."
   registry: "The holder is an instance of, or uses, a registry entry, referenced by its index (Index*)."

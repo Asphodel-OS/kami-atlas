@@ -103,6 +103,9 @@ h1 small { display: block; font: 400 12px/1.3 var(--f-mono); color: var(--muted)
 .legend .lg-row[data-hl]:hover { background: color-mix(in srgb, var(--ink) 9%, transparent); }
 .legend .lg-title + .lg-row { margin-top: 5px; }
 .lg-off { opacity: .08 !important; transition: opacity .12s; }
+#sourceline a { color: inherit; text-decoration: underline dotted; text-underline-offset: 3px; }
+#sourceline a:hover { color: var(--ink); }
+#sourceline code { font: inherit; }
 .card.kbd rect.box { stroke: var(--ink) !important; stroke-width: 2.5px; }
 .legend .lg-row { display: grid; grid-template-columns: 28px auto minmax(0, 1fr); align-items: center; gap: 0 8px; line-height: 1.35; }
 .legend .lg-row b { font-weight: 500; white-space: nowrap; }
@@ -144,12 +147,13 @@ aside { position: absolute; top: 12px; right: 12px; bottom: 12px; width: var(--s
 .sidetabs .navback { margin: 0 0 6px auto; }
 .sidetabs .navback:disabled { opacity: .35; cursor: default; }
 .sidebody { overflow: auto; padding: 16px 18px; flex: 1; min-height: 0; }
-#sys-q { font: 13px var(--f-body); color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; width: 100%; margin-bottom: 4px; }
-.sys-group h3 { font: 500 11px var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 18px 0 4px; }
-.sys-item { display: block; width: 100%; text-align: left; background: none; border: 0; border-radius: 6px; padding: 6px 8px; margin: 0 -8px; color: var(--ink); cursor: pointer; font: inherit; }
-.sys-item:hover, .sys-item.on { background: color-mix(in srgb, var(--ink) 8%, transparent); }
-.sys-item code { font: 500 12px var(--f-mono); }
-.sys-item .muted { display: block; margin-top: 1px; }
+.tab-q { font: 13px var(--f-body); color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; width: 100%; margin-bottom: 4px; }
+.sys-group h3, .ent-group h3 { font: 500 11px var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 18px 0 4px; }
+.sys-item, .ent-item { display: block; width: 100%; text-align: left; background: none; border: 0; border-radius: 6px; padding: 6px 8px; margin: 0 -8px; color: var(--ink); cursor: pointer; font: inherit; }
+.sys-item:hover, .sys-item.on, .ent-item:hover, .ent-item.on { background: color-mix(in srgb, var(--ink) 8%, transparent); }
+.sys-item code, .ent-item code { font: 500 12px var(--f-mono); }
+.ent-item .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; border: 1.5px solid; }
+.sys-item .muted, .ent-item .muted { display: block; margin-top: 1px; }
 .set-group { display: grid; gap: 8px; border-top: 1px solid var(--line); padding-top: 12px; margin-top: 12px; }
 .set-group:first-child { border-top: 0; padding-top: 0; margin-top: 0; }
 .set-group h3 { font: 500 11px var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0; }
@@ -232,13 +236,18 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
     <aside id="side" aria-label="Sidebar">
       <div class="sidetabs" role="tablist">
         <button role="tab" id="tab-details" aria-selected="true" aria-controls="panel">Details</button>
+        <button role="tab" id="tab-entities" aria-selected="false" aria-controls="entities">Entities</button>
         <button role="tab" id="tab-systems" aria-selected="false" aria-controls="systems">Systems</button>
         <button role="tab" id="tab-settings" aria-selected="false" aria-controls="settings">Settings</button>
         <button class="chip navback" id="navback" title="Back to where you were (Backspace)" disabled>← Back</button>
       </div>
       <div class="sidebody" id="panel" role="tabpanel" aria-live="polite"></div>
+      <div class="sidebody" id="entities" role="tabpanel" hidden>
+        <input id="ent-q" class="tab-q" type="search" placeholder="Filter entities" aria-label="Filter entities" autocomplete="off">
+        <div id="ent-list"></div>
+      </div>
       <div class="sidebody" id="systems" role="tabpanel" hidden>
-        <input id="sys-q" type="search" placeholder="Filter systems" aria-label="Filter systems" autocomplete="off">
+        <input id="sys-q" class="tab-q" type="search" placeholder="Filter systems" aria-label="Filter systems" autocomplete="off">
         <div id="sys-list"></div>
       </div>
       <div class="sidebody" id="settings" role="tabpanel" hidden>
@@ -743,6 +752,7 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
         kbd = cur; kbdAt = null; ensureVisible(cur.x, cur.y);
       },
       enter() { if (kbd && !kbd.singleton) { const d = kbd; kbd = null; flyTo(d); return true; } return false; },
+      select(id) { const d = id && nodes.find(x => x.id === id); kbd = d || null; kbdAt = null; if (d) ensureVisible(d.x, d.y); },
     };
     const frame = () => {
       if (gen !== viewGen || st.view !== 'overview') return;
@@ -1042,10 +1052,11 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
   });
   // side panel: tabs and collapse
   const side = document.querySelector('.main');
-  const TABS = { details: panel, systems: document.getElementById('systems'), settings: document.getElementById('settings') };
+  const TABS = { details: panel, entities: document.getElementById('entities'), systems: document.getElementById('systems'), settings: document.getElementById('settings') };
   function showTab(t) {
     for (const [k, el] of Object.entries(TABS)) { document.getElementById('tab-' + k).setAttribute('aria-selected', k === t); el.hidden = k !== t; }
     if (t === 'systems') renderSystems();
+    if (t === 'entities') renderEntities();
   }
   for (const k of Object.keys(TABS)) document.getElementById('tab-' + k).addEventListener('click', () => showTab(k));
   // systems tab: every system, grouped by the leading word of its name; click to see what it touches
@@ -1071,6 +1082,32 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
       : '<p class="muted small">No system matches.</p>';
   }
   sysQ.addEventListener('input', renderSystems);
+  // entities tab: every entity by layer; hover or ↑/↓ points it out on the map, click or Enter opens it
+  const entQ = document.getElementById('ent-q'), entList = document.getElementById('ent-list');
+  let entOn = null;
+  function renderEntities() {
+    const q = entQ.value.trim().toLowerCase();
+    const match = n => !q || [n, (NE[n] || {}).what || '', ...arr(E[n].components)].some(x => x.toLowerCase().includes(q));
+    const item = n => { const e = E[n], ro = relsOf(n), ns = subsOf(n).length;
+      return `<button class="ent-item${entOn === n || st.sel === n ? ' on' : ''}" data-ent="${esc(n)}"><code><span class="dot" style="border-color:var(--${e.layer});${e.typed === false ? 'border-style:dashed' : ''}"></span>${esc(n)}</code>`
+        + ((NE[n] || {}).what ? `<span class="muted small">${esc(NE[n].what)}</span>` : '')
+        + `<span class="muted small">${arr(e.components).length} fields${ns ? ` · ${ns} sub-entities` : ''} · ${ro.out.length} out, ${ro.in.length} in${e.typed === false ? ' · untyped' : ''}</span></button>`; };
+    const groups = LAYERS.map(l => [l, Object.keys(E).filter(n => E[n].layer === l && match(n)).sort()]).filter(([, xs]) => xs.length);
+    entList.innerHTML = groups.length ? groups.map(([l, xs]) => `<section class="ent-group"><h3>${esc(LAYER_NAME[l])} (${xs.length})</h3><p class="muted small" style="margin:0 0 4px">${esc(LAYER_GLOSS[l])}</p>${xs.map(item).join('')}</section>`).join('')
+      : '<p class="muted small">No entity matches.</p>';
+  }
+  const pointAt = n => { if (arrowNav && arrowNav.select) arrowNav.select(n); };
+  entQ.addEventListener('input', renderEntities);
+  entList.addEventListener('click', ev => { const b = ev.target.closest('[data-ent]'); if (b) { entOn = null; focusView(b.dataset.ent); showTab('entities'); } });
+  entList.addEventListener('mouseover', ev => { const b = ev.target.closest('[data-ent]'); if (b) pointAt(b.dataset.ent); });
+  entList.addEventListener('mouseleave', () => pointAt(entOn));
+  function stepEntity(delta) {
+    const items = [...entList.querySelectorAll('.ent-item')]; if (!items.length) return;
+    const at = items.findIndex(b => b.dataset.ent === (entOn || st.sel));
+    entOn = items[at < 0 ? (delta > 0 ? 0 : items.length - 1) : Math.max(0, Math.min(items.length - 1, at + delta))].dataset.ent;
+    renderEntities(); pointAt(entOn);
+    const on = entList.querySelector('.ent-item.on'); if (on) on.scrollIntoView({ block: 'nearest' });
+  }
   function stepSystem(delta) {
     const items = [...sysList.querySelectorAll('.sys-item')]; if (!items.length) return;
     const at = items.findIndex(b => b.dataset.sys === st.system);
@@ -1084,10 +1121,15 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
   document.addEventListener('keydown', ev => {
     if (ev.metaKey || ev.ctrlKey || ev.altKey || (ev.target.closest && ev.target.closest('input, textarea, select'))) return;
     if (DIRS[ev.key]) {
-      if (!TABS.systems.hidden && !cfg.collapsed && (ev.key === 'ArrowUp' || ev.key === 'ArrowDown')) stepSystem(ev.key === 'ArrowDown' ? 1 : -1);
+      const vert = ev.key === 'ArrowUp' || ev.key === 'ArrowDown', d_ = ev.key === 'ArrowDown' ? 1 : -1;
+      if (vert && !cfg.collapsed && !TABS.systems.hidden) stepSystem(d_);
+      else if (vert && !cfg.collapsed && !TABS.entities.hidden) stepEntity(d_);
       else if (arrowNav) arrowNav.key(ev.key);
       ev.preventDefault();
-    } else if (ev.key === 'Enter' && !(ev.target.closest && ev.target.closest('button, a, [role="button"]')) && arrowNav && arrowNav.enter()) ev.preventDefault();
+    } else if (ev.key === 'Enter' && !(ev.target.closest && ev.target.closest('a, [role="button"], button:not([role="tab"])'))) {
+      if (!TABS.entities.hidden && !cfg.collapsed && entOn) { const n = entOn; entOn = null; focusView(n); showTab('entities'); ev.preventDefault(); }
+      else if (arrowNav && arrowNav.enter()) ev.preventDefault();
+    }
   });
   document.getElementById('navback').addEventListener('click', navBack);
   document.addEventListener('keydown', ev => { if (ev.key === 'Backspace' && !(ev.target.closest && ev.target.closest('input, textarea'))) { navBack(); ev.preventDefault(); } });
@@ -1196,7 +1238,12 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
   window.addEventListener('resize', () => setTimeout(() => fit(0), 100));
 
   // ---------------- go ----------------
-  document.getElementById('sourceline').textContent = `Kamigotchi World · ${Object.keys(E).length} entity types · ${rels.length} relationships · ${Object.keys(systems).length} systems · generated from the contracts`;
+  const src = model.source || {}, sha = String(src.commit || '').replace(/-dirty$/, ''), dirty = /-dirty$/.test(src.commit || '');
+  const commitLink = src.repo && sha && sha !== 'unknown'
+    ? ` at <a href="${esc(src.repo)}/tree/${esc(sha)}${src.repo_path ? '/' + esc(src.repo_path) : ''}" target="_blank" rel="noopener" title="${esc(src.repo.replace('https://github.com/', ''))} @ ${esc(sha)}"><code>${esc(sha.slice(0, 7))}</code></a>`
+      + (dirty ? ' <span title="built from a checkout with uncommitted contract changes">+ local changes</span>' : '')
+    : '';
+  document.getElementById('sourceline').innerHTML = `Kamigotchi World · ${Object.keys(E).length} entity types · ${rels.length} relationships · ${Object.keys(systems).length} systems · generated from the contracts${commitLink}`;
   const start = decodeURIComponent((location.hash || '').slice(1));
   if (E[start]) focusView(start); else if (start.startsWith('sys.') && systems[start.slice(4)]) overviewView(start.slice(4)); else overviewView();
 })();

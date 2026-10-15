@@ -226,7 +226,7 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
       .map(f => fetch('data/' + f).then(r => { if (!r.ok) throw new Error(f + ' ' + r.status); return r.json(); })));
     try { notes = jsyaml.load(await (await fetch('data/notes.yaml')).text()) || {}; } catch (e) { notes = {}; }
   } catch (e) {
-    panel.innerHTML = '<h2>Data did not load</h2><p class="muted">' + esc(e.message) + '. Rerun kami/kami-domain/generate.py and republish.</p>';
+    panel.innerHTML = '<h2>Data did not load</h2><p class="muted">' + esc(e.message) + '. Rerun kami/kami-atlas/generate.py and republish.</p>';
     return;
   }
   const E = model.entities, NE = notes.entities || {}, NL = notes.links || {}, NS = notes.sub_entities || {};
@@ -613,7 +613,7 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
       ${arr(notes.open_questions).length ? `<section class="block"><h3>Open questions</h3><ul class="plain">${arr(notes.open_questions).map(q => '<li class="muted small">' + esc(q) + '</li>').join('')}</ul></section>` : ''}`;
   }
   const sysBtn = n => `<button class="sysbtn" data-sys="${esc(n)}" title="Show what ${esc(n)} touches">${esc(n)}</button>`;
-  const GH = 'https://github.com/Asphodel-OS/kami-domain/blob/main/generated/systems/';
+  const GH = 'https://github.com/Asphodel-OS/kami-atlas/blob/main/generated/systems/';
   function systemPanel(n, role) {
     const sy = systems[n] || {};
     const by = r => Object.keys(role).filter(k => role[k] === r).sort();

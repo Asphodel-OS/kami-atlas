@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """Read Kamigotchi config values from Yominet, on demand.
 
-    python3 kami/kami-domain/config.py KAMI_LIQ_SALVAGE KAMI_HARV_BOUNTY   # named keys
-    python3 kami/kami-domain/config.py --system HarvestLiquidate           # every key a system depends on
-    python3 kami/kami-domain/config.py --formula LibKill.calcSalvage       # every key a formula reads
-    python3 kami/kami-domain/config.py --all                               # every key the code reads
-    python3 kami/kami-domain/config.py --all --diff                        # only keys whose live value differs from the deploy script
+    python3 kami/kami-atlas/config.py KAMI_LIQ_SALVAGE KAMI_HARV_BOUNTY   # named keys
+    python3 kami/kami-atlas/config.py --system HarvestLiquidate           # every key a system depends on
+    python3 kami/kami-atlas/config.py --formula LibKill.calcSalvage       # every key a formula reads
+    python3 kami/kami-atlas/config.py --all                               # every key the code reads
+    python3 kami/kami-atlas/config.py --all --diff                        # only keys whose live value differs from the deploy script
     options: --block <n> (historical read)  --json  --world <addr>  --rpc <url>
 
 Read-only: eth_call only, no keys, no transactions. Mirrors LibConfig: a config lives in the Value
@@ -79,7 +79,7 @@ class RPC:
             body = [{'jsonrpc': '2.0', 'id': j, 'method': 'eth_call',
                      'params': [{'to': to, 'data': '0x' + data}, self.block]} for j, (to, data) in enumerate(chunk)]
             req = urllib.request.Request(self.url, json.dumps(body).encode(),
-                                         {'content-type': 'application/json', 'user-agent': 'kami-domain/config.py'})
+                                         {'content-type': 'application/json', 'user-agent': 'kami-atlas/config.py'})
             res = {r['id']: r for r in json.load(urllib.request.urlopen(req, timeout=60))}
             out += [res[j].get('result') if 'error' not in res[j] else None for j in range(len(chunk))]
             self.last_error = next((res[j]['error'] for j in range(len(chunk)) if 'error' in res[j]), None)

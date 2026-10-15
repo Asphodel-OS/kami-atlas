@@ -1,8 +1,8 @@
-# kami-domain
+# kami-atlas
 
 The Kamigotchi domain manifest: what every component, system, function and entity type in the Kamigotchi contracts does and means, as YAML that people and agents can read without tracing the Solidity, plus a live config reader and an interactive map (the Kami Domain Atlas).
 
-Lives next to the game checkout: `Asphodel-OS/kami/kami-domain/` reads `Asphodel-OS/kami/kamigotchi/`. Repository: https://github.com/Asphodel-OS/kami-domain (private; keep it out of any public mirror, since notes hold design intent).
+Lives next to the game checkout: `Asphodel-OS/kami/kami-atlas/` reads `Asphodel-OS/kami/kamigotchi/`. Repository: https://github.com/Asphodel-OS/kami-atlas (private; keep it out of any public mirror, since notes hold design intent).
 
 ```
 generated/                   rebuilt from the code on every run; never edit
@@ -62,7 +62,7 @@ Reads `kami/kamigotchi/packages/contracts` (whatever branch it is on); override 
 
 It reloads the page whenever `viz/` changes, keeping the current view, and reruns `generate.py --no-build` first when `notes/` or `generate.py` change (about a second). Contract changes still need a full `python3 generate.py`.
 
-For the team it is deployed on Vercel at **https://kami-domain.vercel.app** (project `asphodel/kami-domain`, root directory `viz/`). Vercel Authentication is on for every URL, so only people logged into the Asphodel Vercel team can open it. Every push to `main` redeploys, so regenerate, commit `viz/data/` and push to update it.
+For the team it is deployed on Vercel at **https://kami-atlas.vercel.app** (project `asphodel/kami-atlas`, root directory `viz/`). Vercel Authentication is on for every URL, so only people logged into the Asphodel Vercel team can open it. Every push to `main` redeploys, so regenerate, commit `viz/data/` and push to update it.
 
 ## Live config values
 

@@ -12,6 +12,8 @@ written into viz/index.html.
 """
 import argparse, http.server, os, socketserver, subprocess, sys, threading, time
 
+SOURCE_ARGS = ['--ref', 'main']   # passed through to generate.py; set from the command line in main()
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 VIZ = os.path.join(HERE, 'viz')
 HOOK = b"<script>new EventSource('/__reload').onmessage = () => location.reload();</script>"
@@ -48,7 +50,7 @@ def watch():
         if s2 != src:
             src = s2
             print('%s  notes or generator changed: regenerating…' % time.strftime('%H:%M:%S'), flush=True)
-            r = subprocess.run([sys.executable, '-I', os.path.join(HERE, 'generate.py'), '--no-build'], capture_output=True, text=True, cwd=HERE)
+            r = subprocess.run([sys.executable, '-I', os.path.join(HERE, 'generate.py'), '--no-build', *SOURCE_ARGS], capture_output=True, text=True, cwd=HERE)
             print((r.stdout or '').strip().splitlines()[0] if r.returncode == 0 else 'generate.py failed:\n' + r.stderr[-1500:], flush=True)
         v2 = snapshot([VIZ])
         if v2 != viz:
@@ -104,7 +106,10 @@ class Server(socketserver.ThreadingMixIn, http.server.HTTPServer):
 def main():
     ap = argparse.ArgumentParser(description='Kami Domain Atlas dev server with live reload')
     ap.add_argument('--port', type=int, default=8765)
+    ap.add_argument('--ref', default='main', help='branch or tag of kamigotchi to read (default main; same as generate.py)')
+    ap.add_argument('--local', action='store_true', help='read the kamigotchi checkout as is instead of origin/<ref>')
     a = ap.parse_args()
+    SOURCE_ARGS[:] = ['--local'] if a.local else ['--ref', a.ref]
     threading.Thread(target=watch, daemon=True).start()
     srv = Server(('127.0.0.1', a.port), Handler)
     print('Kami Domain Atlas: http://127.0.0.1:%d/index.html  (live reload on viz/, regenerate on notes/ and generate.py)' % a.port, flush=True)

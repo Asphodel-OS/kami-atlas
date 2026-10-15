@@ -19,8 +19,40 @@ import json, os, re, subprocess, sys
 from collections import defaultdict
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-ROOT = os.environ.get('KAMI_CONTRACTS') or os.path.join(os.path.dirname(HERE), 'kamigotchi', 'packages', 'contracts')
-CACHE = os.path.join(HERE, '.cache')
+REPO = os.path.join(os.path.dirname(HERE), 'kamigotchi')   # the game checkout next to this repo
+
+
+def pick_source(argv):
+    """Which contracts to read. By default a private worktree of origin/main under .cache/, so the atlas tracks main
+    no matter what branch the kamigotchi checkout is on; `--ref X` tracks another branch or tag; `--local` (or
+    KAMI_CONTRACTS=<path>) reads the checkout as is. Returns (ref label, packages/contracts path, cache dir)."""
+    ref = argv[argv.index('--ref') + 1] if '--ref' in argv else 'main'
+    if '--local' in argv or os.environ.get('KAMI_CONTRACTS'):
+        root = os.environ.get('KAMI_CONTRACTS') or os.path.join(REPO, 'packages', 'contracts')
+        return 'local', root, os.path.join(HERE, '.cache', 'local')
+    wt = os.path.join(HERE, '.cache', 'src', ref.replace('/', '_'))
+    return ref, os.path.join(wt, 'packages', 'contracts'), os.path.join(HERE, '.cache', ref.replace('/', '_'))
+
+
+def sync_worktree(ref, wt):
+    """Create or fast-forward the worktree at wt to origin/<ref>. Dependencies are symlinked from the checkout
+    (pnpm's node_modules are not tracked), so forge resolves imports exactly as it would there."""
+    git = lambda *a, **k: subprocess.run(['git', *a], capture_output=True, text=True, **k)
+    f = git('-C', REPO, 'fetch', '-q', 'origin', ref)
+    if f.returncode != 0: sys.exit('git fetch origin %s failed:\n%s' % (ref, f.stderr[-1500:]))
+    if not os.path.isdir(os.path.join(wt, '.git')) and not os.path.isfile(os.path.join(wt, '.git')):
+        os.makedirs(os.path.dirname(wt), exist_ok=True)
+        r = git('-C', REPO, 'worktree', 'add', '--detach', wt, 'origin/' + ref)
+        if r.returncode != 0: sys.exit('git worktree add failed:\n' + r.stderr[-1500:])
+    else:
+        r = git('-C', wt, 'checkout', '-q', '--detach', 'origin/' + ref)
+        if r.returncode != 0: sys.exit('git checkout origin/%s failed:\n%s' % (ref, r.stderr[-1500:]))
+    for rel in ('node_modules', os.path.join('packages', 'contracts', 'node_modules')):
+        link, target = os.path.join(wt, rel), os.path.join(REPO, rel)
+        if not os.path.lexists(link) and os.path.isdir(target): os.symlink(target, link)
+
+
+REF, ROOT, CACHE = pick_source(sys.argv)
 GEN = os.path.join(HERE, 'generated')
 NOTES = os.path.join(HERE, 'notes')
 
@@ -35,6 +67,7 @@ KEYED_LIBS = {'LibConfig': 'config', 'LibBonus': 'bonuses', 'LibFlag': 'flags', 
 # ---------------- build + load ----------------
 
 def build():
+    if REF != 'local': sync_worktree(REF, os.path.dirname(os.path.dirname(ROOT)))
     cmd = ['forge', 'build', '--skip', 'test', '--skip', 'script', '--ast',
            '--out', os.path.join(CACHE, 'out'), '--cache-path', os.path.join(CACHE, 'cache')]
     env = dict(os.environ, FOUNDRY_PROFILE='build')
@@ -884,6 +917,18 @@ def source_rev():
         return 'unknown'
 
 
+def source_label():
+    """Where the contracts live, as a path a reader would recognise (the worktree is an implementation detail)."""
+    return os.path.relpath(ROOT, os.path.dirname(HERE)) if REF == 'local' else 'kamigotchi/packages/contracts'
+
+
+def source_ref():
+    """origin/<ref> for a worktree build; the checked-out branch for a local one."""
+    if REF != 'local': return 'origin/' + REF
+    try: return subprocess.run(['git', 'rev-parse', '--abbrev-ref', 'HEAD'], cwd=ROOT, capture_output=True, text=True).stdout.strip() or 'local'
+    except OSError: return 'local'
+
+
 def source_web():
     """The contracts' GitHub web URL and their path in that repo, so the atlas can link to the exact commit."""
     try:
@@ -1086,7 +1131,7 @@ def main():
         if not any(any(c in r for c in creators[et]) for n, r in sys_reach.items() if not n.startswith('__')):
             untyped.discard(et); ents.pop(et); creators.pop(et)
     repo, repo_path = source_web()
-    model_meta = {'contracts': os.path.relpath(ROOT, os.path.dirname(HERE)), 'commit': source_rev(), 'repo': repo, 'repo_path': repo_path}
+    model_meta = {'contracts': source_label(), 'ref': source_ref(), 'commit': source_rev(), 'repo': repo, 'repo_path': repo_path}
     model = derive_domain(ix, ents, creators, ns_struct, systems, {c['comp']: bool(c.get('indexed')) for c in deploy['components']},
                           untyped, singletons, ns_kind, gen_ns)
 
@@ -1128,7 +1173,7 @@ def main():
     for sub in ('systems', 'functions'):
         d_ = os.path.join(GEN, sub)
         for f in os.listdir(d_) if os.path.isdir(d_) else []: os.remove(os.path.join(d_, f))
-    src_note = 'the compiler AST of %s at %s' % (os.path.relpath(ROOT, os.path.dirname(HERE)), source_rev())
+    src_note = 'the compiler AST of %s (%s) at %s' % (source_label(), source_ref(), source_rev())
     for name, rec in systems.items():
         write(os.path.join(GEN, 'systems', name + '.yaml'), src_note, {name: rec})
     for c, tbl in tables.items():

@@ -1256,7 +1256,7 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
   // ---------------- go ----------------
   const src = model.source || {}, sha = String(src.commit || '').replace(/-dirty$/, ''), dirty = /-dirty$/.test(src.commit || '');
   const commitLink = src.repo && sha && sha !== 'unknown'
-    ? ` at <a href="${esc(src.repo)}/tree/${esc(sha)}${src.repo_path ? '/' + esc(src.repo_path) : ''}" target="_blank" rel="noopener" title="${esc(src.repo.replace('https://github.com/', ''))} @ ${esc(sha)}"><code>${esc(sha.slice(0, 7))}</code></a>`
+    ? `${src.ref ? ' on ' + esc(String(src.ref).replace(/^origin\//, '')) : ''} at <a href="${esc(src.repo)}/tree/${esc(sha)}${src.repo_path ? '/' + esc(src.repo_path) : ''}" target="_blank" rel="noopener" title="${esc(src.repo.replace('https://github.com/', ''))} @ ${esc(sha)}"><code>${esc(sha.slice(0, 7))}</code></a>`
       + (dirty ? ' <span title="built from a checkout with uncommitted contract changes">+ local changes</span>' : '')
     : '';
   document.getElementById('sourceline').innerHTML = `Kamigotchi World · ${Object.keys(E).length} entity types · ${rels.length} relationships · ${Object.keys(systems).length} systems · generated from the contracts${commitLink}`;

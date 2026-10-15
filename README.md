@@ -50,7 +50,7 @@ Where notes and code disagree, the code wins: fix the note or add an open questi
     python3 generate.py             # recompiles with forge (about 1 minute), then generates
     python3 generate.py --no-build  # reuse .cache as is (about 1 second)
 
-Reads `kami/kamigotchi/packages/contracts` (whatever branch it is on); override with `KAMI_CONTRACTS=<path to packages/contracts>`. Needs Foundry and Python 3, nothing else.
+By default it reads **`origin/main`** of `kami/kamigotchi`, through a private worktree under `.cache/src/main` that it fetches and fast-forwards on every build, so the atlas tracks main regardless of what branch the checkout is on (the checkout's `node_modules` are symlinked in for forge). `--ref <branch-or-tag>` tracks something else; `--local` (or `KAMI_CONTRACTS=<path to packages/contracts>`) reads the checkout as is. `dev.py` takes the same two flags. Needs Foundry and Python 3, nothing else.
 
 ## Domain model and the atlas
 
@@ -88,10 +88,10 @@ The contracts are compiled with `--ast`, and calls are resolved by the compiler,
 
 ## Reproducibility
 
-Everything in `generated/` and `viz/data/` is a pure function of the contracts checkout: `rm -rf .cache && python3 generate.py` rebuilds it byte for byte (checked: a fresh compile and analysis reproduced all 177 files with no difference). Each output records the contracts commit it came from (`kamigotchi/packages/contracts at <sha>`, `-dirty` if that checkout had local changes), so any output can be traced to its source.
+Everything in `generated/` and `viz/data/` is a pure function of the contracts checkout: `rm -rf .cache && python3 generate.py` rebuilds it byte for byte (checked: a fresh compile and analysis reproduced all 177 files with no difference). Each output records the ref and commit it came from (`kamigotchi/packages/contracts (origin/main) at <sha>`; a `--local` build records the branch instead, and `-dirty` if that checkout had local changes), so any output can be traced to its source.
 
 It depends on:
-- **the contracts commit:** the generator reads whatever branch `kami/kamigotchi` has checked out; check out the commit in the header to reproduce an old output;
+- **the contracts commit:** by default the tip of `origin/main` at build time; to reproduce an old output, `--ref <sha-or-tag>` from the header (or check it out and build `--local`);
 - **the compiler:** solc is pinned by the contracts' `foundry.toml` (0.8.28); Foundry itself is not pinned, and a release that changes the AST format could change the output;
 - **the rules in `generate.py`:** the few hand-written tables (stat names, untyped-shape names, singleton names, admin modifiers) are versioned with the script.
 

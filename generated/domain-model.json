@@ -1,7 +1,8 @@
 {
  "source": {
   "contracts": "kamigotchi/packages/contracts",
-  "commit": "2c358a667e6a",
+  "ref": "origin/main",
+  "commit": "157ad472c81d",
   "repo": "https://github.com/Asphodel-OS/kamigotchi",
   "repo_path": "packages/contracts"
  },

@@ -528,27 +528,6 @@
     "instance": "friendship(accID, targetID)"
    },
    "links": {
-    "IDAnchor": {
-     "to": "FRIENDSHIP",
-     "type": "attachment",
-     "stored_on": "FRIENDSHIP",
-     "required": true,
-     "cardinality": "many FRIENDSHIP per FRIENDSHIP",
-     "navigate": {
-      "up": "read IDAnchor on FRIENDSHIP",
-      "down": "reverse lookup on IDAnchor (indexed)"
-     },
-     "derived": [
-      "IDAnchor = genCounterPtr(targetID, \"REQUEST\") in LibFriend.updateInReqCounter (from the name); through anchor keys friendship.ptr",
-      "IDAnchor = pointers in LibFriend.updateFriendCounter (not resolved)"
-     ],
-     "via": {
-      "anchor_keys": [
-       "friendship.ptr"
-      ]
-     },
-     "inferred": true
-    },
     "IdSource": {
      "to": "ACCOUNT",
      "type": "directed",
@@ -565,11 +544,11 @@
      ]
     },
     "IdTarget": {
-     "to": null,
+     "to": "ACCOUNT",
      "type": "directed",
      "stored_on": "FRIENDSHIP",
      "required": true,
-     "cardinality": "one FRIENDSHIP per referenced entity per accID",
+     "cardinality": "one FRIENDSHIP per ACCOUNT per accID",
      "navigate": {
       "up": "read IdTarget on FRIENDSHIP",
       "down": "compute friendship(accID, targetID), or reverse lookup on IdTarget (indexed)"
@@ -582,7 +561,9 @@
      "unresolved_from": [
       "senderID",
       "targetID"
-     ]
+     ],
+     "settled_in_notes": true,
+     "note": "the other account"
     }
    },
    "components": [
@@ -1052,11 +1033,11 @@
      "inferred": true
     },
     "IdTarget": {
-     "to": null,
+     "to": "any",
      "type": "directed",
      "stored_on": "TAX",
      "required": true,
-     "cardinality": "many TAX per referenced entity",
+     "cardinality": "many TAX per any",
      "navigate": {
       "up": "read IdTarget on TAX",
       "down": "reverse lookup on IdTarget (indexed)"
@@ -1067,7 +1048,9 @@
      "inferred": true,
      "unresolved_from": [
       "recipientID"
-     ]
+     ],
+     "settled_in_notes": true,
+     "note": "whoever receives the cut: a front-end or guild's entity"
     }
    },
    "components": [
@@ -1152,14 +1135,14 @@
      ]
     },
     "IdTarget": {
-     "to": null,
+     "to": "ACCOUNT",
      "type": "directed",
      "stored_on": "TRADE",
      "required": false,
      "only_when": [
       "targetID != 0"
      ],
-     "cardinality": "many TRADE per referenced entity",
+     "cardinality": "many TRADE per ACCOUNT",
      "navigate": {
       "up": "read IdTarget on TRADE",
       "down": "reverse lookup on IdTarget (indexed)"
@@ -1170,7 +1153,9 @@
      "inferred": true,
      "unresolved_from": [
       "targetID"
-     ]
+     ],
+     "settled_in_notes": true,
+     "note": "the counterparty, if the trade is addressed to one"
     }
    },
    "components": [
@@ -1245,28 +1230,6 @@
    },
    "index": "IndexQuest",
    "links": {
-    "IDAnchor": {
-     "to": "QUEST",
-     "type": "attachment",
-     "stored_on": "QUEST",
-     "required": false,
-     "only_when": [
-      "for each (i < objectives.length) and handler == HANDLER.INCREASE || handler == HANDLER.DECREASE"
-     ],
-     "cardinality": "many QUEST per QUEST",
-     "navigate": {
-      "up": "read IDAnchor on QUEST",
-      "down": "reverse lookup on IDAnchor (indexed)"
-     },
-     "derived": [
-      "IDAnchor = genSnapshotAnchor(questID) in LibQuest.snapshotObjective (from the name); through anchor keys snapshot.anchor"
-     ],
-     "via": {
-      "anchor_keys": [
-       "snapshot.anchor"
-      ]
-     }
-    },
     "IDOwnsQuest": {
      "to": "ACCOUNT",
      "type": "ownership",
@@ -1484,13 +1447,16 @@
    "index": "IndexSkill",
    "links": {
     "IDOwnsSkill": {
-     "to": null,
+     "to": [
+      "KAMI",
+      "ACCOUNT"
+     ],
      "type": "ownership",
      "stored_on": "SKILL",
      "required": true,
      "changes_after_creation": false,
      "removable": true,
-     "cardinality": "many SKILL per referenced entity",
+     "cardinality": "many SKILL per KAMI/ACCOUNT",
      "navigate": {
       "up": "read IDOwnsSkill on SKILL",
       "down": "reverse lookup on IDOwnsSkill (indexed)"
@@ -1502,7 +1468,9 @@
      "inferred": true,
      "unresolved_from": [
       "targetID"
-     ]
+     ],
+     "settled_in_notes": true,
+     "note": "a skill's registry entry says which it is for (its For field); SkillUpgradeSystem checks the holder is that shape, so both kamis and accounts can hold skills. Which skills are account skills is registry data, not code."
     }
    },
    "components": [
@@ -1582,11 +1550,16 @@
    },
    "links": {
     "IDAnchor": {
-     "to": null,
+     "to": [
+      "QUEST",
+      "GOAL",
+      "ITEM",
+      "NODE"
+     ],
      "type": "attachment",
      "stored_on": "ALLOCATION",
      "required": true,
-     "cardinality": "one ALLOCATION per referenced entity per type_, index",
+     "cardinality": "one ALLOCATION per QUEST/GOAL/ITEM/NODE per type_, index",
      "navigate": {
       "up": "read IDAnchor on ALLOCATION",
       "down": "compute reward.instance(anchorID, type_, index), or reverse lookup on IDAnchor (indexed)"
@@ -1597,7 +1570,9 @@
      "inferred": true,
      "unresolved_from": [
       "anchorID"
-     ]
+     ],
+     "settled_in_notes": true,
+     "note": "the registry entry the reward is attached to"
     },
     "IdSource": {
      "to": [
@@ -2578,14 +2553,14 @@
      }
     },
     "IdSource": {
-     "to": null,
+     "to": "ROOM",
      "type": "directed",
      "stored_on": "ROOM_GATE",
      "required": false,
      "only_when": [
       "sourceIndex != 0"
      ],
-     "cardinality": "many ROOM_GATE per referenced entity",
+     "cardinality": "many ROOM_GATE per ROOM",
      "navigate": {
       "up": "read IdSource on ROOM_GATE",
       "down": "reverse lookup on IdSource (indexed)"
@@ -2596,7 +2571,9 @@
      "inferred": true,
      "unresolved_from": [
       "sourceIndex"
-     ]
+     ],
+     "settled_in_notes": true,
+     "note": "the source room's index, stored for the client"
     }
    },
    "components": [
@@ -2680,27 +2657,7 @@
    "id": {
     "registry": "registry.trait(_type, index)"
    },
-   "links": {
-    "IDAnchor": {
-     "to": "TRAIT",
-     "type": "attachment",
-     "stored_on": "TRAIT",
-     "required": true,
-     "cardinality": "many TRAIT per TRAIT",
-     "navigate": {
-      "up": "read IDAnchor on TRAIT",
-      "down": "reverse lookup on IDAnchor (indexed)"
-     },
-     "derived": [
-      "IDAnchor = genReverseMappingPtr(_type) in LibTraitRegistry.setReverseMappingPtr (from the name); through anchor keys registry.trait.type"
-     ],
-     "via": {
-      "anchor_keys": [
-       "registry.trait.type"
-      ]
-     }
-    }
-   },
+   "links": {},
    "components": [
     "Affinity",
     "Harmony",
@@ -3136,5 +3093,19 @@
     "_721BatchMinterSystem"
    ]
   }
- }
+ },
+ "links_ignored_in_notes": [
+  {
+   "link": "QUEST.IDAnchor",
+   "note": "set on the quest's objective snapshots (snapshot.anchor), not on the quest"
+  },
+  {
+   "link": "FRIENDSHIP.IDAnchor",
+   "note": "set on the friendship counters (friendship.ptr), not on the friendship"
+  },
+  {
+   "link": "TRAIT.IDAnchor",
+   "note": "set on the trait-type reverse lookup (registry.trait.type)"
+  }
+ ]
 }

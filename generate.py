@@ -1148,6 +1148,55 @@ def source_web():
     return ('https://github.com/' + m.group(1) if m else None), (os.path.relpath(ROOT, top) if top else None)
 
 
+def read_note_links(path):
+    """The `links:` entries of notes/domain-model.yaml, {'ENTITY.Comp': {to, note, ignore}}: a small reader for that one
+    flow-mapping section, since the generator keeps to the standard library."""
+    if not os.path.exists(path): return {}
+    out, inside = {}, False
+    for line in open(path):
+        if re.match(r'^\w', line): inside = line.startswith('links:'); continue
+        if not inside: continue
+        m = re.match(r'^  ([\w.:,]+):\s*\{(.*)\}\s*(#.*)?$', line)
+        if not m: continue
+        d = {}
+        for k, v in re.findall(r'(\w+):\s*("(?:[^"\\]|\\.)*"|[^,}]+)', m.group(2)):
+            v = v.strip()
+            d[k] = json.loads(v) if v.startswith('"') else (v == 'true' if v in ('true', 'false') else v)
+        out[m.group(1)] = d
+    return out
+
+
+def fold_note_links(entities, note_links):
+    """Apply the notes' link settlements to the model, so the generated files say what the atlas shows: a `to:` the code
+    could not give is set and marked settled_in_notes (what the code gave stays in unresolved_from), notes ride along,
+    and pointers the notes say are not a link are dropped. Returns the dropped ones."""
+    ignored = []
+    for key, o in note_links.items():
+        et, comp = key.split('.', 1)
+        links = (entities.get(et) or {}).get('links') or {}
+        l = links.get(comp)
+        if l is None: continue
+        if o.get('ignore'):
+            ignored.append({'link': key, **({'note': o['note']} if o.get('note') else {})}); del links[comp]; continue
+        if o.get('to'):
+            ts = [t.strip() for t in str(o['to']).split('|') if t.strip()]
+            l['to'] = ts[0] if len(ts) == 1 else ts
+            l['settled_in_notes'] = True
+            if l.get('cardinality'): l['cardinality'] = l['cardinality'].replace('referenced entity', '/'.join(ts))
+        if o.get('note'): l['note'] = o['note']
+    return ignored
+
+
+def diff_model(old, new):
+    """Changed leaves between two domain models, as (+ - ~, path, before, after), ignoring the source stamp."""
+    def flat(d, p=''):
+        if isinstance(d, dict): return {k2: v2 for k, v in d.items() for k2, v2 in flat(v, p + '/' + str(k)).items()}
+        return {p: json.dumps(d, sort_keys=True)}
+    a, b = flat(old), flat(new)
+    return [(('+' if k not in a else '-' if k not in b else '~'), k, a.get(k), b.get(k))
+            for k in sorted(set(a) | set(b)) if not k.startswith('/source') and a.get(k) != b.get(k)]
+
+
 def main():
     if '--no-build' not in sys.argv: build()
     ix = Index(load_units())
@@ -1392,7 +1441,16 @@ def main():
     write(os.path.join(GEN, 'formulas.yaml'), src_note, formulas)
     write(os.path.join(GEN, 'components.yaml'), src_note, comps)
     write(os.path.join(GEN, 'entities.yaml'), src_note, {'entity_types': ents, 'id_namespaces': id_ns})
-    model = {'source': model_meta, **model}
+    ignored_links = fold_note_links(model['entities'], read_note_links(os.path.join(NOTES, 'domain-model.yaml')))
+    model = {'source': model_meta, **model, **({'links_ignored_in_notes': ignored_links} if ignored_links else {})}
+    if '--diff' in sys.argv:  # what this run changed against a committed output (default HEAD) before overwriting it
+        i = sys.argv.index('--diff'); ref = sys.argv[i + 1] if i + 1 < len(sys.argv) and not sys.argv[i + 1].startswith('-') else 'HEAD'
+        try:
+            old = json.loads(subprocess.run(['git', 'show', '%s:generated/domain-model.json' % ref], cwd=HERE, capture_output=True, text=True, check=True).stdout)
+            changes = diff_model(old, model)
+            print('diff against %s: %d changed value%s' % (ref, len(changes), '' if len(changes) == 1 else 's'))
+            for sign, k, a_, b_ in changes: print('  %s %s: %s -> %s' % (sign, k, (a_ or '')[:100], (b_ or '')[:200]))
+        except subprocess.CalledProcessError as ex: print('diff: cannot read %s:generated/domain-model.json (%s)' % (ref, ex.stderr.strip()))
     write(os.path.join(GEN, 'domain-model.yaml'), src_note, model)
     with open(os.path.join(GEN, 'domain-model.json'), 'w') as f_: json.dump(model, f_, indent=1)
 

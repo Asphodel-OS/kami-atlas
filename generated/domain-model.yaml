@@ -321,21 +321,6 @@ entities:
     id:
       instance: "friendship(accID, targetID)"
     links:
-      IDAnchor:
-        to: FRIENDSHIP
-        type: attachment
-        stored_on: FRIENDSHIP
-        required: true
-        cardinality: "many FRIENDSHIP per FRIENDSHIP"
-        navigate:
-          up: "read IDAnchor on FRIENDSHIP"
-          down: "reverse lookup on IDAnchor (indexed)"
-        derived:
-          - "IDAnchor = genCounterPtr(targetID, \"REQUEST\") in LibFriend.updateInReqCounter (from the name); through anchor keys friendship.ptr"
-          - "IDAnchor = pointers in LibFriend.updateFriendCounter (not resolved)"
-        via:
-          anchor_keys: [friendship.ptr]
-        inferred: true
       IdSource:
         to: ACCOUNT
         type: directed
@@ -347,17 +332,19 @@ entities:
           down: "compute friendship(accID, targetID), or reverse lookup on IdSource (indexed)"
         derived: ["IdSource = accID in LibFriend.create (from the name)", "IdSource = accID in LibFriend.accept (from the name)"]
       IdTarget:
-        to: null
+        to: ACCOUNT
         type: directed
         stored_on: FRIENDSHIP
         required: true
-        cardinality: "one FRIENDSHIP per referenced entity per accID"
+        cardinality: "one FRIENDSHIP per ACCOUNT per accID"
         navigate:
           up: "read IdTarget on FRIENDSHIP"
           down: "compute friendship(accID, targetID), or reverse lookup on IdTarget (indexed)"
         derived: ["IdTarget = targetID in LibFriend.create (not resolved)", "IdTarget = senderID in LibFriend.accept (not resolved)"]
         inferred: true
         unresolved_from: [senderID, targetID]
+        settled_in_notes: true
+        note: "the other account"
     components: [IDAnchor, IdSource, IdTarget, State]
   HARVEST:
     layer: runtime
@@ -637,17 +624,19 @@ entities:
         derived: ["IDOwnsTax = payerID in LibTax.create (traced through callers)"]
         inferred: true
       IdTarget:
-        to: null
+        to: any
         type: directed
         stored_on: TAX
         required: true
-        cardinality: "many TAX per referenced entity"
+        cardinality: "many TAX per any"
         navigate:
           up: "read IdTarget on TAX"
           down: "reverse lookup on IdTarget (indexed)"
         derived: ["IdTarget = recipientID in LibTax.create (not resolved)"]
         inferred: true
         unresolved_from: [recipientID]
+        settled_in_notes: true
+        note: "whoever receives the cut: a front-end or guild's entity"
     components: [IDOwnsTax, IdTarget, Value]
   TOKEN_RECEIPT:
     layer: runtime
@@ -695,18 +684,20 @@ entities:
           down: "reverse lookup on IDOwnsTrade (indexed)"
         derived: ["IDOwnsTrade = accID in LibTrade.create (from the name)"]
       IdTarget:
-        to: null
+        to: ACCOUNT
         type: directed
         stored_on: TRADE
         required: false
         only_when: ["targetID != 0"]
-        cardinality: "many TRADE per referenced entity"
+        cardinality: "many TRADE per ACCOUNT"
         navigate:
           up: "read IdTarget on TRADE"
           down: "reverse lookup on IdTarget (indexed)"
         derived: ["IdTarget = targetID in LibTrade.create (not resolved)"]
         inferred: true
         unresolved_from: [targetID]
+        settled_in_notes: true
+        note: "the counterparty, if the trade is addressed to one"
     components: [IDOwnsInventory, IDOwnsTrade, IdTarget, IndexItem, Keys, State, Value, Values]
     owns: [INVENTORY]
     sub_entities:
@@ -745,19 +736,6 @@ entities:
       instance: "quest.instance(index, accID)"
     index: IndexQuest
     links:
-      IDAnchor:
-        to: QUEST
-        type: attachment
-        stored_on: QUEST
-        required: false
-        only_when: ["for each (i < objectives.length) and handler == HANDLER.INCREASE || handler == HANDLER.DECREASE"]
-        cardinality: "many QUEST per QUEST"
-        navigate:
-          up: "read IDAnchor on QUEST"
-          down: "reverse lookup on IDAnchor (indexed)"
-        derived: ["IDAnchor = genSnapshotAnchor(questID) in LibQuest.snapshotObjective (from the name); through anchor keys snapshot.anchor"]
-        via:
-          anchor_keys: [snapshot.anchor]
       IDOwnsQuest:
         to: ACCOUNT
         type: ownership
@@ -890,19 +868,21 @@ entities:
     index: IndexSkill
     links:
       IDOwnsSkill:
-        to: null
+        to: [KAMI, ACCOUNT]
         type: ownership
         stored_on: SKILL
         required: true
         changes_after_creation: false
         removable: true
-        cardinality: "many SKILL per referenced entity"
+        cardinality: "many SKILL per KAMI/ACCOUNT"
         navigate:
           up: "read IDOwnsSkill on SKILL"
           down: "reverse lookup on IDOwnsSkill (indexed)"
         derived: ["IDOwnsSkill = targetID in LibSkill.assign (not resolved)", "IDOwnsSkill = targetID in LibSkill.upgradeFor (not resolved)"]
         inferred: true
         unresolved_from: [targetID]
+        settled_in_notes: true
+        note: "a skill's registry entry says which it is for (its For field); SkillUpgradeSystem checks the holder is that shape, so both kamis and accounts can hold skills. Which skills are account skills is registry data, not code."
     components: [Cost, Description, For, IDAnchor, IDOwnsSkill, IDType, IdSource, IndexSkill, IsRegistry, Level, Max, MediaURI, Name, SkillPoint, Subtype, Time, Type, Value]
     sub_entities:
       registry.skill.bonus:
@@ -939,17 +919,19 @@ entities:
       registry: "reward.instance(anchorID, type_, index)"
     links:
       IDAnchor:
-        to: null
+        to: [QUEST, GOAL, ITEM, NODE]
         type: attachment
         stored_on: ALLOCATION
         required: true
-        cardinality: "one ALLOCATION per referenced entity per type_, index"
+        cardinality: "one ALLOCATION per QUEST/GOAL/ITEM/NODE per type_, index"
         navigate:
           up: "read IDAnchor on ALLOCATION"
           down: "compute reward.instance(anchorID, type_, index), or reverse lookup on IDAnchor (indexed)"
         derived: ["IDAnchor = anchorID in LibAllo.createBase (not resolved)"]
         inferred: true
         unresolved_from: [anchorID]
+        settled_in_notes: true
+        note: "the registry entry the reward is attached to"
       IdSource:
         to: [GOAL, QUEST]
         type: directed
@@ -1492,18 +1474,20 @@ entities:
         via:
           anchor_keys: [room.gate.to]
       IdSource:
-        to: null
+        to: ROOM
         type: directed
         stored_on: ROOM_GATE
         required: false
         only_when: ["sourceIndex != 0"]
-        cardinality: "many ROOM_GATE per referenced entity"
+        cardinality: "many ROOM_GATE per ROOM"
         navigate:
           up: "read IdSource on ROOM_GATE"
           down: "reverse lookup on IdSource (indexed)"
         derived: ["IdSource = sourceIndex in LibRoom.createGate (not resolved)"]
         inferred: true
         unresolved_from: [sourceIndex]
+        settled_in_notes: true
+        note: "the source room's index, stored for the client"
     components: [For, IDFrom, IDTo, IdSource, Index, LogicType, Type, Value]
     extends: CONDITION
   SCAVENGE:
@@ -1546,19 +1530,7 @@ entities:
     created_in: [LibTraitRegistry.create]
     id:
       registry: "registry.trait(_type, index)"
-    links:
-      IDAnchor:
-        to: TRAIT
-        type: attachment
-        stored_on: TRAIT
-        required: true
-        cardinality: "many TRAIT per TRAIT"
-        navigate:
-          up: "read IDAnchor on TRAIT"
-          down: "reverse lookup on IDAnchor (indexed)"
-        derived: ["IDAnchor = genReverseMappingPtr(_type) in LibTraitRegistry.setReverseMappingPtr (from the name); through anchor keys registry.trait.type"]
-        via:
-          anchor_keys: [registry.trait.type]
+    links: {}
     components: [Affinity, Harmony, Health, IDAnchor, IsRegistry, Name, Power, Rarity, Slots, Violence]
     sub_entities:
       registry.trait.type:
@@ -1817,3 +1789,10 @@ singletons:
     constant: GACHA_ID
     defined_in: src/libraries/LibGacha.sol
     used_in: [LibGacha, LibKamiCreate, _721BatchMinterSystem]
+links_ignored_in_notes:
+  - link: QUEST.IDAnchor
+    note: "set on the quest's objective snapshots (snapshot.anchor), not on the quest"
+  - link: FRIENDSHIP.IDAnchor
+    note: "set on the friendship counters (friendship.ptr), not on the friendship"
+  - link: TRAIT.IDAnchor
+    note: "set on the trait-type reverse lookup (registry.trait.type)"

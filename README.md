@@ -49,12 +49,13 @@ Where notes and code disagree, the code wins: fix the note or add an open questi
 
     python3 generate.py             # recompiles with forge (about 1 minute), then generates
     python3 generate.py --no-build  # reuse .cache as is (about 1 second)
+    python3 generate.py --no-build --diff [ref]   # also print every model value this run changed against the committed output (default HEAD)
 
 By default it reads **`origin/main`** of `kami/kamigotchi`, through a private worktree under `.cache/src/main` that it fetches and fast-forwards on every build, so the atlas tracks main regardless of what branch the checkout is on (the checkout's `node_modules` are symlinked in for forge). `--ref <branch-or-tag>` tracks something else; `--local` (or `KAMI_CONTRACTS=<path to packages/contracts>`) reads the checkout as is. `dev.py` takes the same two flags. Needs Foundry and Python 3, nothing else.
 
 ## Domain model and the atlas
 
-`generated/domain-model.yaml` (and `.json`) is derived from the code: the 31 typed entities with their layer (runtime, registry, or hybrid), id, links, owners and sub-entities. Links the generator resolved by tracing variable names are marked `inferred`; links it could not resolve have `to: null`. `notes/domain-model.yaml` adds what the code can't say: descriptions, the unresolved links, confirmed facts and open questions. The generator reports any entity without a description and any unresolved link not settled in notes.
+`generated/domain-model.yaml` (and `.json`) is derived from the code: the 31 typed entities with their layer (runtime, registry, or hybrid), id, links, owners and sub-entities. Links the generator resolved by tracing variable names are marked `inferred`. `notes/domain-model.yaml` adds what the code can't say: descriptions, targets for the links the code leaves open, confirmed facts and open questions. The generator folds the notes' link settlements into the generated files, so they say what the atlas shows: a target taken from notes is marked `settled_in_notes` (what the code gave stays in `unresolved_from`), and a pointer the notes say is not a link is dropped and listed under `links_ignored_in_notes`. It reports any entity without a description and any open link not settled in notes.
 
 `viz/index.html` is the Kami Domain Atlas. It reads `viz/data/`, which each generator run rewrites, and merges the notes in the browser. For local work, run the dev server:
 

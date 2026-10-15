@@ -26,7 +26,7 @@ entities:
   TOKEN_RECEIPT: {what: "A token-portal withdrawal waiting out its delay (config PORTAL_TOKEN_EXPORT_DELAY)."}
   POOL_SHARE: {what: "A holder's share of an item pool."}
   QUEST: {what: "Registry: a quest with objectives, requirements and rewards. Instance: an account's accepted quest."}
-  SKILL: {what: "Registry: a skill in the tree. Instance: points a kami has put into it."}
+  SKILL: {what: "Registry: a skill in the tree. Instance: points a kami (or an account, for account skills) has put into it."}
   RELATIONSHIP: {what: "Registry: a relationship stage with an NPC. Instance: an account's progress in it."}
   ROOM: {what: "A place in the world. Nodes, NPCs, goals and accounts are located by room index."}
   NODE: {what: "A harvestable spot in a room; yields one item and has a scavenge bar."}
@@ -78,6 +78,32 @@ sub_entities:   # descriptions; the parent comes from the generated model unless
   room.gate.to: {what: "anchor key grouping the gates guarding entry to a room"}
   SOULBOUND: {what: "a temporary lock on a kami: Value holds the expiry time. Set for 3 days when a kami is bought from the newbie vendor."}
   operator.cache: {what: "lookup from an operator wallet to its account, keyed by the wallet address; rewritten when the operator changes"}
+  # anchor keys that group a registry entry's conditions, rewards and bonuses (the CONDITION / ALLOCATION / BONUS entries point at them with IDAnchor)
+  auction.requirement: {what: "anchor key grouping the conditions for bidding in an auction"}
+  goal.requirement: {what: "anchor key grouping the conditions for contributing to a goal"}
+  listing.requirement: {what: "anchor key grouping the conditions for buying from a listing"}
+  recipe.requirement: {what: "anchor key grouping the conditions for crafting a recipe"}
+  registry.quest.requirement: {what: "anchor key grouping the conditions for accepting a quest"}
+  registry.quest.objective: {what: "anchor key grouping a quest's objectives: conditions that must hold to complete it"}
+  registry.quest.reward: {what: "anchor key grouping a quest's rewards (ALLOCATION entries)"}
+  registry.skill.requirement: {what: "anchor key grouping the conditions for upgrading a skill"}
+  registry.skill.bonus: {what: "anchor key grouping the bonuses a skill grants"}
+  node.bonus: {what: "anchor key grouping the bonuses a node grants"}
+  scavenge.reward: {what: "anchor key grouping a scavenge bar's rewards (ALLOCATION entries)"}
+  item.usecase: {what: "anchor key grouping an item's use cases: one REFERENCE entry per way the item can be used (USE, ...), keyed by the item index"}
+  item.requirement: {what: "anchor key grouping the conditions for one item use case; keyed by that use case's REFERENCE id, not the item"}
+  item.allo: {what: "anchor key grouping what one item use case does (ALLOCATION entries); keyed by that use case's REFERENCE id, not the item"}
+  # records holding item lists
+  recipe.input: {what: "a recipe's inputs: Keys are item indices, Values the amounts consumed"}
+  recipe.output: {what: "a recipe's outputs: Keys are item indices, Values the amounts produced"}
+  trade.buy: {what: "what the trade's buy side asks for: Keys are item indices, Values the amounts"}
+  trade.sell: {what: "what the trade's sell side offers: Keys are item indices, Values the amounts"}
+  # classifiers and reverse lookups
+  flag.type: {what: "anchor key for flags of one kind on one kind of parent (parentType, flagType); a has.flag's IDType points at it so all flags of that kind can be queried"}
+  score.type: {what: "anchor key classifying a score by (epoch, index, scoreType); an is.score's IDType points at it, which is what leaderboards query"}
+  score.total: {what: "running total of every score of one type (keyed by that score.type id), kept so an individual's share of the total can be computed"}
+  snapshot.anchor: {what: "anchor key grouping the objective snapshots of one quest instance (the progress baselines taken when it was accepted)"}
+  registry.trait.type: {what: "reverse lookup from a trait type (body, hand, face, color, background) to its trait entries, for querying all of one type"}
   goal.objective: {what: "a goal's objective, stored as a CONDITION at a hashed id"}
   node.requirement: {what: "anchor key grouping the CONDITIONs required to harvest a node"}
   listing.buy: {what: "buy-side pricing: rate, decay, period, scale"}

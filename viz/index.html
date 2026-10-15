@@ -500,9 +500,11 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
   function navBack() {
     const s_ = navStack.pop(); if (!s_) return;
     document.getElementById('navback').disabled = !navStack.length;
+    const fromFocus = st.view === 'focus';
     navRestoring = true;
     try { if (s_.view === 'focus') focusView(s_.sel, s_.sub); else overviewView(s_.system, s_.pos); } finally { navRestoring = false; }
-    setTimeout(() => svg.interrupt().call(zoom.transform, s_.t), 60);  // after the view's own fit
+    // leaving a drill-in for the map refits it; otherwise restore the camera as it was
+    if (!(fromFocus && s_.view === 'overview')) setTimeout(() => svg.interrupt().call(zoom.transform, s_.t), 60);  // after the view's own fit
   }
   function overviewView(system, pos) {
     navPush('overview:' + (system && systems[system] ? system : ''));

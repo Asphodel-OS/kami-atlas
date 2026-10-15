@@ -172,7 +172,7 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
     <div class="map" id="map">
       <div class="crumb" id="crumb" hidden><button class="chip" id="back">← All entities</button><span id="crumb-name"></span></div>
       <div class="maptools"><button class="chip" id="expand" hidden title="Show the panel (])">⟨ Panel</button><button class="chip" id="zin" aria-label="Zoom in">+</button><button class="chip" id="zout" aria-label="Zoom out">−</button><button class="chip" id="fit">Fit</button></div>
-      <div class="hint" id="hint">drag to pan · scroll to zoom · drag a node to pin it, double-click to release · + − 0 keys</div>
+      <div class="hint" id="hint">drag to pan · scroll to zoom · the cursor snaps to the nearest entity: click to open, drag to pin, double-click to release · + − 0 keys</div>
       <svg id="svg" role="img" aria-label="Map of Kamigotchi entities and their relationships"></svg>
       <div class="legend" id="legend"></div>
       <div class="tip" id="tip" hidden></div>
@@ -185,6 +185,16 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
       </div>
       <div class="sidebody" id="panel" role="tabpanel" aria-live="polite"></div>
       <div class="sidebody" id="settings" role="tabpanel" hidden>
+        <div class="set-group"><h3>Cursor effects</h3>
+          <div class="set-row"><span class="small muted" style="width:88px">Lens</span><span class="seg" id="set-lens"><button data-v="fisheye">Fisheye</button><button data-v="soft">Soft</button><button data-v="hyperbolic">Hyperbolic</button><button data-v="off">Off</button></span></div>
+          <div class="set-range"><label for="set-lstr">Strength</label><input type="range" id="set-lstr" min="0" max="8" step="0.1"><output id="out-lstr"></output></div>
+          <div class="set-range"><label for="set-lrad">Radius</label><input type="range" id="set-lrad" min="60" max="400" step="10"><output id="out-lrad"></output></div>
+          <div class="set-range"><label for="set-lfol">Follow</label><input type="range" id="set-lfol" min="0.05" max="1" step="0.01"><output id="out-lfol"></output></div>
+          <div class="set-row"><label><input type="checkbox" id="set-push"> Repulsion</label></div>
+          <div class="set-range"><label for="set-pstr">Push</label><input type="range" id="set-pstr" min="0.5" max="8" step="0.1"><output id="out-pstr"></output></div>
+          <div class="set-row"><label><input type="checkbox" id="set-snap"> Snap to nearest entity</label></div>
+          <div class="set-range"><label for="set-sdist">Snap distance</label><input type="range" id="set-sdist" min="8" max="60" step="1"><output id="out-sdist"></output></div>
+        </div>
         <div class="set-group"><h3>Layers</h3><div class="set-row">
           <button class="chip" id="f-runtime" aria-pressed="true"><span class="dot" style="background:var(--runtime)"></span>Runtime</button>
           <button class="chip" id="f-hybrid" aria-pressed="true"><span class="dot" style="background:var(--hybrid)"></span>Hybrid</button>
@@ -334,8 +344,9 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
   const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const ms = d => reduceMotion ? 0 : d;
   // Click and drag pans; scroll (wheel, trackpad or pinch) zooms around the pointer.
+  let grabbing = false, viewGen = 0;  // grabbing: a node is being dragged, so the background must not pan
   const zoom = d3.zoom().scaleExtent([0.15, 4])
-    .filter(ev => ev.type === 'wheel' || ((!ev.ctrlKey || ev.type === 'touchstart') && !ev.button))
+    .filter(ev => ev.type === 'wheel' || (!grabbing && (!ev.ctrlKey || ev.type === 'touchstart') && !ev.button))
     .wheelDelta(ev => -ev.deltaY * (ev.deltaMode === 1 ? 0.05 : ev.deltaMode ? 1 : 0.002) * (ev.ctrlKey ? 6 : 1))
     .on('zoom', ev => {
       root.attr('transform', ev.transform);
@@ -361,6 +372,8 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
       + '<span class="lg-title">Line</span>'
       + `<span>${line('var(--muted)')}required</span><span>${line('var(--muted)', true)}optional</span>`
       + `<span class="lg-note">A → B: A stores B's id or index</span>` + (extra ? `<span class="lg-note">${extra}</span>` : '')
+      + '<span class="lg-title">Layer (node colour)</span>'
+      + LAYERS.map(l => `<span><svg viewBox="0 0 28 8" aria-hidden="true"><circle cx="8" cy="4" r="3.4" fill="color-mix(in srgb, var(--${l}) 22%, var(--panel))" stroke="var(--${l})" stroke-width="1.6"/></svg>${esc(LAYER_NAME[l])}</span>`).join('')
       + (shapes ? '<span class="lg-title">Node</span>'
         + '<span><svg viewBox="0 0 28 8" aria-hidden="true"><circle cx="8" cy="4" r="3.2" fill="none" stroke="var(--muted)" stroke-width="1.5"/></svg>typed entity</span>'
         + '<span><svg viewBox="0 0 28 8" aria-hidden="true"><circle cx="8" cy="4" r="3.2" fill="none" stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="2 1.5"/></svg>untyped shape</span>'
@@ -375,7 +388,8 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
   }
 
   // ---------------- overview ----------------
-  const DEFAULTS = { layers: LAYERS.slice(), rel: Object.keys(REL_NAME), edgeLabels: 'auto', names: true, spacing: 1, linkLen: 150, legend: true, hint: true, collapsed: false };
+  const DEFAULTS = { layers: LAYERS.slice(), rel: Object.keys(REL_NAME), edgeLabels: 'auto', names: true, spacing: 1, linkLen: 150, legend: true, hint: true, collapsed: false,
+    lensMode: 'fisheye', lensStrength: 2.5, lensRadius: 170, lensFollow: 0.18, pushOn: true, pushStrength: 3, snapOn: true, snapDist: 26 };
   const loadSettings = () => { try { return Object.assign({}, DEFAULTS, JSON.parse(localStorage.getItem('atlas.settings.v1') || '{}')); } catch (e) { return Object.assign({}, DEFAULTS); } };
   const cfg = loadSettings();
   const saveSettings = () => { try { localStorage.setItem('atlas.settings.v1', JSON.stringify(Object.assign(cfg, { layers: [...st.layers], rel: [...st.rel] }))); } catch (e) {} };
@@ -450,18 +464,9 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
         .on('end', () => focusView(d.id));
       if (reduceMotion) focusView(d.id);
     };
-    let dragging = false;
     const tipFor = d => d.singleton ? singletonTip(d.id) : st.system && role[d.id] ? systemTip(d.id, role[d.id]) : entityTip(d.id);
-    node.on('mouseenter', (ev, d) => { if (!dragging) { highlight(d.id); show(tipFor(d), ev); } })
-      .on('mousemove', (ev, d) => { if (!dragging) placeTip(ev); })
-      .on('mouseleave', () => { if (!dragging) { highlight(null); applySystem(); hide(); } })
-      .on('click', (ev, d) => { ev.stopPropagation(); if (ev.defaultPrevented || d.singleton) return; flyTo(d); })
-      .on('dblclick', (ev, d) => { ev.stopPropagation(); d.fx = null; d.fy = null; d3.select(ev.currentTarget).classed('pinned', false); sim.alpha(0.3).restart(); })
-      .on('keydown', (ev, d) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); focusView(d.id); } })
-      .call(d3.drag().clickDistance(4)
-        .on('start', (ev, d) => { dragging = true; hide(); if (!ev.active) sim.alphaTarget(.15).restart(); d.fx = d.x; d.fy = d.y; })
-        .on('drag', (ev, d) => { d.fx = ev.x; d.fy = ev.y; })
-        .on('end', function (ev, d) { dragging = false; if (!ev.active) sim.alphaTarget(0); d3.select(this).classed('pinned', true); }));  // stays where dropped
+    node.on('dblclick', (ev, d) => { ev.stopPropagation(); d.userPinned = false; d.fx = null; d.fy = null; d3.select(ev.currentTarget).classed('pinned', false); sim.alpha(0.3).restart(); })
+      .on('keydown', (ev, d) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); focusView(d.id); } });
 
     if (sim) sim.stop();
     sim = d3.forceSimulation(nodes)
@@ -472,21 +477,155 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
       .force('collide', d3.forceCollide(d => radius(d.id) + 34))
       .stop();
     for (let i = 0; i < 400; i++) sim.tick();  // settle before the first frame
-    const xs = nodes.map(d => d.x), x0 = Math.min(...xs) - 150, x1 = Math.max(...xs) + 150;
-    LAYERS.filter(l => st.layers.has(l)).forEach(l => {
-      bands.append('rect').attr('class', 'band').attr('x', x0).attr('width', x1 - x0).attr('y', bandY[l] * BAND - BAND / 2 + 10).attr('height', BAND - 20);
-      bands.append('text').attr('class', 'band-label').attr('x', x0 + 14).attr('y', bandY[l] * BAND - BAND / 2 + 32).text(LAYER_NAME[l]);
+
+    // ---- cursor lens, repulsion, snap ----
+    // Layout space is d.x/d.y (physics). Display space is d.px/d.py/d.pz, recomputed every frame through the lens.
+    // The lens never writes x/y; repulsion only changes velocities; snapping and hit-testing use display space.
+    const mouse = { x: 0, y: 0, sx: 0, sy: 0, inside: false };   // layout + screen
+    const lens = { x: 0, y: 0, s: 0 };
+    let snapped = null, drag = null, dragFrom = null, dragMoved = false, focusId = null, edgeHover = false;
+    const kNow = () => d3.zoomTransform(svg.node()).k;
+    const fisheye = (x, y, m, R) => {
+      const dx = x - lens.x, dy = y - lens.y, dd = Math.hypot(dx, dy);
+      if (!dd || dd >= R || m <= 0) return [x, y, 1];
+      const e = Math.exp(m), k0 = e / (e - 1) * R, k1 = m / R;
+      const k = k0 * (1 - Math.exp(-dd * k1)) / dd * 0.75 + 0.25;
+      return [lens.x + dx * k, lens.y + dy * k, Math.min(k, 10)];
+    };
+    const gauss = (x, y, m, R) => {
+      const dx = x - lens.x, dy = y - lens.y, d2 = dx * dx + dy * dy, sg = R / 2, g = Math.min(m / 4, 2) * Math.exp(-d2 / (2 * sg * sg));
+      return [lens.x + dx * (1 + g), lens.y + dy * (1 + g), 1 + g * 1.5];
+    };
+    const hyper = (x, y, m, Rpx) => {
+      const dx = x - lens.x, dy = y - lens.y, d = Math.hypot(dx, dy);
+      if (!d || m <= 0) return [x, y, 1];
+      const R = Math.max(W(), H()) / kNow() * 0.75, c = R / (1 + m * (cfg.lensRadius / 180));
+      const t = Math.tanh(d / c) * R / d, sb = 1 - lens.s, k = sb + (1 - sb) * t;
+      const local = (R / c) / Math.cosh(d / c) ** 2;
+      return [lens.x + dx * k, lens.y + dy * k, Math.max(0.35, sb + (1 - sb) * Math.min(local, 6))];
+    };
+    const project = () => {
+      const mode = drag ? 'off' : cfg.lensMode, R = cfg.lensRadius / kNow();
+      const f = mode === 'soft' ? gauss : mode === 'hyperbolic' ? hyper : mode === 'fisheye' ? fisheye : null;
+      const m = mode === 'hyperbolic' ? cfg.lensStrength : cfg.lensStrength * lens.s;
+      for (const d of nodes) { const p = f ? f(d.x, d.y, m, R) : [d.x, d.y, 1]; d.px = p[0]; d.py = p[1]; d.pz = p[2]; }
+    };
+    const drawnR = d => radius(d.id) * Math.sqrt(d.pz || 1);
+    const screenGap = d => (Math.hypot(d.px - mouse.x, d.py - mouse.y) - drawnR(d)) * kNow();  // px from cursor to the drawn edge
+    const nearest = () => { let best = null, bd = Infinity; for (const d of nodes) { const g = screenGap(d); if (g < bd) { best = d; bd = g; } } return [best, bd]; };
+    const setSnap = d => {
+      if (d === snapped) return;
+      if (snapped && snapped !== drag && !snapped.userPinned) { snapped.fx = null; snapped.fy = null; }
+      snapped = d;
+      if (snapped && !snapped.userPinned) { snapped.fx = snapped.x; snapped.fy = snapped.y; }  // so physics can't slide it away
+    };
+    const updateSnap = () => {
+      if (drag) return;
+      if (!cfg.snapOn || !mouse.inside) { setSnap(null); return; }
+      const reach = cfg.snapDist;
+      if (snapped) {
+        const g = screenGap(snapped);
+        if (g > reach * 1.7) setSnap(null);
+        else { const [n, ng_] = nearest(); if (n !== snapped && ng_ < reach * 0.5 && ng_ < g - 6) setSnap(n); return; }
+      }
+      const [n, g] = nearest(); if (g < reach) setSnap(n);
+    };
+    sim.force('push', alpha => {   // repulsion: clears space around the cursor; links spring nodes back
+      if (!cfg.pushOn || !mouse.inside || drag) return;
+      const k = kNow(), R = cfg.lensRadius * 0.6 / k, strength = cfg.pushStrength * 0.9 / k;
+      for (const d of nodes) {
+        if (d === snapped || d.fx != null) continue;
+        const dx = d.x - lens.x, dy = d.y - lens.y, dd = Math.hypot(dx, dy) || 0.01;
+        if (dd > R) continue;
+        const f = strength * (1 - dd / R) ** 2 * alpha * 4;
+        d.vx += dx / dd * f; d.vy += dy / dd * f;
+      }
     });
-    sim.on('tick', () => {
-        edge.each(function (d) {
-          const bend = 18 * (d.r._i - 1) + (d.r._i > 1 ? 10 : 6);
-          const p = edgePath(d.source.x, d.source.y, d.target.x, d.target.y, radius(d.target.id) + 4, bend);
-          const g = d3.select(this);
-          g.selectAll('path').attr('d', p.d);
-          g.select('text').attr('x', p.lx).attr('y', p.ly - 3);
-        });
-        node.attr('transform', d => `translate(${d.x},${d.y})`);
+    const ov = content.append('g').attr('class', 'lens-ov').style('pointer-events', 'none');
+    const ring = ov.append('circle').attr('fill', 'none').style('stroke', 'var(--ink)').attr('stroke-width', 2).attr('vector-effect', 'non-scaling-stroke').attr('display', 'none');
+    const tether = ov.append('line').style('stroke', 'var(--ink)').attr('stroke-width', 1).attr('stroke-dasharray', '3 3').attr('opacity', 0.35).attr('vector-effect', 'non-scaling-stroke').attr('display', 'none');
+    const tipAtNode = d => {
+      const t = d3.zoomTransform(svg.node()), [x, y] = t.apply([d.px, d.py]), r = drawnR(d) * t.k;
+      tip.innerHTML = tipFor(d); tip.hidden = false;
+      const w = tip.offsetWidth, h = tip.offsetHeight;
+      let lx = x + r + 14, ly = y - 10;
+      if (lx + w > W() - 8) lx = Math.max(8, x - r - 14 - w);
+      ly = Math.max(8, Math.min(ly, H() - h - 8));
+      tip.style.left = lx + 'px'; tip.style.top = ly + 'px';
+    };
+    const pointer = ev => { const [sx, sy] = d3.pointer(ev, svg.node()), t = d3.zoomTransform(svg.node()), [x, y] = t.invert([sx, sy]); return { sx, sy, x, y }; };
+    svg.on('pointermove.atlas', ev => {
+      const p = pointer(ev);
+      if (!mouse.inside) { lens.x = p.x; lens.y = p.y; }
+      Object.assign(mouse, p, { inside: true });
+      if (drag) {
+        if (Math.hypot(p.sx - dragFrom[0], p.sy - dragFrom[1]) > 4) dragMoved = true;
+        if (dragMoved) { drag.fx = p.x; drag.fy = p.y; sim.alphaTarget(0.25).restart(); }
+        return;
+      }
+      if (cfg.pushOn) sim.alphaTarget(0.12).restart();
+    }).on('pointerleave.atlas', () => {
+      mouse.inside = false;
+      if (!drag) { setSnap(null); sim.alphaTarget(0); }
+    }).on('pointerdown.atlas', ev => {
+      if (ev.button) return;
+      const p = pointer(ev); Object.assign(mouse, p, { inside: true });
+      const [n, g] = nearest();
+      const grab = (cfg.snapOn && snapped) || (g < 4 ? n : null);
+      if (!grab) return;
+      drag = grab; dragFrom = [p.sx, p.sy]; dragMoved = false; grabbing = true; hide();
+      svg.node().setPointerCapture(ev.pointerId);
+    });
+    const endDrag = () => {
+      if (!drag) return;
+      const d = drag; drag = null; grabbing = false;
+      if (!dragMoved) { if (!d.singleton) flyTo(d); }
+      else { d.userPinned = true; d.fx = d.x; d.fy = d.y; node.filter(x => x === d).classed('pinned', true); }
+      sim.alphaTarget(mouse.inside && cfg.pushOn ? 0.12 : 0);
+    };
+    svg.on('pointerup.atlas', endDrag).on('pointercancel.atlas', endDrag);
+    edge.on('mouseenter', (ev, d) => { if (focusId || drag) return; edgeHover = true; show(relTip(d.r), ev); edge.classed('faded', e => e !== d); node.classed('faded', n => n.id !== d.source.id && n.id !== d.target.id); })
+      .on('mousemove', ev => { if (edgeHover) placeTip(ev); })
+      .on('mouseleave', () => { if (!edgeHover) return; edgeHover = false; hide(); edge.classed('faded', false); node.classed('faded', false); applySystem(); });
+
+    const gen = ++viewGen;
+    const frame = () => {
+      if (gen !== viewGen || st.view !== 'overview') return;
+      updateSnap();
+      const tx = snapped ? snapped.x : mouse.x, ty = snapped ? snapped.y : mouse.y;
+      const a = reduceMotion ? 1 : Math.min(1, cfg.lensFollow * (snapped ? 1.6 : 1));
+      lens.x += (tx - lens.x) * a; lens.y += (ty - lens.y) * a;
+      lens.s += ((mouse.inside && cfg.lensMode !== 'off' ? 1 : 0) - lens.s) * (reduceMotion ? 1 : 0.12);
+      project();
+      // focus: the snapped node, or with snap off the node under the cursor
+      let f = drag || (cfg.snapOn ? snapped : null);
+      if (!f && !cfg.snapOn && mouse.inside) { const [n, g] = nearest(); if (g <= 0) f = n; }
+      const fid = f ? f.id : null;
+      if (fid !== focusId) {
+        focusId = fid; edgeHover = false;
+        highlight(fid);
+        if (!fid) hide();
+      }
+      if (f && !drag) tipAtNode(f);
+      // draw through the lens, magnified nodes on top
+      edge.each(function (d) {
+        const bend = 18 * (d.r._i - 1) + (d.r._i > 1 ? 10 : 6);
+        const p = edgePath(d.source.px, d.source.py, d.target.px, d.target.py, drawnR(d.target) + 4, bend);
+        const g = d3.select(this);
+        g.selectAll('path').attr('d', p.d);
+        g.select('text').attr('x', p.lx).attr('y', p.ly - 3);
       });
+      node.attr('transform', d => `translate(${d.px},${d.py}) scale(${Math.min(3, Math.sqrt(d.pz || 1))})`);
+      node.sort((p, q) => (p.pz || 1) - (q.pz || 1));
+      if (f) {
+        ring.attr('display', null).attr('cx', f.px).attr('cy', f.py).attr('r', drawnR(f) + 4 / kNow());
+        if (!drag && cfg.snapOn) tether.attr('display', null).attr('x1', mouse.x).attr('y1', mouse.y).attr('x2', f.px).attr('y2', f.py);
+        else tether.attr('display', 'none');
+      } else { ring.attr('display', 'none'); tether.attr('display', 'none'); }
+      requestAnimationFrame(frame);
+    };
+    project();
+    requestAnimationFrame(frame);
     sim.alpha(0.02).restart();
     legend(['ownership', 'registry', 'directed', 'attachment', 'classifier'], null, true);
     applySystem();
@@ -750,10 +889,25 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
     el.addEventListener('input', () => { out.textContent = fmt(+el.value); });
     el.addEventListener('change', () => { cfg[key] = +el.value; saveSettings(); if (st.view === 'overview') overviewView(st.system); });
   }
+  const live = [['set-lstr', 'out-lstr', 'lensStrength', v => v.toFixed(1)], ['set-lrad', 'out-lrad', 'lensRadius', v => v + 'px'],
+    ['set-lfol', 'out-lfol', 'lensFollow', v => v.toFixed(2)], ['set-pstr', 'out-pstr', 'pushStrength', v => v.toFixed(1)], ['set-sdist', 'out-sdist', 'snapDist', v => v + 'px']];
+  function applyCursor() {
+    for (const [id, outId, key, fmt] of live) { document.getElementById(id).value = cfg[key]; document.getElementById(outId).textContent = fmt(+cfg[key]); }
+    document.querySelectorAll('#set-lens button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === cfg.lensMode));
+    document.getElementById('set-push').checked = cfg.pushOn; document.getElementById('set-snap').checked = cfg.snapOn;
+  }
+  for (const [id, outId, key, fmt] of live) {
+    const el = document.getElementById(id);
+    el.addEventListener('input', () => { cfg[key] = +el.value; document.getElementById(outId).textContent = fmt(+el.value); });
+    el.addEventListener('change', saveSettings);
+  }
+  document.getElementById('set-lens').addEventListener('click', ev => { const b = ev.target.closest('[data-v]'); if (!b) return; cfg.lensMode = b.dataset.v; saveSettings(); applyCursor(); });
+  document.getElementById('set-push').addEventListener('change', ev => { cfg.pushOn = ev.target.checked; saveSettings(); });
+  document.getElementById('set-snap').addEventListener('change', ev => { cfg.snapOn = ev.target.checked; saveSettings(); });
   document.getElementById('set-reheat').addEventListener('click', () => { if (sim && st.view === 'overview') sim.alpha(0.8).restart(); });
   document.getElementById('set-unpin').addEventListener('click', () => {
     if (st.view !== 'overview') return;
-    d3.selectAll('#svg .node').each(d => { if (d) { d.fx = null; d.fy = null; } }).classed('pinned', false);
+    d3.selectAll('#svg .node').each(d => { if (d) { d.userPinned = false; d.fx = null; d.fy = null; } }).classed('pinned', false);
     if (sim) sim.alpha(0.3).restart();
   });
   function applyOverlays() {
@@ -767,10 +921,10 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
     LAYERS.forEach(x => press('f-' + x, true));
     relChips.querySelectorAll('[data-rel]').forEach(b => b.setAttribute('aria-pressed', 'true'));
     ranges.forEach(([id, outId, key, fmt]) => { document.getElementById(id).value = cfg[key]; document.getElementById(outId).textContent = fmt(+cfg[key]); });
-    saveSettings(); applyLabels(); applyOverlays(); setCollapsed(false); redraw();
+    saveSettings(); applyLabels(); applyOverlays(); applyCursor(); setCollapsed(false); redraw();
   });
   LAYERS.forEach(x => press('f-' + x, st.layers.has(x)));
-  applyLabels(); applyOverlays();
+  applyLabels(); applyOverlays(); applyCursor();
   if (cfg.collapsed) setCollapsed(true);
 
   document.getElementById('back').addEventListener('click', () => overviewView());

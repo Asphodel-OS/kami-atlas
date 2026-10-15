@@ -705,23 +705,88 @@ def derive_domain(ix, ents, creators, ns_struct, systems, indexed=None, untyped=
         owners = {o for o in owners if o not in untyped}
         return gen_ns[fid], (next(iter(owners)) if len(owners) == 1 else None)
 
+    trace_notes = []  # evidence gathered while resolving the current link: how a value was validated along the way
+    pass_cache, alias_cache = {}, {}
+    def passthrough(fid):
+        """A pure helper that only rearranges its parameters (LibPoolRegistry.sortIndices): its results carry its arguments' types."""
+        if fid in pass_cache: return pass_cache[fid]
+        f = ix.fn[fid][1] if fid in ix.fn else None
+        ok = False
+        if f and f.get('body'):
+            ids = {p['id'] for p in f['parameters']['parameters']} | {p['id'] for p in (f.get('returnParameters') or {}).get('parameters', [])}
+            body = list(walk(f['body']))
+            ok = all(n.get('referencedDeclaration') in ids for n in body if n.get('nodeType') == 'Identifier') \
+                and not any(n.get('nodeType') == 'FunctionCall' and n.get('kind') == 'functionCall' for n in body)
+        pass_cache[fid] = ok
+        return ok
+    def tuple_alias(fid):
+        """Locals bound by `(lo, hi) = helper(a, b)` where helper only rearranges its parameters: local id and name -> the call's arguments."""
+        if fid in alias_cache: return alias_cache[fid]
+        out = {}
+        f = ix.fn[fid][1] if fid in ix.fn else None
+        for n in walk((f or {}).get('body') or {}):
+            if n.get('nodeType') != 'VariableDeclarationStatement' or not n.get('initialValue') or len(n['declarations']) < 2: continue
+            e = n['initialValue']
+            if e.get('nodeType') != 'FunctionCall' or not passthrough(e['expression'].get('referencedDeclaration')): continue
+            args = [('lit', a.get('value')) if a.get('nodeType') == 'Literal'
+                    else ('ref', a.get('referencedDeclaration'), a.get('name')) if a.get('nodeType') == 'Identifier'
+                    else ('expr', None, ix.text(ix.fn[fid][2], a['src'], 60)) for a in e['arguments']]
+            for d in n['declarations']:
+                if d: out[d['id']] = args; out[d['name']] = args
+        alias_cache[fid] = out
+        return out
+    def used_as(fid, declid):
+        """Entity type a value in fid is validated as, from the calls it is passed to: into a parameter named after an entity
+        (itemIndex), or as the registry `index` of a library that creates exactly one entity (LibItem.getByIndex(comps, index))."""
+        found = set()
+        for st in flat_events(ix.events(fid)):
+            if st[0] != 'call' or st[1] not in ix.fn: continue
+            for j, a in enumerate(st[4]):
+                if not a or a[0] != 'ref' or a[1] != declid: continue
+                ps = ix.fn[st[1]][1]['parameters']['parameters']
+                if j >= len(ps): continue
+                pn = ps[j]['name']
+                t = name_type(pn)
+                if not t and 'index' in pn.lower():
+                    owners = {o for o in lib_creates.get(ix.fn[st[1]][0], ()) if o not in untyped}
+                    if len(owners) == 1:
+                        own = next(iter(owners))
+                        if any(pn in ks for o, ks in ns_struct.get(id_of.get(own, {}).get('registry') or '', []) if o is not None): t = own
+                if t:
+                    found.add(t); trace_notes.append('%s is passed as %s to %s' % (a[2], pn, ix.key(st[1])))
+        return next(iter(found)) if len(found) == 1 else None
+
+    def arg_types(caller, arg, depth, seen):
+        """Entity types an argument in caller denotes: by name, by how the caller validates it, through its own callers, or through a pass-through helper."""
+        if not arg: return set()
+        kind, ref, nm = arg if len(arg) == 3 else (arg[0], arg[1], None)
+        t = name_type(nm) if kind in ('ref', 'expr') else None
+        if not t and nm in ('id', 'entityID') and len(lib_creates.get(ix.fn[caller][0], ())) == 1:
+            t = next(iter(lib_creates[ix.fn[caller][0]]))
+        if not t and kind == 'expr':
+            ns_, owner_ = gen_owner(nm, ix.fn[caller][0])
+            if owner_: t = owner_; via_anchor.append(ns_)
+        if t: return {t}
+        if kind != 'ref': return set()
+        cps = [x['id'] for x in ix.fn[caller][1]['parameters']['parameters']]
+        if ref in cps:
+            out = trace(caller, cps.index(ref), depth + 1, seen)
+            if out: return out
+            t = used_as(caller, ref)  # nobody upstream names it: fall back to how this function checks it
+            return {t} if t else set()
+        al = tuple_alias(caller).get(ref)
+        if al is None: return set()
+        out = set()
+        for a in al: out |= arg_types(caller, a, depth, seen)
+        return out
+
     def trace(fid, pi, depth=0, seen=()):
         """Entity types that callers pass as parameter pi of fid."""
         if depth > 4 or (fid, pi) in seen: return set()
         out = set()
         for caller, args in callers.get(fid, []):
             if pi >= len(args) or not args[pi]: continue
-            kind, ref, nm = args[pi] if len(args[pi]) == 3 else (args[pi][0], args[pi][1], None)
-            t = name_type(nm) if kind in ('ref', 'expr') else None
-            if not t and nm in ('id', 'entityID') and len(lib_creates.get(ix.fn[caller][0], ())) == 1:
-                t = next(iter(lib_creates[ix.fn[caller][0]]))
-            if not t and kind == 'expr':
-                ns_, owner_ = gen_owner(nm, ix.fn[caller][0])
-                if owner_: t = owner_; via_anchor.append(ns_)
-            if t: out.add(t); continue
-            cps = [x['id'] for x in ix.fn[caller][1]['parameters']['parameters']]
-            if kind == 'ref' and ref in cps:
-                out |= trace(caller, cps.index(ref), depth + 1, seen + ((fid, pi),))
+            out |= arg_types(caller, args[pi], depth, seen + ((fid, pi),))
         return out
 
     def resolve(fid, argname):
@@ -736,6 +801,11 @@ def derive_domain(ix, ents, creators, ns_struct, systems, indexed=None, untyped=
         if base in ps:
             t = trace(fid, ps.index(base))
             if not t and base in ('regID', 'registryID') and len(own) == 1: t = set(own)  # a bare regID in LibBonus is a BONUS entry
+            return t, True
+        al = tuple_alias(fid).get(base) if fid in ix.fn else None
+        if al is not None:  # (lo, hi) = sortIndices(indexA, indexB): lo and hi are whatever the arguments are
+            t = set()
+            for a in al: t |= arg_types(fid, a, 0, ())
             return t, True
         if base in ('id', 'entityID', 'regID', 'registryID') and len(own) == 1: return set(own), True  # a bare `id` in LibHarvest is a harvest
         return set(), True
@@ -885,19 +955,26 @@ def derive_domain(ix, ents, creators, ns_struct, systems, indexed=None, untyped=
             occ = next(((o, k) for o, k in ns_struct[v] if o is not None), None)
             if not occ: continue
             ofid_, keys_ = occ
+            by_tgt = {}  # target -> [keys that resolve to it], inferred, evidence; amm.pool(lo, hi) names two ITEMs
             for k in keys_:
-                del via_anchor[:]
+                del via_anchor[:]; del trace_notes[:]
                 t, inf = resolve(ofid_, k)
                 t = {x for x in t if x in ents and x != et}
                 if len(t) != 1: continue
                 tgt = next(iter(t))
-                if any(tgt in ([l['to']] if isinstance(l['to'], str) else l['to'] or []) for l in links.values()): continue  # a stored pointer already says so
-                rest = [x for x in keys_ if x != k]
-                links['key:' + k] = {'to': tgt, 'type': 'keyed', 'stored_on': et, 'required': True, 'key': k,
-                                     'cardinality': 'one %s per %s%s' % (et, tgt, (' per ' + ', '.join(rest)) if rest else ''),
-                                     'navigate': {'up': 'the %s key of %s' % (k, v), 'down': 'compute %s(%s)' % (v, ', '.join(keys_))},
-                                     'derived': ['%s key %s of %s(%s) resolves to %s%s' % (which, k, v, ', '.join(keys_), tgt, ' (traced through callers)' if inf else '')],
-                                     **({'inferred': True} if inf else {})}
+                if any(tgt in ([l['to']] if isinstance(l['to'], str) else l['to'] or []) for l in links.values() if l['type'] != 'keyed'): continue  # a stored pointer already says so
+                if any(x in k.lower() for x in ('holder', 'owner')) and any(l['type'] == 'ownership' for l in links.values()): continue  # the ownership pointer is the holder relation, resolved or settled in notes
+                ks, inf0, notes0 = by_tgt.get(tgt, ([], False, []))
+                by_tgt[tgt] = (ks + [k], inf0 or inf, notes0 + [x for x in dict.fromkeys(trace_notes) if x not in notes0])
+            for tgt, (ks, inf, notes) in by_tgt.items():
+                rest = [x for x in keys_ if x not in ks]
+                per = ' per '.join([tgt] * len(ks)) + (' (%s)' % ', '.join(ks) if len(ks) > 1 else '')
+                traced = (' (traced through callers%s)' % (': ' + '; '.join(notes[:4]) if notes else '')) if inf else ''
+                links['key:' + ','.join(ks)] = {'to': tgt, 'type': 'keyed', 'stored_on': et, 'required': True, 'key': ks[0] if len(ks) == 1 else ks,
+                                                'cardinality': 'one %s per %s%s' % (et, per, (' per ' + ', '.join(rest)) if rest else ''),
+                                                'navigate': {'up': 'the %s key%s of %s' % (', '.join(ks), 's' if len(ks) > 1 else '', v), 'down': 'compute %s(%s)' % (v, ', '.join(keys_))},
+                                                'derived': ['%s key%s %s of %s(%s) resolve%s to %s%s' % (which, 's' if len(ks) > 1 else '', ', '.join(ks), v, ', '.join(keys_), '' if len(ks) > 1 else 's', tgt, traced)],
+                                                **({'inferred': True} if inf else {})}
         if links: e['links'] = links
         e['components'] = [c for c in rec['components_at_creation'] if c != 'EntityType']
         model[et] = e

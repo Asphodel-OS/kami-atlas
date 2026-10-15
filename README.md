@@ -84,6 +84,8 @@ Colour is the relationship type; a dashed line means the reference is only set u
 
 The generator finds record references by following pointer fields (`IDType`, `IdSource`, `IDAnchor`, `Index*`) written at a record's hashed id, lifting the value back to the call site where the record was created so it resolves per record rather than per shared helper; `links` on the record entry and `via: {record}` on the holder's edge carry the result. Anchor-key passthroughs are `via: {anchor_keys}`.
 
+**Keyed** references have no pointer field at all: the id is hashed from another entity's key (`registry.scavenge("NODE", nodeIndex)`, `amm.pool(lo, hi)`). The generator resolves each key of an entity's id formula the same way it resolves pointer values: by name (`nodeIndex`), then through callers, then by how the function that received it checks it (a value passed as the `index` of `LibItem.getByIndex`, or into a parameter named `itemIndex`, is an item), and through pure helpers that only rearrange their arguments (`(lo, hi) = sortIndices(indexA, indexB)`). Keys that resolve to the same entity become one link (`key:lo,hi`, one POOL per ITEM per ITEM); a key that a stored pointer already covers is not drawn twice. The `derived` line on each link says which of these steps produced it.
+
 ## Live config values
 
 `config.py` reads config values from Yominet on demand: read-only `eth_call`, no keys.

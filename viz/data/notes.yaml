@@ -51,7 +51,7 @@ links:   # for links the generator left unresolved (to: null)
   FRIENDSHIP.IdTarget: {to: ACCOUNT, note: "the other account"}
   TRADE.IdTarget: {to: ACCOUNT, note: "the counterparty, if the trade is addressed to one"}
   TAX.IdTarget: {to: "any", note: "whoever receives the cut: a front-end or guild's entity"}
-  SKILL.IDOwnsSkill: {to: KAMI, note: "DRAFT: skills are upgraded on kamis; check whether accounts can hold skills"}
+  SKILL.IDOwnsSkill: {to: "KAMI | ACCOUNT", note: "a skill's registry entry says which it is for (its For field); SkillUpgradeSystem checks the holder is that shape, so both kamis and accounts can hold skills. Which skills are account skills is registry data, not code."}
   ALLOCATION.IDAnchor: {to: "QUEST | GOAL | ITEM | NODE", note: "the registry entry the reward is attached to"}
   QUEST.IDAnchor: {ignore: true, note: "set on the quest's objective snapshots (snapshot.anchor), not on the quest"}
   FRIENDSHIP.IDAnchor: {ignore: true, note: "set on the friendship counters (friendship.ptr), not on the friendship"}

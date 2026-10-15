@@ -86,7 +86,7 @@ h1 small { display: block; font: 400 12px/1.3 var(--f-mono); color: var(--muted)
 .col-label { font: 500 10.5px var(--f-mono); letter-spacing: .08em; text-transform: uppercase; fill: var(--muted); }
 
 .legend { position: absolute; left: 12px; top: 10px; z-index: 2; font: 11px var(--f-mono); color: var(--ink); pointer-events: none;
-  background: color-mix(in srgb, var(--panel) 92%, transparent); border: 1px solid var(--line); border-radius: 8px; max-width: calc(100% - 120px); }
+  background: color-mix(in srgb, var(--panel) 92%, transparent); border: 1px solid var(--line); border-radius: 8px; width: 330px; max-width: calc(100% - 120px); }
 .lg-head { pointer-events: auto; display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; padding: 6px 10px;
   font: 500 10px var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); background: none; border: 0; cursor: pointer; }
 .lg-head:hover { color: var(--ink); }
@@ -96,11 +96,15 @@ h1 small { display: block; font: 400 12px/1.3 var(--f-mono); color: var(--muted)
 .legend.collapsed .lg-body { grid-template-rows: 0fr; }
 .lg-inner { min-height: 0; overflow: hidden; display: grid; gap: 3px; padding: 0 10px 8px; }
 .legend.collapsed .lg-inner { padding-bottom: 0; }
-.legend .lg-title { font: 500 10px var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-top: 4px; }
-.legend .lg-inner > .lg-title:first-child { margin-top: 0; }
+.legend .lg-title { font: 600 10px var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--ink); margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--line); }
+.legend .lg-sub { font: 10.5px var(--f-mono); color: var(--muted); margin: 2px 0 1px; }
+.legend .lg-row { display: grid; grid-template-columns: 28px auto minmax(0, 1fr); align-items: center; gap: 0 8px; line-height: 1.35; }
+.legend .lg-row b { font-weight: 500; white-space: nowrap; }
+.legend .lg-row i { font-style: normal; color: var(--muted); font-size: 10.5px; }
+.legend .lg-inner > .lg-title:first-child { margin-top: 0; padding-top: 0; border-top: 0; }
 .legend span { display: flex; align-items: center; gap: 8px; }
 .legend .lg-note { color: var(--muted); }
-.legend .lg-inner svg { width: 28px; height: 8px; flex: none; }
+.legend .lg-inner svg { width: 28px; height: 10px; flex: none; }
 .map.focus .legend { top: 50px; }
 .tip { position: absolute; pointer-events: none; background: var(--panel); color: var(--ink); border: 1px solid var(--line); box-shadow: 0 6px 24px rgb(0 0 0 / .18); font: 12.5px/1.45 var(--f-body); padding: 10px 12px; border-radius: 8px; width: max-content; max-width: 340px; z-index: 5; }
 .tip h4 { margin: 0 0 4px; font: 600 15px var(--f-display); }
@@ -400,20 +404,42 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
     svg.transition().duration(ms(dur)).call(zoom.transform, d3.zoomIdentity.translate(lw + aw / 2 - s * (b.x + b.width / 2), H() / 2 - s * (b.y + b.height / 2)).scale(s));
   }
 
-  function legend(types, extra, shapes) {
-    const line = (stroke, dash) => `<svg viewBox="0 0 28 8" aria-hidden="true"><line x1="0" y1="4" x2="22" y2="4" stroke="${stroke}" stroke-width="2"${dash ? ' stroke-dasharray="4 3"' : ''}/><path d="M21 1L27 4L21 7z" fill="${stroke}"/></svg>`;
+  const REL_GLOSS = { ownership: 'belongs to', registry: 'instance of', directed: 'points at', attachment: 'is attached to',
+    classifier: 'is classified by', keyed: 'id hashed from its parent' };
+  const REL_COMP = { ownership: 'IDOwns*, IdHolder', registry: 'Index*', directed: 'IdSource, IdTarget', attachment: 'IDAnchor', classifier: 'IDType', keyed: '' };
+  const LAYER_GLOSS = { runtime: 'made by playing', hybrid: 'registry entry + player instance', registry: 'made by admins' };
+  // view: 'map' (the overview) or the name of the entity open in the drill-in view
+  function legend(types, view) {
+    const sw = inner => `<svg viewBox="0 0 28 10" aria-hidden="true">${inner}</svg>`;
+    const line = (stroke, dash) => sw(`<line x1="1" y1="5" x2="21" y2="5" stroke="${stroke}" stroke-width="2"${dash ? ' stroke-dasharray="4 3"' : ''}/><path d="M20 1.5L27 5L20 8.5z" fill="${stroke}"/>`);
+    const dot = (fill, stroke, dash, r = 3.6) => sw(`<circle cx="10" cy="5" r="${r}" fill="${fill}" stroke="${stroke}" stroke-width="1.5"${dash ? ' stroke-dasharray="2 1.5"' : ''}/>`);
+    const box = dash => sw(`<rect x="3" y="1.5" width="16" height="7" rx="2" fill="none" stroke="var(--r-keyed)" stroke-width="1.3"${dash ? ' stroke-dasharray="3 2"' : ''}/>`);
+    const row = (icon, name, gloss) => `<span class="lg-row">${icon}<b>${esc(name)}</b>${gloss ? `<i>${esc(gloss)}</i>` : ''}</span>`;
+    const sub = t => `<span class="lg-sub">${esc(t)}</span>`;
+    const isMap = view === 'map';
+    const tint = l => `color-mix(in srgb, var(--${l}) 22%, var(--panel))`;
     document.getElementById('legend-body').innerHTML =
-      '<span class="lg-title">Relationship type</span>'
-      + types.map(t => `<span>${line(`var(--r-${t})`)}${esc(REL_NAME[t])}</span>`).join('')
-      + '<span class="lg-title">Line</span>'
-      + `<span>${line('var(--muted)')}required</span><span>${line('var(--muted)', true)}optional</span>`
-      + `<span class="lg-note">A → B: A stores B's id or index</span>` + (extra ? `<span class="lg-note">${extra}</span>` : '')
-      + '<span class="lg-title">Layer (node colour)</span>'
-      + LAYERS.map(l => `<span><svg viewBox="0 0 28 8" aria-hidden="true"><circle cx="8" cy="4" r="3.4" fill="color-mix(in srgb, var(--${l}) 22%, var(--panel))" stroke="var(--${l})" stroke-width="1.6"/></svg>${esc(LAYER_NAME[l])}</span>`).join('')
-      + (shapes ? '<span class="lg-title">Node</span>'
-        + '<span><svg viewBox="0 0 28 8" aria-hidden="true"><circle cx="8" cy="4" r="3.2" fill="none" stroke="var(--muted)" stroke-width="1.5"/></svg>typed entity</span>'
-        + '<span><svg viewBox="0 0 28 8" aria-hidden="true"><circle cx="8" cy="4" r="3.2" fill="none" stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="2 1.5"/></svg>untyped shape</span>'
-        + '<span><svg viewBox="0 0 28 8" aria-hidden="true"><path d="M8,0.5L11.5,4L8,7.5L4.5,4Z" fill="none" stroke="var(--muted)" stroke-width="1.3"/></svg>singleton</span>' : '');
+      '<span class="lg-title">Entities</span>'
+      + sub(isMap ? 'colour = layer' : 'card outline = layer')
+      + LAYERS.map(l => row(dot(tint(l), `var(--${l})`), LAYER_NAME[l], LAYER_GLOSS[l])).join('')
+      + (isMap ? sub('outline')
+        + row(dot('none', 'var(--muted)'), 'Typed', 'has an EntityType')
+        + row(dot('none', 'var(--muted)', true), 'Untyped shape', 'no EntityType')
+        + row(sw('<path d="M10,1L14,5L10,9L6,5Z" fill="none" stroke="var(--muted)" stroke-width="1.3"/>'), 'Singleton', 'one entity, fixed id')
+        + row(sw(`<circle cx="6" cy="5" r="2.2" fill="none" stroke="var(--muted)" stroke-width="1.2"/><circle cx="17" cy="5" r="4" fill="none" stroke="var(--muted)" stroke-width="1.2"/>`), 'Size', 'more sub-entities') : '')
+      + '<span class="lg-title">References</span>'
+      + sub('A → B: A stores B’s id or index')
+      + sub('colour = relationship type')
+      + types.map(t => row(line(`var(--r-${t})`), REL_NAME[t], REL_GLOSS[t] + (REL_COMP[t] ? ` · ${REL_COMP[t]}` : ''))).join('')
+      + sub('line')
+      + row(line('var(--muted)'), 'Required', 'set whenever it’s created')
+      + row(line('var(--muted)', true), 'Optional', 'set only under a condition')
+      + sub('edge label = the component that stores it')
+      + (!isMap && view ? '<span class="lg-title">Fields & records</span>'
+        + row(sw('<circle cx="10" cy="5" r="3" fill="var(--ink)"/>'), 'Own field', `only ${view} has it`)
+        + row(sw('<circle cx="10" cy="5" r="3" fill="none" stroke="var(--muted)" stroke-width="1.3"/>'), 'Shared field', 'other entities have it too')
+        + row(box(false), 'Record', 'sub-entity with stored fields')
+        + row(box(true), 'Anchor key', 'groups records that point at it') : '');
   }
 
   function edgePath(sx, sy, tx, ty, rT, bend) {
@@ -663,7 +689,7 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
     project();
     requestAnimationFrame(frame);
     sim.alpha(0.02).restart();
-    legend(['ownership', 'registry', 'directed', 'attachment', 'classifier'], null, true);
+    legend(['ownership', 'registry', 'directed', 'attachment', 'classifier'], 'map');
     applySystem();
     if (st.system) systemPanel(st.system, role); else overviewPanel();
     try { history.replaceState(null, '', st.system ? '#sys.' + st.system : location.pathname); } catch (e) {}
@@ -758,7 +784,7 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
       });
     }
     const usedTypes = [...new Set(out.concat(inn).map(r => r.l.type))];
-    legend(usedTypes.concat(subs.length ? ['keyed'] : []), `● field unique to ${esc(n)} · ○ shared`);
+    legend(usedTypes.concat(subs.length ? ['keyed'] : []), n);
     focusPanel(n, sub);
     try { history.replaceState(null, '', '#' + n); } catch (e) {}
     setTimeout(() => fit(350), 30);

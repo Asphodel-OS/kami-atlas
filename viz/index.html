@@ -575,16 +575,17 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
     links.forEach(l => relKeys(l.r).forEach(k => { nk[l.r.from].add(k); nk[l.r.to].add(k); }));
     node.attr('data-k', d => [...nk[d.id]].join(' '));
     edge.attr('data-k', d => { const a = byId[d.r.from], b = byId[d.r.to]; return relKeys(d.r).concat(!a.singleton && !b.singleton && a.layer === b.layer ? ['layer:' + a.layer] : []).join(' '); });
-    const role = {};
-    if (st.system) {
-      const sy = systems[st.system] || {}, w = new Set(sy.writes || []), rd = new Set(sy.reads || []);
+    const rolesOf = name => {
+      const r = {}, sy = systems[name] || {}, w = new Set(sy.writes || []), rd = new Set(sy.reads || []);
       for (const n of ids) {
         const own = uniqueFields(n);
-        if (arr(E[n].created_by).includes(st.system)) role[n] = 'creates';
-        else if (own.some(c => w.has(c))) role[n] = 'changes';
-        else if (own.some(c => rd.has(c))) role[n] = 'reads';
+        if (arr(E[n].created_by).includes(name)) r[n] = 'creates';
+        else if (own.some(c => w.has(c))) r[n] = 'changes';
+        else if (own.some(c => rd.has(c))) r[n] = 'reads';
       }
-    }
+      return r;
+    };
+    const role = st.system ? rolesOf(st.system) : {};
     const applySystem = () => {
       node.selectAll('.badge').remove();
       if (!st.system) return;
@@ -759,6 +760,12 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
       },
       enter() { if (kbd && !kbd.singleton) { const d = kbd; setKbd(null); flyTo(d); return true; } return false; },
       select(id) { setKbd(id && nodes.find(x => x.id === id)); },
+      // hovering a system in the list: light up what it creates, changes or reads
+      system(name) {
+        if (!name) { highlight(focusId); return; }
+        const r = rolesOf(name);
+        node.classed('faded', d => !r[d.id]); edge.classed('faded', d => !(r[d.source.id] && r[d.target.id]));
+      },
     };
     const frame = () => {
       if (gen !== viewGen || st.view !== 'overview') return;
@@ -1104,7 +1111,7 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
   }
   const pointAt = n => { if (arrowNav && arrowNav.select) arrowNav.select(n); };
   entQ.addEventListener('input', renderEntities);
-  entList.addEventListener('click', ev => { const b = ev.target.closest('[data-ent]'); if (b) { entOn = null; focusView(b.dataset.ent); showTab('entities'); } });
+  entList.addEventListener('click', ev => { const b = ev.target.closest('[data-ent]'); if (b) { entOn = null; focusView(b.dataset.ent); } });
   entList.addEventListener('mouseover', ev => { const b = ev.target.closest('[data-ent]'); if (b) pointAt(b.dataset.ent); });
   entList.addEventListener('mouseleave', () => pointAt(entOn));
   function stepEntity(delta) {
@@ -1133,13 +1140,16 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
       else if (arrowNav) arrowNav.key(ev.key);
       ev.preventDefault();
     } else if (ev.key === 'Enter' && !(ev.target.closest && ev.target.closest('a, [role="button"], button:not([role="tab"])'))) {
-      if (!TABS.entities.hidden && !cfg.collapsed && entOn) { const n = entOn; entOn = null; focusView(n); showTab('entities'); ev.preventDefault(); }
+      if (!TABS.entities.hidden && !cfg.collapsed && entOn) { const n = entOn; entOn = null; focusView(n); ev.preventDefault(); }
       else if (arrowNav && arrowNav.enter()) ev.preventDefault();
     }
   });
   document.getElementById('navback').addEventListener('click', navBack);
   document.addEventListener('keydown', ev => { if (ev.key === 'Backspace' && !(ev.target.closest && ev.target.closest('input, textarea'))) { navBack(); ev.preventDefault(); } });
-  sysList.addEventListener('click', ev => { const b = ev.target.closest('[data-sys]'); if (b) { overviewView(b.dataset.sys); renderSystems(); } });
+  sysList.addEventListener('click', ev => { const b = ev.target.closest('[data-sys]'); if (b) { overviewView(b.dataset.sys); showTab('details'); } });
+  const hoverSys = n => { if (arrowNav && arrowNav.system) arrowNav.system(n); };
+  sysList.addEventListener('mouseover', ev => { const b = ev.target.closest('[data-sys]'); hoverSys(b ? b.dataset.sys : null); });
+  sysList.addEventListener('mouseleave', () => hoverSys(null));
   const handle = document.getElementById('sidehandle');
   function setCollapsed(c, instant) {
     cfg.collapsed = c; saveSettings();

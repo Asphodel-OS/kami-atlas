@@ -103,7 +103,6 @@ h1 small { display: block; font: 400 12px/1.3 var(--f-mono); color: var(--muted)
 .legend .lg-row[data-hl]:hover { background: color-mix(in srgb, var(--ink) 9%, transparent); }
 .legend .lg-title + .lg-row { margin-top: 5px; }
 .lg-off { opacity: .08 !important; transition: opacity .12s; }
-.preview-hint { margin: 0 0 10px; }
 .legend .lg-row { display: grid; grid-template-columns: 28px auto minmax(0, 1fr); align-items: center; gap: 0 8px; line-height: 1.35; }
 .legend .lg-row b { font-weight: 500; white-space: nowrap; }
 .legend .lg-row i { font-style: normal; color: var(--muted); font-size: 10.5px; }
@@ -716,7 +715,7 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
     let previewing = null, baseScroll = 0, revertT = 0;
     const previewPanel = id => {
       clearTimeout(revertT);
-      if (id) { if (!previewing) baseScroll = panel.scrollTop; previewing = id; focusPanel(id, null, true); return; }
+      if (id) { if (!previewing) baseScroll = panel.scrollTop; previewing = id; focusPanel(id); return; }
       if (!previewing) return;
       revertT = setTimeout(() => { if (gen !== viewGen || focusId) return; previewing = null; basePanel(); panel.scrollTop = baseScroll; }, 350);
     };
@@ -876,9 +875,9 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
       <div class="muted small">down: ${esc(l.navigate?.down || '')}</div>
       ${r.note ? `<div class="small">${esc(r.note)}</div>` : ''}</div>`;
   }
-  function focusPanel(n, sub, preview) {
+  function focusPanel(n, sub) {
     const e = E[n], nt = NE[n] || {}, { out, in: inn } = relsOf(n), subs = subsOf(n), cb = changedBy(n);
-    panel.innerHTML = `${preview ? '<p class="muted small preview-hint">Previewing · click the entity to open it</p>' : ''}<span class="pill" style="background:var(--${e.layer})">${esc(LAYER_NAME[e.layer])}</span>
+    panel.innerHTML = `<span class="pill" style="background:var(--${e.layer})">${esc(LAYER_NAME[e.layer])}</span>
       <h2>${esc(n)}</h2>
       ${nt.what ? `<p class="what">${esc(nt.what)}</p>` : '<p class="what muted">No description in notes yet.</p>'}
       ${e.extends ? `<p class="small">Built on ${entBtn(e.extends)}: it has the same fields plus its own.</p>` : ''}

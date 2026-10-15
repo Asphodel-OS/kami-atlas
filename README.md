@@ -78,6 +78,12 @@ The generator finds five kinds of thing that hold components, and only the first
 
 An untyped shape reachable from no deployed system is dead code and is left out; `source.left_out` in `domain-model.{json,yaml}` lists what was dropped and why (currently `KILL_BOUNTY_LOG`, from `LibKill._logBounty`). The split between record and anchor key comes from the AST pass in `classify_namespaces`, not from anything the contracts declare, so treat it as the generator's reading. The open question of whether the three untyped shapes should get an EntityType is in `notes/domain-model.yaml`.
 
+### How the atlas draws a reference
+
+Colour is the relationship type; a dashed line means the reference is only set under a condition. Two more things sit on the line itself: a small **glyph at the midpoint** when the reference passes through something — a box for a record stored under the holder (ACCOUNT → FACTION through `faction.reputation`), a dashed circle for an anchor key the target groups things under (CONDITION → NODE through `node.requirement`); hover it for the sub-entity — and a **marker at the holder end** for how many holders a target has: a crow's foot for many, a bar for one, a bar with a dot for one per key value. The markers appear once zoomed in (same rule as edge labels); the glyphs always. Edges through records can be hidden in Settings → Display.
+
+The generator finds record references by following pointer fields (`IDType`, `IdSource`, `IDAnchor`, `Index*`) written at a record's hashed id, lifting the value back to the call site where the record was created so it resolves per record rather than per shared helper; `links` on the record entry and `via: {record}` on the holder's edge carry the result. Anchor-key passthroughs are `via: {anchor_keys}`.
+
 ## Live config values
 
 `config.py` reads config values from Yominet on demand: read-only `eth_call`, no keys.

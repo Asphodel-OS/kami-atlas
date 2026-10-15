@@ -31,6 +31,46 @@ entities:
           up: "read IndexRoom on ACCOUNT"
           down: "reverse lookup on IndexRoom (indexed)"
         derived: ["component name: IndexRoom points at ROOM by index"]
+      bonus.instance.IdSource:
+        to: BONUS
+        type: directed
+        stored_on: bonus.instance
+        via:
+          record: bonus.instance
+        required: false
+        only_when: ["a bonus.instance record exists for the ACCOUNT"]
+        cardinality: "one bonus.instance per ACCOUNT per regID, duration"
+        navigate:
+          up: "compute bonus.instance(regID, holderID, duration), read IdSource"
+          down: "reverse lookup on IdSource (indexed)"
+        derived: ["bonus.instance stores IdSource = regID in LibBonus.assign (traced through callers); the record is keyed under ACCOUNT"]
+        inferred: true
+      faction.reputation.IDType:
+        to: FACTION
+        type: classifier
+        stored_on: faction.reputation
+        via:
+          record: faction.reputation
+        required: false
+        only_when: ["a faction.reputation record exists for the ACCOUNT"]
+        cardinality: "one faction.reputation per ACCOUNT per index"
+        navigate:
+          up: "compute faction.reputation(holderID, index), read IDType"
+          down: "reverse lookup on IDType (indexed)"
+        derived: ["faction.reputation stores IDType = factionID in LibFaction.decRep (the id of a FACTION); the record is keyed under ACCOUNT"]
+      goal.contribution.IDType:
+        to: GOAL
+        type: classifier
+        stored_on: goal.contribution
+        via:
+          record: goal.contribution
+        required: false
+        only_when: ["a goal.contribution record exists for the ACCOUNT"]
+        cardinality: "one goal.contribution per ACCOUNT per goalID"
+        navigate:
+          up: "compute goal.contribution(goalID, accID), read IDType"
+          down: "reverse lookup on IDType (indexed)"
+        derived: ["goal.contribution stores IDType = goalID in LibGoal.incContribution (from the name); the record is keyed under ACCOUNT"]
     components: [AddressOperator, AddressOwner, CacheOperator, IndexAccount, IndexRoom, Stamina, TimeLast, TimeLastAction, TimeStart, Value]
     owns: [COMMIT, INVENTORY, KAMI, KAMI_COLLECTION_OFFER, KAMI_LISTING, KAMI_OFFER, POOL_SHARE, QUEST, RELATIONSHIP, TOKEN_RECEIPT, TRADE]
     sub_entities:
@@ -48,6 +88,20 @@ entities:
             up: "from the key values"
         kind: record
         fields: [IDType, IdHolder, Value]
+        links:
+          IDType:
+            to: FACTION
+            type: classifier
+            stored_on: faction.reputation
+            required: true
+            derived: ["IDType = factionID in LibFaction.decRep (the id of a FACTION)", "IDType = factionID in LibFaction.incRep (the id of a FACTION)"]
+          IdHolder:
+            to: [ACCOUNT, KAMI]
+            type: ownership
+            stored_on: faction.reputation
+            required: true
+            derived: ["IdHolder = targetID in LibFaction.decRep (not resolved)", "IdHolder = targetID in LibFaction.incRep (traced through callers)"]
+            inferred: true
       friendship.ptr:
         id: "friendship.ptr(accID, state)"
         keys:
@@ -76,6 +130,20 @@ entities:
             up: "from the key values"
         kind: record
         fields: [IDType, IdHolder, IsComplete, Value]
+        links:
+          IDType:
+            to: GOAL
+            type: classifier
+            stored_on: goal.contribution
+            required: true
+            derived: ["IDType = goalID in LibGoal.incContribution (from the name)"]
+          IdHolder:
+            to: ACCOUNT
+            type: ownership
+            stored_on: goal.contribution
+            required: true
+            derived: ["IdHolder = holderID in LibGoal.incContribution (traced through callers)"]
+            inferred: true
       is.data:
         id: "is.data(holderID, index, type_)"
         keys:
@@ -107,6 +175,25 @@ entities:
             up: "from the key values"
         kind: record
         fields: [IDType, IdHolder, Value]
+        links:
+          IDType:
+            to: score.type
+            to_kind: "anchor key"
+            type: classifier
+            stored_on: is.score
+            required: true
+            derived:
+              - "IDType = genTypeID(epoch, index, _type) in LibScore.decFor(uint256,uint256,uint32,string,uint256) (an anchor key)"
+              - "IDType = genTypeID(epoch, index, _type) in LibScore.incFor(uint256,uint256,uint32,string,uint256) (an anchor key)"
+          IdHolder:
+            to: ACCOUNT
+            type: ownership
+            stored_on: is.score
+            required: true
+            derived:
+              - "IdHolder = holderID in LibScore.decFor(uint256,uint256,uint32,string,uint256) (not resolved)"
+              - "IdHolder = holderID in LibScore.incFor(uint256,uint256,uint32,string,uint256) (traced through callers)"
+            inferred: true
       sacrifice.pity:
         id: "sacrifice.pity(accID)"
         keys:
@@ -219,6 +306,8 @@ entities:
         derived:
           - "IDAnchor = genCounterPtr(targetID, \"REQUEST\") in LibFriend.updateInReqCounter (from the name); through anchor keys friendship.ptr"
           - "IDAnchor = pointers in LibFriend.updateFriendCounter (not resolved)"
+        via:
+          anchor_keys: [friendship.ptr]
         inferred: true
       IdSource:
         to: ACCOUNT
@@ -362,6 +451,20 @@ entities:
           up: "read IDOwnsKami on KAMI"
           down: "reverse lookup on IDOwnsKami (indexed)"
         derived: ["IDOwnsKami = GACHA_ID in LibKamiCreate.setBase (from the name)", "IDOwnsKami = accID in LibKami.setOwner, after creation"]
+        inferred: true
+      bonus.instance.IdSource:
+        to: BONUS
+        type: directed
+        stored_on: bonus.instance
+        via:
+          record: bonus.instance
+        required: false
+        only_when: ["a bonus.instance record exists for the KAMI"]
+        cardinality: "one bonus.instance per KAMI per regID, duration"
+        navigate:
+          up: "compute bonus.instance(regID, holderID, duration), read IdSource"
+          down: "reverse lookup on IdSource (indexed)"
+        derived: ["bonus.instance stores IdSource = regID in LibBonus.assign (traced through callers); the record is keyed under KAMI"]
         inferred: true
     components: [Experience, Harmony, Health, IDOwnsKami, IndexKami, Level, MediaURI, Name, Power, SkillPoint, Slots, State, Violence]
     owns: [EQUIPMENT, HARVEST]
@@ -626,6 +729,8 @@ entities:
           up: "read IDAnchor on QUEST"
           down: "reverse lookup on IDAnchor (indexed)"
         derived: ["IDAnchor = genSnapshotAnchor(questID) in LibQuest.snapshotObjective (from the name); through anchor keys snapshot.anchor"]
+        via:
+          anchor_keys: [snapshot.anchor]
       IDOwnsQuest:
         to: ACCOUNT
         type: ownership
@@ -656,6 +761,14 @@ entities:
             up: "from the key values"
         kind: record
         fields: [IDAnchor, Value]
+        links:
+          IDAnchor:
+            to: snapshot.anchor
+            to_kind: "anchor key"
+            type: attachment
+            stored_on: quest.objective.snapshot
+            required: true
+            derived: ["IDAnchor = genSnapshotAnchor(questID) in LibQuest.snapshotObjective (an anchor key)"]
       registry.quest.objective:
         id: "registry.quest.objective(index)"
         keys:
@@ -881,6 +994,8 @@ entities:
           up: "read IDAnchor on BONUS"
           down: "compute bonus.registry(anchorID, type_), or reverse lookup on IDAnchor (indexed)"
         derived: ["IDAnchor = anchorID in LibBonus.regCreate (traced through callers); through anchor keys node.bonus, registry.skill.bonus"]
+        via:
+          anchor_keys: [node.bonus, registry.skill.bonus]
         inferred: true
       IdSource:
         to: [NODE, SKILL]
@@ -892,6 +1007,8 @@ entities:
           up: "read IdSource on BONUS"
           down: "reverse lookup on IdSource (indexed)"
         derived: ["IdSource = sourceID in LibBonus.regCreate (traced through callers); through anchor keys node"]
+        via:
+          anchor_keys: [node]
         inferred: true
     components: [IDAnchor, IdSource, IsRegistry, Subtype, Time, Type, Value]
   CONDITION:
@@ -914,6 +1031,17 @@ entities:
           down: "reverse lookup on IDAnchor (indexed)"
         derived:
           - "IDAnchor = pointerID in LibConditional.createFor (traced through callers); through anchor keys auction.requirement, goal.requirement, item.requirement, listing.requirement, node.requirement, recipe.requirement, registry.quest.objective, registry.quest.requirement, registry.skill.requirement"
+        via:
+          anchor_keys:
+            - auction.requirement
+            - goal.requirement
+            - item.requirement
+            - listing.requirement
+            - node.requirement
+            - recipe.requirement
+            - registry.quest.objective
+            - registry.quest.requirement
+            - registry.skill.requirement
         inferred: true
     components: [For, IDAnchor, Index, LogicType, Type, Value]
   FACTION:
@@ -1271,6 +1399,8 @@ entities:
           up: "read IDAnchor on REFERENCE"
           down: "compute reference.instance(field, anchorID), or reverse lookup on IDAnchor (indexed)"
         derived: ["IDAnchor = anchorID in LibReference._create (traced through callers); through anchor keys goal.tier, item.usecase"]
+        via:
+          anchor_keys: [goal.tier, item.usecase]
         inferred: true
     components: [IDAnchor]
   ROOM:
@@ -1303,6 +1433,8 @@ entities:
           up: "read IDFrom on ROOM_GATE"
           down: "reverse lookup on IDFrom (indexed)"
         derived: ["IDFrom = genGateSourcePtr(sourceIndex) in LibRoom.createGate (from the name); through anchor keys room.gate.from", "IDFrom = 0 in LibRoom.createGate (not resolved)"]
+        via:
+          anchor_keys: [room.gate.from]
         inferred: true
       IDTo:
         to: ROOM
@@ -1316,6 +1448,8 @@ entities:
           up: "read IDTo on ROOM_GATE"
           down: "reverse lookup on IDTo (indexed)"
         derived: ["IDTo = genGateAtPtr(roomIndex) in LibRoom.createGate (from the name); through anchor keys room.gate.to"]
+        via:
+          anchor_keys: [room.gate.to]
       IdSource:
         to: null
         type: directed
@@ -1369,6 +1503,8 @@ entities:
           up: "read IDAnchor on TRAIT"
           down: "reverse lookup on IDAnchor (indexed)"
         derived: ["IDAnchor = genReverseMappingPtr(_type) in LibTraitRegistry.setReverseMappingPtr (from the name); through anchor keys registry.trait.type"]
+        via:
+          anchor_keys: [registry.trait.type]
     components: [Affinity, Harmony, Health, IDAnchor, IsRegistry, Name, Power, Rarity, Slots, Violence]
     sub_entities:
       registry.trait.type:
@@ -1403,7 +1539,7 @@ shared_sub_entities:
   bonus.instance:
     id: "bonus.instance(regID, holderID, duration)"
     keys:
-      regID: null
+      regID: BONUS
       holderID: [ACCOUNT, KAMI]
       duration: null
     parent_from: "held by several types"
@@ -1415,6 +1551,28 @@ shared_sub_entities:
         up: "from the key values"
     kind: record
     fields: [IDAnchor, IDType, IdSource, Time]
+    links:
+      IDAnchor:
+        to: bonus.ending.type
+        to_kind: "anchor key"
+        type: attachment
+        stored_on: bonus.instance
+        required: true
+        derived: ["IDAnchor = anchorID in LibBonus.assign (traced through callers)", "IDAnchor = endAnchor in LibBonus.assign (an anchor key)"]
+      IDType:
+        to: bonus.type
+        to_kind: "anchor key"
+        type: classifier
+        stored_on: bonus.instance
+        required: true
+        derived: ["IDType = genTypeID(TypeComponent(getAddrByID(components, TypeCompID)… in LibBonus.setTypeIDFromReg (an anchor key)"]
+      IdSource:
+        to: BONUS
+        type: directed
+        stored_on: bonus.instance
+        required: true
+        derived: ["IdSource = regID in LibBonus.assign (traced through callers)"]
+        inferred: true
     held_by: [ACCOUNT, KAMI]
   bonus.type:
     id: "bonus.type(type_, holderID)"
@@ -1473,6 +1631,21 @@ shared_sub_entities:
         up: "from the key values"
     kind: record
     fields: [HasFlag, IDOwnsFlag, IDType, Type]
+    links:
+      IDOwnsFlag:
+        to: [ITEM, ROOM]
+        type: ownership
+        stored_on: has.flag
+        required: true
+        derived: ["IDOwnsFlag = holderID in LibFlag.setFull (traced through callers)"]
+        inferred: true
+      IDType:
+        to: flag.type
+        to_kind: "anchor key"
+        type: classifier
+        stored_on: has.flag
+        required: true
+        derived: ["IDType = genTypeAnchor(parentType, flagType) in LibFlag.setFull (an anchor key)"]
   is.config:
     id: "is.config(name)"
     keys:

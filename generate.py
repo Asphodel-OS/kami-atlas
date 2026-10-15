@@ -538,7 +538,43 @@ def classify_namespaces(ix, ns_struct):
                     e = unwrap(n['expression'])
                     if e.get('nodeType') == 'FunctionCall' and e['expression'].get('referencedDeclaration') in gen:
                         gen[fid] = gen[e['expression']['referencedDeclaration']]; changed = True; break
-    role_cache = {}
+    role_cache, ptr_roles = {}, defaultdict(list)   # ptr_roles[(fid, pi)]: pointer sets on the id passed as parameter pi
+    ns_local_cache = {}
+    def ns_locals(fid):
+        """local variable id -> namespace, for locals assigned from a namespace generator in fid."""
+        if fid in ns_local_cache: return ns_local_cache[fid]
+        local = {}
+        for n in walk(ix.fn[fid][1].get('body') or {}):
+            if n.get('nodeType') == 'VariableDeclarationStatement' and n.get('initialValue') and len(n['declarations']) == 1 and n['declarations'][0]:
+                e = unwrap(n['initialValue'])
+                if e.get('nodeType') == 'FunctionCall' and e['expression'].get('referencedDeclaration') in gen: local[n['declarations'][0]['id']] = gen[e['expression']['referencedDeclaration']]
+            if n.get('nodeType') == 'Assignment' and n['leftHandSide'].get('nodeType') == 'Identifier':
+                e = unwrap(n['rightHandSide'])
+                if e.get('nodeType') == 'FunctionCall' and e['expression'].get('referencedDeclaration') in gen: local[n['leftHandSide']['referencedDeclaration']] = gen[e['expression']['referencedDeclaration']]
+        ns_local_cache[fid] = local
+        return local
+    def ns_of_in(fid, a):
+        a = unwrap(a)
+        if not isinstance(a, dict): return None
+        if a.get('nodeType') == 'FunctionCall' and a['expression'].get('referencedDeclaration') in gen: return gen[a['expression']['referencedDeclaration']]
+        if a.get('nodeType') == 'Identifier': return ns_locals(fid).get(a.get('referencedDeclaration'))
+        return None
+    def param_index(fid, a):
+        a = unwrap(a)
+        ps = [x['id'] for x in ix.fn[fid][1]['parameters']['parameters']]
+        return ps.index(a['referencedDeclaration']) if isinstance(a, dict) and a.get('nodeType') == 'Identifier' and a.get('referencedDeclaration') in ps else None
+    def ptr_entry(fid, n):
+        """(component, where, value text, parameter index of the value if it is one, namespace of the value if known)."""
+        v = n['arguments'][-1]
+        return (comp_name(n['expression']), ix.key(fid), ix.text(ix.fn[fid][2], v['src'], 60), param_index(fid, v), ns_of_in(fid, v))
+    def lift(entries, fid, args):
+        """Re-express pointer entries from a callee at this call site: a value that was the callee's parameter becomes the argument passed here."""
+        out = []
+        for comp, where, text, pi, nsv in entries:
+            a = args[pi] if pi is not None and pi < len(args) else None
+            if a is None: out.append((comp, where, text, None if pi is None else pi, nsv)); continue
+            out.append((comp, ix.key(fid), ix.text(ix.fn[fid][2], a['src'], 60), param_index(fid, a), ns_of_in(fid, a) or nsv))
+        return out
     def is_comp_call(callee):
         return callee.get('nodeType') == 'MemberAccess' and callee.get('memberName') in COMP_METHODS and \
             'Component' in callee['expression'].get('typeDescriptions', {}).get('typeString', '')
@@ -569,17 +605,21 @@ def classify_namespaces(ix, ns_struct):
                 if not (isinstance(a, dict) and a.get('nodeType') == 'Identifier' and a.get('referencedDeclaration') == pid): continue
                 if is_comp_call(callee):
                     out.append(('id' if j == 0 and callee['memberName'] != 'getEntitiesWithValue' else 'value', comp_name(callee)))
+                    if j == 0 and callee['memberName'] in ('set', 'setBatch') and len(n['arguments']) >= 2 and re.match(r'^(ID|Id|Index)[A-Z]', comp_name(callee)):
+                        ptr_roles[key].append(ptr_entry(fid, n))
                 else:
                     ref, args = call_args(n)
                     if ref in ix.fn:
                         jj = args.index(n['arguments'][j]) if n['arguments'][j] in args else j
                         sub = param_roles(ref, jj, depth + 1)
+                        ptr_roles[key] += lift(ptr_roles.get((ref, jj), []), fid, args)
                         if sub and ix.name(ref) == 'LibConditional.create' and any(r == 'id' for r, _ in sub):
                             sub = sub + [('shape', 'CONDITION')]
                         out += sub
         role_cache[key] = out
         return out
     uses = defaultdict(list)  # ns -> [(role, component, where)]
+    ptrs = defaultdict(list)  # ns -> [(pointer component, where, value text)]: references a record stores
     for fid, (c, f, path) in ix.fn.items():
         if not f.get('body'): continue
         local = {}
@@ -607,6 +647,8 @@ def classify_namespaces(ix, ns_struct):
                 if is_comp_call(callee):
                     role = 'id' if j == 0 and callee['memberName'] != 'getEntitiesWithValue' else 'value'
                     uses[ns].append((role, comp_name(callee), ix.key(fid)))
+                    if role == 'id' and callee['memberName'] in ('set', 'setBatch') and len(n['arguments']) >= 2 and re.match(r'^(ID|Id|Index)[A-Z]', comp_name(callee)):
+                        ptrs[ns].append(ptr_entry(fid, n))
                 else:
                     ref, args = call_args(n)
                     if ref in ix.fn and ref not in gen:
@@ -616,6 +658,7 @@ def classify_namespaces(ix, ns_struct):
                             roles_ = roles_ + [('shape', 'CONDITION')]
                         for r, comp in roles_:
                             uses[ns].append((r, comp, ix.key(fid)))
+                        ptrs[ns] += lift(ptr_roles.get((ref, jj), []), fid, args)
     out = {}
     comp_names = set(ix.comp_id_decl.values())
     for ns in ns_struct:
@@ -627,6 +670,7 @@ def classify_namespaces(ix, ns_struct):
         if ids: rec['fields'] = sorted({c for _, c, _ in ids if real(c)})
         if vals and not ids: rec['pointed_at_by'] = sorted({c for _, c, _ in vals if real(c)})
         if any(r == 'shape' for r, _, _ in u): rec['shape'] = 'CONDITION'
+        if ids and ptrs.get(ns): rec['pointers'] = sorted({(c, w, t, nsv) for c, w, t, _, nsv in ptrs[ns]})
         out[ns] = rec
     return out, gen
 
@@ -685,9 +729,12 @@ def derive_domain(ix, ents, creators, ns_struct, systems, indexed=None, untyped=
         if t: return {t}, False
         ps = [x['name'] for x in ix.fn[fid][1]['parameters']['parameters']] if fid in ix.fn else []
         base = re.split(r'[\[.]', argname)[0]
-        if base in ps: return trace(fid, ps.index(base)), True
         own = lib_creates.get(ix.fn[fid][0], set()) if fid in ix.fn else set()
-        if base in ('id', 'entityID') and len(own) == 1: return set(own), True  # a bare `id` in LibHarvest is a harvest
+        if base in ps:
+            t = trace(fid, ps.index(base))
+            if not t and base in ('regID', 'registryID') and len(own) == 1: t = set(own)  # a bare regID in LibBonus is a BONUS entry
+            return t, True
+        if base in ('id', 'entityID', 'regID', 'registryID') and len(own) == 1: return set(own), True  # a bare `id` in LibHarvest is a harvest
         return set(), True
 
     lib_of = lambda fid: ix.fn[fid][0]
@@ -785,7 +832,7 @@ def derive_domain(ix, ents, creators, ns_struct, systems, indexed=None, untyped=
             rows = [r for r in sets if r[0] == comp]
             if comp in INDEX_TARGET and (INDEX_TARGET[comp] == et or comp == 'IndexAccount'):
                 e['index'] = comp; continue
-            types, inferred, how = set(), False, []
+            types, inferred, how, via_keys = set(), False, [], set()
             if comp in INDEX_TARGET:
                 types = {INDEX_TARGET[comp]}; how.append('component name: %s points at %s by index' % (comp, INDEX_TARGET[comp]))
             else:
@@ -793,7 +840,7 @@ def derive_domain(ix, ents, creators, ns_struct, systems, indexed=None, untyped=
                     del via_anchor[:]
                     t, inf = resolve(key_fid.get(where), val)
                     types |= t; inferred |= inf
-                    anchors = sorted(set(via_anchor))
+                    anchors = sorted(set(via_anchor)); via_keys |= set(anchors)
                     how.append('%s = %s in %s%s%s' % (comp, val, where, ' (traced through callers)' if inf and t else ' (from the name)' if t else ' (not resolved)',
                                                       ('; through anchor keys ' + ', '.join(anchors)) if anchors else ''))
             dev = lambda z: ix.fn[z][2].endswith('__LocalSetupSystem.sol')  # local-only setup, never deployed
@@ -826,6 +873,7 @@ def derive_domain(ix, ents, creators, ns_struct, systems, indexed=None, untyped=
                 down = 'compute %s, or %s' % (id_formula, down)
             l['navigate'] = {'up': 'read %s on %s' % (comp, et), 'down': down}
             l['derived'] = list(dict.fromkeys(how))[:6]
+            if via_keys: l['via'] = {'anchor_keys': sorted(via_keys)}
             if inferred: l['inferred'] = True
             if not types: l['unresolved_from'] = vals
             links[comp] = l
@@ -868,6 +916,45 @@ def derive_domain(ix, ents, creators, ns_struct, systems, indexed=None, untyped=
                'relation': {'type': 'keyed', 'required': True,
                             'navigate': {'down': 'compute %s(%s) from the parent' % (ns, ', '.join(keys)), 'up': 'from the key values'}}}
         sub.update(ns_kind.get(ns, {}))
+        # references the record itself stores (IDType on faction.reputation -> FACTION), and the holder -> target edge
+        # they imply, drawn on the map as passing through the record
+        holders_ = [parent] if parent else runtime_holders
+        by_comp = defaultdict(list)
+        for comp, where, val, nsv in sub.pop('pointers', []): by_comp[comp].append((where, val, nsv))
+        for comp, entries in sorted(by_comp.items()):
+            t, inf, notes, anchors = set(), False, [], set()
+            for where, val, nsv in entries:
+                fid_ = key_fid.get(where)
+                del via_anchor[:]
+                if nsv and nsv in ns_kind and ns_kind[nsv].get('kind') == 'anchor key':   # points at a grouping key, not an entity
+                    anchors.add(nsv); notes.append('%s = %s in %s (an anchor key)' % (comp, val, where)); continue
+                if comp in INDEX_TARGET: t_, inf_, note = {INDEX_TARGET[comp]}, False, 'component name: %s points at %s by index' % (comp, INDEX_TARGET[comp])
+                elif nsv and nsv in claimed: t_, inf_, note = {claimed[nsv]}, False, '%s = %s in %s (the id of a %s)' % (comp, val, where, claimed[nsv])
+                else:
+                    t_, inf_ = resolve(fid_, val) if fid_ is not None else (set(), True)
+                    note = '%s = %s in %s%s' % (comp, val, where, ' (traced through callers)' if inf_ and t_ else ' (from the name)' if t_ else ' (not resolved)')
+                t |= {x for x in t_ if x in model}; inf |= inf_; notes.append(note)
+            if anchors:   # the structural answer wins over a traced guess from another call site
+                sub.setdefault('links', {})[comp] = {'to': sorted(anchors)[0] if len(anchors) == 1 else sorted(anchors), 'to_kind': 'anchor key', 'type': rel_type(comp),
+                                                     'stored_on': ns, 'required': True, 'derived': list(dict.fromkeys(notes))[:4]}
+                continue
+            l = {'to': sorted(t)[0] if len(t) == 1 else sorted(t) if t else None, 'type': rel_type(comp), 'stored_on': ns, 'required': True, 'derived': list(dict.fromkeys(notes))[:4]}
+            if inf: l['inferred'] = True
+            if not t: l['unresolved_from'] = sorted({val for _, val, _ in entries})
+            sub.setdefault('links', {})[comp] = l
+            note = l['derived'][0]
+            rest = [k for k in keys if not any(x in k.lower() for x in ('holder', 'acc', 'kami', 'owner'))]
+            if comp == 'IdHolder' or comp.startswith('IDOwns'): continue   # the record's own holder: not a connection to another entity
+            for h in holders_:
+                for tgt in sorted(t):
+                    if tgt == h or h not in model: continue
+                    model[h].setdefault('links', {})['%s.%s' % (ns, comp)] = {
+                        'to': tgt, 'type': rel_type(comp), 'stored_on': ns, 'via': {'record': ns}, 'required': False,
+                        'only_when': ['a %s record exists for the %s' % (ns, h)],
+                        'cardinality': 'one %s per %s%s' % (ns, h, (' per ' + ', '.join(rest)) if rest else ''),
+                        'navigate': {'up': 'compute %s(%s), read %s' % (ns, ', '.join(keys), comp),
+                                     'down': 'reverse lookup on %s (indexed)' % comp if indexed.get(comp) else 'not indexed: needs a scan or the indexer'},
+                        'derived': ['%s stores %s; the record is keyed under %s' % (ns, note, h)], **({'inferred': True} if inf else {})}
         if parent:
             model[parent].setdefault('sub_entities', {})[ns] = sub
         else:

@@ -103,6 +103,12 @@ h1 small { display: block; font: 400 12px/1.3 var(--f-mono); color: var(--muted)
 .legend .lg-row[data-hl]:hover { background: color-mix(in srgb, var(--ink) 9%, transparent); }
 .legend .lg-title + .lg-row { margin-top: 5px; }
 .lg-off { opacity: .08 !important; transition: opacity .12s; }
+.edge .via { pointer-events: all; }
+.edge .via rect, .edge .via circle { fill: var(--panel); stroke: var(--muted); stroke-width: 1.2; }
+.edge .via circle { stroke-dasharray: 2 1.5; }
+.edge .via:hover rect, .edge .via:hover circle { stroke: var(--ink); }
+.zoomed-out .edge .line { marker-start: none; }
+.far .edge .via { display: none; }
 #sourceline a { color: inherit; text-decoration: underline dotted; text-underline-offset: 3px; }
 #sourceline a:hover { color: var(--ink); }
 #sourceline code { font: inherit; }
@@ -260,6 +266,7 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
         <div class="set-group"><h3>Display</h3>
           <div class="set-row"><span class="small muted" style="width:88px">Edge labels</span><span class="seg" id="set-lbl"><button data-v="auto">Auto</button><button data-v="on">Always</button><button data-v="off">Off</button></span></div>
           <div class="set-row"><label><input type="checkbox" id="set-names"> Entity names</label></div>
+          <div class="set-row"><label><input type="checkbox" id="set-via"> Links through records</label></div>
           <div class="set-row"><span class="small muted" style="width:88px">Overlays</span><label><input type="checkbox" id="set-legend"> Legend</label><label><input type="checkbox" id="set-hint"> Controls hint</label></div>
         </div>
         <div class="set-group"><h3>Layout</h3>
@@ -323,13 +330,18 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
     if (!to.length) rels.push({ ...base, to: null });
     for (const t of to) rels.push({ ...base, to: t });
   }
+  // what an edge passes through: a record stored under the holder, or anchor keys the target groups things under
+  const viaOf = r => r.l.via && r.l.via.record ? { kind: 'record', ns: [r.l.via.record] } : r.l.via && arr(r.l.via.anchor_keys).length ? { kind: 'anchor', ns: arr(r.l.via.anchor_keys) } : null;
+  for (const r of rels) { const v = viaOf(r); r.via = v; r.label = v && v.kind === 'record' ? v.ns[0] : r.comp; r.field = v && v.kind === 'record' ? r.comp.slice(v.ns[0].length + 1) : r.comp; }
+  // holder-end multiplicity, from the cardinality sentence: many / one / one per key
+  const cardOf = l => /^one .+ per .+ per /.test(l.cardinality || '') ? 'key' : /^one /.test(l.cardinality || '') ? 'one' : /^many /.test(l.cardinality || '') ? 'many' : null;
+  const SUB_BY_NS = {};  // namespace -> {ns, s, shared} for tooltips on passthrough glyphs
+  for (const [n, e] of Object.entries(E)) for (const [ns, s] of Object.entries(e.sub_entities || {})) SUB_BY_NS[ns] = { ns, s, shared: false, parent: n };
+  for (const [ns, s] of Object.entries(model.shared_sub_entities || {})) SUB_BY_NS[ns] = { ns, s, shared: true, parent: arr(s.held_by).join('/') || 'any holder' };
   const anchorUsers = {};  // anchor key -> [{from, comp}] of records that point at it
-  for (const r of rels) for (const d of arr(r.l.derived)) {
-    const m = String(d).match(/through anchor keys (.+)$/);
-    if (m) for (const ns of m[1].split(/,\s*/)) {
-      anchorUsers[ns] = anchorUsers[ns] || [];
-      if (!anchorUsers[ns].some(u => u.from === r.from && u.comp === r.comp)) anchorUsers[ns].push({ from: r.from, comp: r.comp });
-    }
+  for (const r of rels) if (r.via && r.via.kind === 'anchor') for (const ns of r.via.ns) {
+    anchorUsers[ns] = anchorUsers[ns] || [];
+    if (!anchorUsers[ns].some(u => u.from === r.from && u.comp === r.comp)) anchorUsers[ns].push({ from: r.from, comp: r.comp });
   }
   const subKindLine = x => x.s.kind === 'anchor key'
     ? 'anchor key' + (anchorUsers[x.ns] ? ' ← ' + anchorUsers[x.ns].map(u => u.from + '.' + u.comp).join(', ') : arr(x.s.pointed_at_by).length ? ' ← ' + arr(x.s.pointed_at_by).join(', ') : '')
@@ -373,8 +385,9 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
   function relTip(r) {
     const l = r.l;
     const dir = `<code>${esc(r.from)}</code> → <code>${esc(r.to || '?')}</code>`;
-    return `<h4>${esc(r.comp)}</h4>
+    return `<h4>${esc(r.label)}${r.via && r.via.kind === 'record' ? ` <span class="muted">· ${esc(r.field)}</span>` : ''}</h4>
       <div>${dir} · ${esc(REL_NAME[l.type] || l.type)} · ${l.required ? 'required' : 'optional'}</div>
+      ${r.via ? `<div class="row"><b>Through</b><span>${r.via.kind === 'record' ? 'the record ' : 'the anchor key' + (r.via.ns.length > 1 ? 's ' : ' ')}${r.via.ns.map(x => '<code>' + esc(x) + '</code>').join(', ')}</span></div>` : ''}
       <div class="muted small" style="margin-top:2px">${esc(RT[l.type] || '')}</div>
       <div class="row"><b>Stored on</b><span><code>${esc(l.stored_on)}</code>, as the value of <code>${esc(r.comp)}</code></span></div>
       ${!l.required && l.only_when ? `<div class="row"><b>Only when</b><span>${l.only_when.map(c => '<code>' + esc(c) + '</code>').join('<br>')}</span></div>` : ''}
@@ -392,6 +405,7 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
       <div class="row"><b>Id</b><span><code>${esc(String(s.id || x.ns).startsWith('address(') ? s.id : 'keccak256(' + (s.id || x.ns) + ')')}</code></span></div>
       ${keys ? `<div class="row"><b>Keys</b><span>${keys}</span></div>` : ''}
       <div class="row"><b>Relation</b><span>${esc(REL_NAME.keyed)} of <code>${esc(parent)}</code>${x.shared ? ' (shared by ' + arr(s.held_by).map(esc).join(', ') + ')' : ''}; required by construction</span></div>
+      ${s.links ? `<div class="row"><b>Points at</b><span>${Object.entries(s.links).map(([c, l]) => `<code>${esc(c)}</code> → ${arr(l.to).map(t => E[t] ? entBtn(t) : '<code>' + esc(t) + '</code>' + (l.to_kind ? ' (' + esc(l.to_kind) + ')' : '')).join('/') || '<span class="muted">unresolved</span>'}`).join('<br>')}</span></div>` : ''}
       <div class="row"><b>Navigate</b><span>${esc(s.relation?.navigate?.down || 'compute the id from the parent')}</span></div>
       <div class="row"><b>Placed by</b><span>${esc(s.parent_from || '')}</span></div>`;
   }
@@ -404,6 +418,10 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
   for (const t of Object.keys(REL_NAME)) defs.append('marker').attr('id', 'm-' + t).attr('viewBox', '0 0 10 10')
     .attr('refX', 9).attr('refY', 5).attr('markerWidth', 7).attr('markerHeight', 7).attr('orient', 'auto-start-reverse')
     .append('path').attr('d', 'M0 0L10 5L0 10z').style('fill', `var(--r-${t})`);
+  // holder-end markers: crow's foot = many, bar = one, bar + dot = one per key (marker-start, so they sit at the holder)
+  for (const t of Object.keys(REL_NAME)) for (const [k, d] of [['many', 'M0,5L10,0.5M0,5L10,5M0,5L10,9.5'], ['one', 'M8,0.5L8,9.5'], ['key', 'M8,0.5L8,9.5M2,5a2,2 0 1,0 0.01,0']])
+    defs.append('marker').attr('id', `c-${k}-${t}`).attr('viewBox', '0 0 12 10').attr('refX', 10).attr('refY', 5).attr('markerWidth', 12).attr('markerHeight', 10)
+      .attr('markerUnits', 'userSpaceOnUse').attr('orient', 'auto-start-reverse').append('path').attr('d', d).attr('fill', 'none').style('stroke', `var(--r-${t})`).attr('stroke-width', 1.5);
   const root = svg.append('g');
   const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const ms = d => reduceMotion ? 0 : d;
@@ -481,6 +499,13 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
       + sub('line')
       + row(line('var(--muted)'), 'Required', 'set whenever it’s created', 'req:required')
       + row(line('var(--muted)', true), 'Optional', 'set only under a condition', 'req:optional')
+      + sub('passes through')
+      + row(sw('<line x1="1" y1="5" x2="27" y2="5" stroke="var(--muted)" stroke-width="1.5"/><rect x="9" y="1.5" width="10" height="7" rx="2" fill="var(--panel)" stroke="var(--muted)" stroke-width="1.2"/>'), 'Record', 'stored under the holder', 'via:record')
+      + row(sw('<line x1="1" y1="5" x2="27" y2="5" stroke="var(--muted)" stroke-width="1.5"/><circle cx="14" cy="5" r="3.8" fill="var(--panel)" stroke="var(--muted)" stroke-width="1.2" stroke-dasharray="2 1.5"/>'), 'Anchor key', 'grouped under the target', 'via:anchor')
+      + sub('holder end = how many')
+      + row(sw('<path d="M12,5L2,0.5M12,5L2,5M12,5L2,9.5" fill="none" stroke="var(--muted)" stroke-width="1.4"/><line x1="12" y1="5" x2="27" y2="5" stroke="var(--muted)" stroke-width="1.5"/>'), 'Many', 'per target', 'card:many')
+      + row(sw('<line x1="4" y1="0.5" x2="4" y2="9.5" stroke="var(--muted)" stroke-width="1.4"/><line x1="1" y1="5" x2="27" y2="5" stroke="var(--muted)" stroke-width="1.5"/>'), 'One', 'per target', 'card:one')
+      + row(sw('<line x1="4" y1="0.5" x2="4" y2="9.5" stroke="var(--muted)" stroke-width="1.4"/><circle cx="10" cy="5" r="2" fill="var(--muted)"/><line x1="1" y1="5" x2="27" y2="5" stroke="var(--muted)" stroke-width="1.5"/>'), 'One per key', 'per target, per key value', 'card:key')
       + sub('edge label = the component that stores it')
       + (!isMap && view ? '<span class="lg-title">Fields & records</span>'
         + row(sw('<circle cx="10" cy="5" r="3" fill="var(--ink)"/>'), 'Own field', `only ${view} has it`, 'field:own')
@@ -494,17 +519,21 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
   const lgBody = document.getElementById('legend-body');
   lgBody.addEventListener('mouseover', ev => { const r = ev.target.closest('.lg-row[data-hl]'); legendHL(r ? r.dataset.hl : null); });
   lgBody.addEventListener('mouseleave', () => legendHL(null));
-  const relKeys = r => ['rel:' + r.l.type, 'req:' + (r.l.required ? 'required' : 'optional')];
+  const relKeys = r => ['rel:' + r.l.type, 'req:' + (r.l.required ? 'required' : 'optional')].concat(r.via ? ['via:' + r.via.kind] : [], cardOf(r.l) ? ['card:' + cardOf(r.l)] : []);
+  const viaTip = (r, holder) => { const x = SUB_BY_NS[r.via.ns[0]]; return x ? subTip(x, holder) : `<h4>${esc(r.via.ns.join(', '))}</h4>`; };
+  // a small glyph on the edge for what it passes through: a record (box) or an anchor key (dashed circle)
+  const viaGlyph = (g, r) => { const v = g.append('g').attr('class', 'via'); if (r.via.kind === 'record') v.append('rect').attr('x', -7).attr('y', -4.5).attr('width', 14).attr('height', 9).attr('rx', 2); else v.append('circle').attr('r', 5); return v; };
 
-  function edgePath(sx, sy, tx, ty, rT, bend) {
+  function edgePath(sx, sy, tx, ty, rT, bend, rS = 0) {
     const dx = tx - sx, dy = ty - sy, len = Math.hypot(dx, dy) || 1;
     const ex = tx - dx / len * rT, ey = ty - dy / len * rT;
+    sx += dx / len * rS; sy += dy / len * rS;
     const mx = (sx + ex) / 2 - dy / len * bend, my = (sy + ey) / 2 + dx / len * bend;
     return { d: `M${sx},${sy}Q${mx},${my} ${ex},${ey}`, lx: (sx + 2 * mx + ex) / 4, ly: (sy + 2 * my + ey) / 4 };
   }
 
   // ---------------- overview ----------------
-  const DEFAULTS = { layers: LAYERS.slice(), rel: Object.keys(REL_NAME), edgeLabels: 'auto', names: true, spacing: 1, linkLen: 150, legend: true, legendCollapsed: false, hint: true, collapsed: false,
+  const DEFAULTS = { layers: LAYERS.slice(), rel: Object.keys(REL_NAME), edgeLabels: 'auto', names: true, viaEdges: true, spacing: 1, linkLen: 150, legend: true, legendCollapsed: false, hint: true, collapsed: false,
     lensMode: 'fisheye', lensStrength: 2.5, lensRadius: 170, lensFollow: 0.18, pushOn: true, pushStrength: 3, snapOn: true, snapDist: 26 };
   const loadSettings = () => { try { return Object.assign({}, DEFAULTS, JSON.parse(localStorage.getItem('atlas.settings.v1') || '{}')); } catch (e) { return Object.assign({}, DEFAULTS); } };
   const cfg = loadSettings();
@@ -547,7 +576,7 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
     // singletons that an entity points at (the gacha pool) join the map beside their referrers
     for (const r of rels) if (r.to && SG[r.to] && ids.includes(r.from) && !nodes.some(n => n.id === r.to)) nodes.push({ id: r.to, layer: E[r.from].layer, singleton: true });
     const byId = Object.fromEntries(nodes.map(n => [n.id, n]));
-    const er = rels.filter(r => r.to && byId[r.from] && byId[r.to] && r.from !== r.to && st.rel.has(r.l.type));
+    const er = rels.filter(r => r.to && byId[r.from] && byId[r.to] && r.from !== r.to && st.rel.has(r.l.type) && (cfg.viaEdges || !(r.via && r.via.kind === 'record')));
     const pairCount = {};
     er.forEach(r => { const k = [r.from, r.to].sort().join('|'); r._i = pairCount[k] = (pairCount[k] || 0) + 1; });
     const links = er.map(r => ({ source: r.from, target: r.to, r }));
@@ -556,9 +585,15 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
     const content = root.append('g'); fitTarget = null;  // bands are sized to the nodes, so fit everything
     const eg = content.append('g'), ng = content.append('g');
     const edge = eg.selectAll('g').data(links).join('g').attr('class', d => 'edge ' + (d.r.l.required ? 'required' : 'optional'));
-    edge.append('path').attr('class', 'line').style('stroke', d => `var(--r-${d.r.l.type})`).attr('marker-end', d => `url(#m-${d.r.l.type})`);
+    edge.append('path').attr('class', 'line').style('stroke', d => `var(--r-${d.r.l.type})`).attr('marker-end', d => `url(#m-${d.r.l.type})`)
+      .attr('marker-start', d => cardOf(d.r.l) ? `url(#c-${cardOf(d.r.l)}-${d.r.l.type})` : null);
     edge.append('path').attr('class', 'hit');
-    edge.append('text').attr('class', 'lbl').attr('text-anchor', 'middle').style('fill', d => `var(--r-${d.r.l.type})`).text(d => d.r.comp);
+    edge.append('text').attr('class', 'lbl').attr('text-anchor', 'middle').style('fill', d => `var(--r-${d.r.l.type})`).text(d => d.r.label);
+    edge.filter(d => d.r.via).each(function (d) {
+      viaGlyph(d3.select(this), d.r)
+        .on('mouseenter', ev => { if (typeof focusId !== 'undefined' && (focusId || drag)) return; ev.stopPropagation(); show(viaTip(d.r, d.r.from), ev); })
+        .on('mouseleave', ev => { if (typeof focusId !== 'undefined' && (focusId || drag)) return; show(relTip(d.r), ev); });
+    });
     edge.on('mouseenter', (ev, d) => { show(relTip(d.r), ev); edge.classed('faded', e => e !== d); node.classed('faded', n => n.id !== d.source.id && n.id !== d.target.id); })
       .on('mousemove', ev => placeTip(ev))
       .on('mouseleave', () => { hide(); edge.classed('faded', false); node.classed('faded', false); applySystem(); });
@@ -789,10 +824,11 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
       // draw through the lens, magnified nodes on top
       edge.each(function (d) {
         const bend = 18 * (d.r._i - 1) + (d.r._i > 1 ? 10 : 6);
-        const p = edgePath(d.source.px, d.source.py, d.target.px, d.target.py, drawnR(d.target) + 4, bend);
+        const p = edgePath(d.source.px, d.source.py, d.target.px, d.target.py, drawnR(d.target) + 4, bend, drawnR(d.source) + 3);
         const g = d3.select(this);
         g.selectAll('path').attr('d', p.d);
-        g.select('text').attr('x', p.lx).attr('y', p.ly - 3);
+        g.select('text').attr('x', p.lx).attr('y', p.ly - (d.r.via ? 10 : 3));
+        if (d.r.via) g.select('.via').attr('transform', `translate(${p.lx},${p.ly})`);
       });
       node.attr('transform', d => `translate(${d.px},${d.py}) scale(${Math.min(3, Math.sqrt(d.pz || 1))})`);
       node.sort((p, q) => (p.pz || 1) - (q.pz || 1));
@@ -850,7 +886,8 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
     document.getElementById('crumb').hidden = false; wrap.classList.add('focus');
     document.getElementById('crumb-name').textContent = n;
     const e = E[n], ro = relsOf(n);
-    const out = ro.out.filter(r => st.rel.has(r.l.type)), inn = ro.in.filter(r => st.rel.has(r.l.type));
+    const viaOk = r => cfg.viaEdges || !(r.via && r.via.kind === 'record');
+    const out = ro.out.filter(r => st.rel.has(r.l.type) && viaOk(r)), inn = ro.in.filter(r => st.rel.has(r.l.type) && viaOk(r));
     const subs = st.rel.has('keyed') ? subsOf(n) : [];
     const eg = root.append('g'), cg = root.append('g');
     const own = new Set(uniqueFields(n));
@@ -884,27 +921,38 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
       const path = edgePath(sx, sy, tx, ty, 2, 0);
       const g = eg.append('g').attr('class', 'edge ' + (p.r.l.required ? 'required' : 'optional'))
         .attr('data-k', relKeys(p.r).concat(isEnt && E[other].layer === e.layer ? ['layer:' + e.layer] : []).join(' '));
-      g.append('path').attr('class', 'line').attr('d', path.d).style('stroke', `var(--r-${p.r.l.type})`).attr('marker-end', `url(#m-${p.r.l.type})`);
+      g.append('path').attr('class', 'line').attr('d', path.d).style('stroke', `var(--r-${p.r.l.type})`).attr('marker-end', `url(#m-${p.r.l.type})`)
+        .attr('marker-start', cardOf(p.r.l) ? `url(#c-${cardOf(p.r.l)}-${p.r.l.type})` : null);
       g.append('path').attr('class', 'hit').attr('d', path.d);
-      g.append('text').attr('class', 'lbl').attr('x', path.lx).attr('y', path.ly - 5).attr('text-anchor', 'middle')
-        .style('fill', `var(--r-${p.r.l.type})`).text(p.r.comp + (p.r.l.required ? '' : ' (optional)'));
+      g.append('text').attr('class', 'lbl').attr('x', path.lx).attr('y', path.ly - (p.r.via ? 11 : 5)).attr('text-anchor', 'middle')
+        .style('fill', `var(--r-${p.r.l.type})`).text(p.r.label + (p.r.l.required ? '' : ' (optional)'));
       g.on('mouseenter mousemove', ev => show(relTip(p.r), ev)).on('mouseleave', hide);
+      if (p.r.via) viaGlyph(g, p.r).attr('transform', `translate(${path.lx},${path.ly})`)
+        .on('mouseenter mousemove', ev => { ev.stopPropagation(); show(viaTip(p.r, p.r.from), ev); });
     };
     outs.forEach(p => drawRel(p, 'out'));
     ins.forEach(p => drawRel(p, 'in'));
 
     // sub-entities below, keyed from the parent
     if (subs.length) {
-      const per = 3, w = 250, gapX = 24, top = Math.max(center.h, 0) + 110;
+      const per = 3, w = 250, gapX = 24, colBottom = cyMid + Math.max(outs.length, ins.length) * rowH / 2;
+      const top = Math.max(center.h, colBottom) + 110;   // below the reference columns, which can run past the centre card
       cg.append('text').attr('class', 'col-label').attr('x', 0).attr('y', top - 40).attr('text-anchor', 'middle').text('Sub-entities, keyed by this entity');
+      const subLines = x => {
+        const keyLine = x.s.keys ? 'keys: ' + Object.keys(x.s.keys).join(', ') : '';
+        const whatLine = (NS[x.ns] || {}).what || '';
+        const linkLines = Object.entries(x.s.links || {}).map(([c, l]) => ({ text: trunc(c + ' → ' + (arr(l.to).join('/') || '?') + (l.to_kind ? ' (' + l.to_kind + ')' : ''), 36) }));
+        return [{ text: trunc(subKindLine(x), 36) }, whatLine && { text: trunc(whatLine, 36), shared: true }, keyLine && { text: trunc(keyLine, 36), shared: true }, ...linkLines].filter(Boolean);
+      };
+      const cardH = x => 30 + subLines(x).length * 16 + (x.shared ? 16 : 0) + 6;   // mirrors card()
+      const rowY = [top];
+      for (let r = 0; r * per < subs.length; r++) rowY.push(rowY[r] + Math.max(...subs.slice(r * per, r * per + per).map(cardH)) + 22);
       subs.forEach((x, i) => {
         const col = i % per, row = Math.floor(i / per);
         const cols = Math.min(per, subs.length - row * per);
         const px = (col - (cols - 1) / 2) * (w + gapX);
-        const keyLine = x.s.keys ? 'keys: ' + Object.keys(x.s.keys).join(', ') : '';
-        const whatLine = (NS[x.ns] || {}).what || '';
-        const lines = [{ text: trunc(subKindLine(x), 36) }, whatLine && { text: trunc(whatLine, 36), shared: true }, keyLine && { text: trunc(keyLine, 36), shared: true }].filter(Boolean);
-        const py = top + row * 108;
+        const lines = subLines(x);
+        const py = rowY[row];
         const c = card(cg, px, py, w, lines, { title: x.ns, meta: x.shared ? 'shared with ' + arr(x.s.held_by).filter(h => h !== n).join(', ') : '', stroke: `var(--r-keyed)`, tip: () => subTip(x, n), k: subK(x) });
         nav.sub.push({ c, tip: () => subTip(x, n) });
         if (x.s.kind === 'anchor key') c.g.select('rect').style('stroke-dasharray', '5 4');
@@ -993,8 +1041,8 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
   function relRow(r, dir) {
     const l = r.l, other = dir === 'out' ? r.to : r.from;
     return `<div class="rel"><div class="head"><span class="swatch" style="background:var(--r-${l.type})"></span>
-      <code>${esc(r.comp)}</code> ${dir === 'out' ? '→' : '←'} ${other ? entBtn(other) : '<span class="tag warn">unresolved</span>'}
-      <span class="tag">${esc(REL_NAME[l.type])}</span><span class="tag">${l.required ? 'required' : 'optional'}</span>
+      <code>${esc(r.label)}</code>${r.via && r.via.kind === 'record' ? ` <span class="muted small">· ${esc(r.field)}</span>` : ''} ${dir === 'out' ? '→' : '←'} ${other ? entBtn(other) : '<span class="tag warn">unresolved</span>'}
+      <span class="tag">${esc(REL_NAME[l.type])}</span><span class="tag">${l.required ? 'required' : 'optional'}</span>${r.via ? `<span class="tag">via ${r.via.kind === 'record' ? 'record' : 'anchor key'}</span>` : ''}
       ${r.fromNotes ? '<span class="tag">from notes</span>' : l.inferred ? '<span class="tag">inferred</span>' : ''}</div>
       <div class="muted small">${esc(l.cardinality || '')}${'changes_after_creation' in l ? ' · ' + (l.changes_after_creation ? 'can change after creation' : 'fixed at creation') : ''}${l.removable ? ' · removable' : ''}</div>
       <div class="muted small">down: ${esc(l.navigate?.down || '')}</div>
@@ -1190,7 +1238,9 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
     svg.classed('lbl-off', cfg.edgeLabels === 'off').classed('lbl-on', cfg.edgeLabels === 'on').classed('names-off', !cfg.names);
     document.querySelectorAll('#set-lbl button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === cfg.edgeLabels));
     document.getElementById('set-names').checked = cfg.names;
+    document.getElementById('set-via').checked = cfg.viaEdges;
   }
+  document.getElementById('set-via').addEventListener('change', ev => { cfg.viaEdges = ev.target.checked; saveSettings(); redraw(); });
   document.getElementById('set-lbl').addEventListener('click', ev => { const b = ev.target.closest('[data-v]'); if (!b) return; cfg.edgeLabels = b.dataset.v; saveSettings(); applyLabels(); });
   document.getElementById('set-names').addEventListener('change', ev => { cfg.names = ev.target.checked; saveSettings(); applyLabels(); });
   const ranges = [['set-spacing', 'out-spacing', 'spacing', v => v.toFixed(1) + '×'], ['set-link', 'out-link', 'linkLen', v => String(v)]];

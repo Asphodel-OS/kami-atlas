@@ -5,6 +5,8 @@ source:
   commit: "157ad472c81d"
   repo: "https://github.com/Asphodel-OS/kamigotchi"
   repo_path: packages/contracts
+  left_out:
+    KILL_BOUNTY_LOG: "untyped shape made in LibKill._logBounty; no deployed system reaches it"
 relationship_types:
   ownership: "The holder belongs to the referenced entity (IDOwns*, IdHolder)."
   registry: "The holder is an instance of, or uses, a registry entry, referenced by its index (Index*)."
@@ -151,6 +153,7 @@ entities:
     created_by: [AccountUseItem, GoalClaim, KamiCastItem, KamiGachaMint, KamiGachaReroll, KamiSacrificeCommit, KamiUseItem, QuestComplete, ScavengeClaim, SkillRespec]
     created_in: [LibCommit.commit]
     typed: false
+    name_from: "kami-atlas: no EntityType in the contracts; named by generate.py after LibCommit.commit"
     id:
       instance: "world.getUniqueEntityId() (a counter, no hashed id)"
     links:
@@ -896,6 +899,7 @@ entities:
     created_by: [Chat, _AuctionRegistry, _GoalRegistry, _ItemRegistry, _ListingRegistry, _NodeRegistry, _QuestRegistry, _RecipeRegistry, _SkillRegistry]
     created_in: [LibConditional.createFor]
     typed: false
+    name_from: "kami-atlas: no EntityType in the contracts; named by generate.py after LibConditional.createFor"
     id:
       instance: "world.getUniqueEntityId() (a counter, no hashed id)"
     links:
@@ -1282,6 +1286,7 @@ entities:
     created_by: [_RoomRegistry]
     created_in: [LibRoom.createGate]
     typed: false
+    name_from: "kami-atlas: no EntityType in the contracts; named by generate.py after LibRoom.createGate"
     id:
       instance: "world.getUniqueEntityId() (a counter, no hashed id)"
     links:

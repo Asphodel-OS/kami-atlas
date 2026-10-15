@@ -64,6 +64,20 @@ It reloads the page whenever `viz/` changes, keeping the current view, and rerun
 
 For the team it is deployed on Vercel at **https://kami-atlas.vercel.app** (project `asphodel/kami-atlas`, root directory `viz/`). Vercel Authentication is on for every URL, so only people logged into the Asphodel Vercel team can open it. Every push to `main` redeploys, so regenerate, commit `viz/data/` and push to update it.
 
+### What counts as an entity, and who named it
+
+The generator finds five kinds of thing that hold components, and only the first is named by the contracts:
+
+| kind | how the generator finds it | name comes from |
+|---|---|---|
+| **typed entity** (31) | a library calls `LibEntityType.set(id, "X")` or `checkAndSet` | the contracts (`"X"`) |
+| **untyped shape** (3: CONDITION, ROOM_GATE, COMMIT) | a library takes an id from `world.getUniqueEntityId()`, writes components to it, and never sets an EntityType | **`generate.py`** — `SHAPE_NAMES`, after the creating library; `name_from` on the entry says so |
+| **singleton** (7) | a `uint256 constant X = uint256(keccak256("name"))` that components are written to | the constant's name, except `SINGLETON_NAMES` (`gacha.id` → GACHA_POOL) |
+| **record** (22) | a hashed-id namespace (`keccak256("ns", keys...)`) that components are stored at | the namespace string |
+| **anchor key** (26) | a hashed-id namespace nothing is stored at; records point at it (IDAnchor, IDTo, IDFrom) | the namespace string |
+
+An untyped shape reachable from no deployed system is dead code and is left out; `source.left_out` in `domain-model.{json,yaml}` lists what was dropped and why (currently `KILL_BOUNTY_LOG`, from `LibKill._logBounty`). The split between record and anchor key comes from the AST pass in `classify_namespaces`, not from anything the contracts declare, so treat it as the generator's reading. The open question of whether the three untyped shapes should get an EntityType is in `notes/domain-model.yaml`.
+
 ## Live config values
 
 `config.py` reads config values from Yominet on demand: read-only `eth_call`, no keys.

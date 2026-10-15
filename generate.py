@@ -766,7 +766,9 @@ def derive_domain(ix, ents, creators, ns_struct, systems, indexed=None, untyped=
     for et, rec in ents.items():
         by = rec.get('created_by_systems', [])
         e = {'layer': layer_of(et), 'created_by': by, 'created_in': rec['created_in']}
-        if et in untyped: e['typed'] = False
+        if et in untyped:   # the contracts never name these; the name is this script's, from the creating library
+            e['typed'] = False
+            e['name_from'] = 'kami-atlas: no EntityType in the contracts; named by generate.py after ' + ', '.join(sorted(rec['created_in']))
         if id_of[et]:
             e['id'] = {k: '%s(%s)' % (v, ', '.join(ns_struct[v][0][1])) for k, v in id_of[et].items()}
         elif et in untyped:
@@ -1126,12 +1128,15 @@ def main():
     id_ns = {k: sorted(v) for k, v in sorted(namespaces.items())}
     ns_kind, gen_ns = classify_namespaces(ix, ns_struct)
 
-    # untyped shapes reachable from no deployed system are dead code: leave them out
+    # untyped shapes reachable from no deployed system are dead code: leave them out, but say so in the output
+    dropped = {}
     for et in list(untyped):
         if not any(any(c in r for c in creators[et]) for n, r in sys_reach.items() if not n.startswith('__')):
+            dropped[et] = 'untyped shape made in %s; no deployed system reaches it' % ', '.join(sorted(ents[et]['created_in']))
             untyped.discard(et); ents.pop(et); creators.pop(et)
     repo, repo_path = source_web()
-    model_meta = {'contracts': source_label(), 'ref': source_ref(), 'commit': source_rev(), 'repo': repo, 'repo_path': repo_path}
+    model_meta = {'contracts': source_label(), 'ref': source_ref(), 'commit': source_rev(), 'repo': repo, 'repo_path': repo_path,
+                  'left_out': dropped}
     model = derive_domain(ix, ents, creators, ns_struct, systems, {c['comp']: bool(c.get('indexed')) for c in deploy['components']},
                           untyped, singletons, ns_kind, gen_ns)
 

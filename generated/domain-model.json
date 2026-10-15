@@ -4,7 +4,10 @@
   "ref": "origin/main",
   "commit": "157ad472c81d",
   "repo": "https://github.com/Asphodel-OS/kamigotchi",
-  "repo_path": "packages/contracts"
+  "repo_path": "packages/contracts",
+  "left_out": {
+   "KILL_BOUNTY_LOG": "untyped shape made in LibKill._logBounty; no deployed system reaches it"
+  }
  },
  "relationship_types": {
   "ownership": "The holder belongs to the referenced entity (IDOwns*, IdHolder).",
@@ -259,6 +262,7 @@
     "LibCommit.commit"
    ],
    "typed": false,
+   "name_from": "kami-atlas: no EntityType in the contracts; named by generate.py after LibCommit.commit",
    "id": {
     "instance": "world.getUniqueEntityId() (a counter, no hashed id)"
    },
@@ -1557,6 +1561,7 @@
     "LibConditional.createFor"
    ],
    "typed": false,
+   "name_from": "kami-atlas: no EntityType in the contracts; named by generate.py after LibConditional.createFor",
    "id": {
     "instance": "world.getUniqueEntityId() (a counter, no hashed id)"
    },
@@ -2251,6 +2256,7 @@
     "LibRoom.createGate"
    ],
    "typed": false,
+   "name_from": "kami-atlas: no EntityType in the contracts; named by generate.py after LibRoom.createGate",
    "id": {
     "instance": "world.getUniqueEntityId() (a counter, no hashed id)"
    },

@@ -488,7 +488,7 @@ REL_TYPES = {
     'directed': 'A relation from a source entity to a target entity (IdSource, IdTarget, IDFrom, IDTo).',
     'attachment': 'The holder is attached to an anchor entity, e.g. a requirement or reward on a quest (IDAnchor).',
     'classifier': 'The holder is classified by the referenced entity, e.g. a share by its pool (IDType).',
-    'keyed': 'A sub-entity whose id is hashed from its parent: no stored pointer is needed to find it from the parent.',
+    'keyed': 'The id is hashed from the referenced entity\'s key (a sub-entity from its parent, registry.scavenge from a node index): no stored pointer is needed to find it.',
 }
 
 
@@ -679,6 +679,9 @@ SHAPE_NAMES = {'LibConditional': 'CONDITION', 'LibRoom.createGate': 'ROOM_GATE',
                'LibKill._logBounty': 'KILL_BOUNTY_LOG'}  # names for untyped shapes; others default to the library name
 SINGLETON_NAMES = {'gacha.id': 'GACHA_POOL'}
 ADDRESS_KEYED_NAMES = {'CacheOperator': 'operator.cache'}
+# records whose index key means different things depending on a string key next to it (a stat counter's index is an
+# item, a node, ... by `type_`): no single entity to draw a key-derived link to
+POLYMORPHIC_KEYS = {'is.data', 'is.score', 'is.config', 'has.flag', 'score.total', 'score.type', 'flag.type'}
 ADMIN_MODIFIERS = {'onlyAdmin', 'onlyOwner', 'onlyCommManager', 'onlyLocal'}  # entry points players can't call
 
 
@@ -877,6 +880,24 @@ def derive_domain(ix, ents, creators, ns_struct, systems, indexed=None, untyped=
             if inferred: l['inferred'] = True
             if not types: l['unresolved_from'] = vals
             links[comp] = l
+        # keyed references: the id is hashed from another entity's index or id (registry.scavenge("NODE", nodeIndex) -> NODE)
+        for which, v in sorted(id_of[et].items()):
+            occ = next(((o, k) for o, k in ns_struct[v] if o is not None), None)
+            if not occ: continue
+            ofid_, keys_ = occ
+            for k in keys_:
+                del via_anchor[:]
+                t, inf = resolve(ofid_, k)
+                t = {x for x in t if x in ents and x != et}
+                if len(t) != 1: continue
+                tgt = next(iter(t))
+                if any(tgt in ([l['to']] if isinstance(l['to'], str) else l['to'] or []) for l in links.values()): continue  # a stored pointer already says so
+                rest = [x for x in keys_ if x != k]
+                links['key:' + k] = {'to': tgt, 'type': 'keyed', 'stored_on': et, 'required': True, 'key': k,
+                                     'cardinality': 'one %s per %s%s' % (et, tgt, (' per ' + ', '.join(rest)) if rest else ''),
+                                     'navigate': {'up': 'the %s key of %s' % (k, v), 'down': 'compute %s(%s)' % (v, ', '.join(keys_))},
+                                     'derived': ['%s key %s of %s(%s) resolves to %s%s' % (which, k, v, ', '.join(keys_), tgt, ' (traced through callers)' if inf else '')],
+                                     **({'inferred': True} if inf else {})}
         if links: e['links'] = links
         e['components'] = [c for c in rec['components_at_creation'] if c != 'EntityType']
         model[et] = e
@@ -898,10 +919,11 @@ def derive_domain(ix, ents, creators, ns_struct, systems, indexed=None, untyped=
     for ns, occ in sorted(ns_struct.items()):
         if ns in ns_used: continue
         ofid, keys = next(((o, k) for o, k in occ if o is not None), (None, occ[0][1]))
-        keyinfo, holders = {}, set()
+        keyinfo, holders, kinf = {}, set(), {}
         for k in keys:
             t, inf = resolve(ofid, k) if ofid else (set(), True)
             keyinfo[k] = sorted(t)[0] if len(t) == 1 else sorted(t) if t else None
+            kinf[k] = inf
             if any(x in k.lower() for x in ('holder', 'acc', 'kami', 'owner')) and t: holders |= t
         owner_lib = stem(lib_of(ofid)) if ofid else None
         lib_ents = sorted(lib_entity.get(owner_lib, []))
@@ -955,6 +977,26 @@ def derive_domain(ix, ents, creators, ns_struct, systems, indexed=None, untyped=
                         'navigate': {'up': 'compute %s(%s), read %s' % (ns, ', '.join(keys), comp),
                                      'down': 'reverse lookup on %s (indexed)' % comp if indexed.get(comp) else 'not indexed: needs a scan or the indexer'},
                         'derived': ['%s stores %s; the record is keyed under %s' % (ns, note, h)], **({'inferred': True} if inf else {})}
+        via_targets = {l['to'] for l in sub.get('links', {}).values() if isinstance(l.get('to'), str)}
+        def via_edge(h, tgt, comp, typ, how, card_rest, inferred=False):
+            if tgt == h or h not in model or tgt in via_targets: return
+            model[h].setdefault('links', {})['%s.%s' % (ns, comp)] = {
+                'to': tgt, 'type': typ, 'stored_on': ns, 'via': {'record': ns}, 'required': False,
+                'only_when': ['a %s record exists for the %s' % (ns, h)],
+                'cardinality': 'one %s per %s%s' % (ns, h, (' per ' + ', '.join(card_rest)) if card_rest else ''),
+                'navigate': {'up': 'compute %s(%s)' % (ns, ', '.join(keys)), 'down': 'from the key values'}, 'derived': [how],
+                **({'inferred': True} if inferred else {})}
+        # keys naming another entity: scavenge.instance(field, index, holderID) -> index is a NODE
+        for k, kv in keyinfo.items():
+            if ns in POLYMORPHIC_KEYS or not isinstance(kv, str) or kv not in model or kv in holders_ or any(x in k.lower() for x in ('holder', 'acc', 'owner')): continue
+            for h in holders_: via_edge(h, kv, 'key:' + k, 'keyed', 'key %s of %s(%s) resolves to %s%s' % (k, ns, ', '.join(keys), kv, ' (traced through callers)' if kinf.get(k) else ''), [x for x in keys if x != k and x not in ('holderID', 'accID')], kinf.get(k, False))
+        # the same keys as a registry entry's id: the record is the holder's instance of that entry
+        for v_, et_ in claimed.items():
+            occ_ = next(((o, k) for o, k in ns_struct[v_] if o is not None), None)
+            if not occ_ or not ofid or stem(lib_of(occ_[0])) != stem(lib_of(ofid)) or et_ in holders_: continue
+            ek = [k for k in occ_[1]]
+            if ek and set(ek) <= set(keys) and set(ek) != set(keys) and et_ in model:
+                for h in holders_: via_edge(h, et_, 'keys', 'registry', 'keys %s of %s match the id %s(%s) of %s' % (', '.join(ek), ns, v_, ', '.join(ek), et_), [k for k in keys if k not in ('holderID', 'accID')])
         if parent:
             model[parent].setdefault('sub_entities', {})[ns] = sub
         else:

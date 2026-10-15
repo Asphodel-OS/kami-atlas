@@ -298,7 +298,7 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
   const arr = v => v == null ? [] : Array.isArray(v) ? v : [v];
   const LAYERS = ['runtime', 'hybrid', 'registry'];
   const LAYER_NAME = { runtime: 'Runtime', hybrid: 'Hybrid', registry: 'Registry' };
-  const REL_NAME = { ownership: 'Ownership', registry: 'Registry reference', directed: 'Directed', attachment: 'Attachment', classifier: 'Classifier', keyed: 'Keyed sub-entity' };
+  const REL_NAME = { ownership: 'Ownership', registry: 'Registry reference', directed: 'Directed', attachment: 'Attachment', classifier: 'Classifier', keyed: 'Keyed' };
   const panel = document.getElementById('panel');
 
   let model, systems, comps, notes = {};
@@ -419,9 +419,12 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
     .attr('refX', 9).attr('refY', 5).attr('markerWidth', 7).attr('markerHeight', 7).attr('orient', 'auto-start-reverse')
     .append('path').attr('d', 'M0 0L10 5L0 10z').style('fill', `var(--r-${t})`);
   // holder-end markers: crow's foot = many, bar = one, bar + dot = one per key (marker-start, so they sit at the holder)
-  for (const t of Object.keys(REL_NAME)) for (const [k, d] of [['many', 'M0,5L10,0.5M0,5L10,5M0,5L10,9.5'], ['one', 'M8,0.5L8,9.5'], ['key', 'M8,0.5L8,9.5M2,5a2,2 0 1,0 0.01,0']])
-    defs.append('marker').attr('id', `c-${k}-${t}`).attr('viewBox', '0 0 12 10').attr('refX', 10).attr('refY', 5).attr('markerWidth', 12).attr('markerHeight', 10)
-      .attr('markerUnits', 'userSpaceOnUse').attr('orient', 'auto-start-reverse').append('path').attr('d', d).attr('fill', 'none').style('stroke', `var(--r-${t})`).attr('stroke-width', 1.5);
+  for (const t of Object.keys(REL_NAME)) for (const [k, d] of [['many', 'M0,5L10,0.5M0,5L10,5M0,5L10,9.5'], ['one', 'M8,0.5L8,9.5'], ['key', 'M8,0.5L8,9.5']]) {
+    const m = defs.append('marker').attr('id', `c-${k}-${t}`).attr('viewBox', '0 0 12 10').attr('refX', 10).attr('refY', 5).attr('markerWidth', 12).attr('markerHeight', 10)
+      .attr('markerUnits', 'userSpaceOnUse').attr('orient', 'auto-start-reverse');
+    m.append('path').attr('d', d).attr('fill', 'none').style('stroke', `var(--r-${t})`).attr('stroke-width', 1.5);
+    if (k === 'key') m.append('circle').attr('cx', 3).attr('cy', 5).attr('r', 2).style('fill', `var(--r-${t})`);
+  }
   const root = svg.append('g');
   const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const ms = d => reduceMotion ? 0 : d;
@@ -470,8 +473,8 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
   }
 
   const REL_GLOSS = { ownership: 'belongs to', registry: 'instance of', directed: 'points at', attachment: 'is attached to',
-    classifier: 'is classified by', keyed: 'id hashed from its parent' };
-  const REL_COMP = { ownership: 'IDOwns*, IdHolder', registry: 'Index*', directed: 'IdSource, IdTarget', attachment: 'IDAnchor', classifier: 'IDType', keyed: '' };
+    classifier: 'is classified by', keyed: 'id hashed from its key' };
+  const REL_COMP = { ownership: 'IDOwns*, IdHolder', registry: 'Index*', directed: 'IdSource, IdTarget', attachment: 'IDAnchor', classifier: 'IDType', keyed: 'keccak256(ns, keys…)' };
   const LAYER_GLOSS = { runtime: 'made by playing', hybrid: 'registry entry + player instance', registry: 'made by admins' };
   // view: 'map' (the overview) or the name of the entity open in the drill-in view
   function legend(types, view) {
@@ -842,7 +845,7 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
     project();
     requestAnimationFrame(frame);
     sim.alpha(0.02).restart();
-    legend(['ownership', 'registry', 'directed', 'attachment', 'classifier'], 'map');
+    legend(['ownership', 'registry', 'directed', 'attachment', 'classifier'].concat(links.some(l => l.r.l.type === 'keyed') ? ['keyed'] : []), 'map');
     applySystem();
     // the details panel previews the focused entity; it falls back to the overview after a short grace
     // period, so sweeping across gaps between nodes doesn't flash the overview
@@ -967,7 +970,7 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
       });
     }
     const usedTypes = [...new Set(out.concat(inn).map(r => r.l.type))];
-    legend(usedTypes.concat(subs.length ? ['keyed'] : []), n);
+    legend([...new Set(usedTypes.concat(subs.length ? ['keyed'] : []))], n);
     // arrows: ←/→ move between "Referenced by", this entity and "Stores a reference to"; ↑/↓ within a column;
     // ↓ from this entity reaches the sub-entities (rows of 3). Enter opens the selected entity.
     let fsel = null;

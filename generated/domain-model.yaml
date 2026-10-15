@@ -13,7 +13,7 @@ relationship_types:
   directed: "A relation from a source entity to a target entity (IdSource, IdTarget, IDFrom, IDTo)."
   attachment: "The holder is attached to an anchor entity, e.g. a requirement or reward on a quest (IDAnchor)."
   classifier: "The holder is classified by the referenced entity, e.g. a share by its pool (IDType)."
-  keyed: "A sub-entity whose id is hashed from its parent: no stored pointer is needed to find it from the parent."
+  keyed: "The id is hashed from the referenced entity's key (a sub-entity from its parent, registry.scavenge from a node index): no stored pointer is needed to find it."
 entities:
   ACCOUNT:
     layer: runtime
@@ -71,6 +71,33 @@ entities:
           up: "compute goal.contribution(goalID, accID), read IDType"
           down: "reverse lookup on IDType (indexed)"
         derived: ["goal.contribution stores IDType = goalID in LibGoal.incContribution (from the name); the record is keyed under ACCOUNT"]
+      "scavenge.instance.key:index":
+        to: NODE
+        type: keyed
+        stored_on: scavenge.instance
+        via:
+          record: scavenge.instance
+        required: false
+        only_when: ["a scavenge.instance record exists for the ACCOUNT"]
+        cardinality: "one scavenge.instance per ACCOUNT per field"
+        navigate:
+          up: "compute scavenge.instance(field, index, holderID)"
+          down: "from the key values"
+        derived: ["key index of scavenge.instance(field, index, holderID) resolves to NODE (traced through callers)"]
+        inferred: true
+      scavenge.instance.keys:
+        to: SCAVENGE
+        type: registry
+        stored_on: scavenge.instance
+        via:
+          record: scavenge.instance
+        required: false
+        only_when: ["a scavenge.instance record exists for the ACCOUNT"]
+        cardinality: "one scavenge.instance per ACCOUNT per field, index"
+        navigate:
+          up: "compute scavenge.instance(field, index, holderID)"
+          down: "from the key values"
+        derived: ["keys field, index of scavenge.instance match the id registry.scavenge(field, index) of SCAVENGE"]
     components: [AddressOperator, AddressOwner, CacheOperator, IndexAccount, IndexRoom, Stamina, TimeLast, TimeLastAction, TimeStart, Value]
     owns: [COMMIT, INVENTORY, KAMI, KAMI_COLLECTION_OFFER, KAMI_LISTING, KAMI_OFFER, POOL_SHARE, QUEST, RELATIONSHIP, TOKEN_RECEIPT, TRADE]
     sub_entities:
@@ -1471,6 +1498,19 @@ entities:
     created_in: [LibScavenge.create]
     id:
       registry: "registry.scavenge(field, index)"
+    links:
+      "key:index":
+        to: NODE
+        type: keyed
+        stored_on: SCAVENGE
+        required: true
+        key: index
+        cardinality: "one SCAVENGE per NODE per field"
+        navigate:
+          up: "the index key of registry.scavenge"
+          down: "compute registry.scavenge(field, index)"
+        derived: ["registry key index of registry.scavenge(field, index) resolves to NODE (traced through callers)"]
+        inferred: true
     components: [Affinity, Index, IsRegistry, Type, Value]
     sub_entities:
       scavenge.reward:

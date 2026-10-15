@@ -140,7 +140,15 @@ aside { position: absolute; top: 12px; right: 12px; bottom: 12px; width: var(--s
 .sidetabs { display: flex; align-items: center; gap: 4px; padding: 8px 10px 0; border-bottom: 1px solid var(--line); }
 .sidetabs [role="tab"] { font: 500 12.5px var(--f-body); color: var(--muted); background: none; border: 0; border-bottom: 2px solid transparent; padding: 6px 10px 8px; cursor: pointer; }
 .sidetabs [role="tab"][aria-selected="true"] { color: var(--ink); border-bottom-color: var(--ink); }
+.sidetabs .navback { margin: 0 0 6px auto; }
+.sidetabs .navback:disabled { opacity: .35; cursor: default; }
 .sidebody { overflow: auto; padding: 16px 18px; flex: 1; min-height: 0; }
+#sys-q { font: 13px var(--f-body); color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; width: 100%; margin-bottom: 4px; }
+.sys-group h3 { font: 500 11px var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 18px 0 4px; }
+.sys-item { display: block; width: 100%; text-align: left; background: none; border: 0; border-radius: 6px; padding: 6px 8px; margin: 0 -8px; color: var(--ink); cursor: pointer; font: inherit; }
+.sys-item:hover, .sys-item.on { background: color-mix(in srgb, var(--ink) 8%, transparent); }
+.sys-item code { font: 500 12px var(--f-mono); }
+.sys-item .muted { display: block; margin-top: 1px; }
 .set-group { display: grid; gap: 8px; border-top: 1px solid var(--line); padding-top: 12px; margin-top: 12px; }
 .set-group:first-child { border-top: 0; padding-top: 0; margin-top: 0; }
 .set-group h3 { font: 500 11px var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0; }
@@ -223,9 +231,15 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
     <aside id="side" aria-label="Sidebar">
       <div class="sidetabs" role="tablist">
         <button role="tab" id="tab-details" aria-selected="true" aria-controls="panel">Details</button>
+        <button role="tab" id="tab-systems" aria-selected="false" aria-controls="systems">Systems</button>
         <button role="tab" id="tab-settings" aria-selected="false" aria-controls="settings">Settings</button>
+        <button class="chip navback" id="navback" title="Back to where you were (Backspace)" disabled>← Back</button>
       </div>
       <div class="sidebody" id="panel" role="tabpanel" aria-live="polite"></div>
+      <div class="sidebody" id="systems" role="tabpanel" hidden>
+        <input id="sys-q" type="search" placeholder="Filter systems" aria-label="Filter systems" autocomplete="off">
+        <div id="sys-list"></div>
+      </div>
       <div class="sidebody" id="settings" role="tabpanel" hidden>
         <div class="set-group"><h3>Layers</h3><div class="set-row">
           <button class="chip" id="f-runtime" aria-pressed="true"><span class="dot" style="background:var(--runtime)"></span>Runtime</button>
@@ -470,7 +484,28 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
   const BAND = 320, bandY = { runtime: 0, hybrid: 1, registry: 2 };
   const radius = n => E[n] ? 12 + Math.sqrt(subsOf(n).length) * 3.2 : 12;
 
-  function overviewView(system) {
+  // exploration history for the panel's Back button: view, selection and camera
+  const navStack = []; let navRestoring = false, curNodes = null;
+  // the overview's layout as it was left (including pins), so Back returns to the same picture
+  const navSave = () => st.view === 'overview' && curNodes && navStack.length && (navStack[navStack.length - 1].pos = new Map(curNodes.map(d => [d.id, { x: d.x, y: d.y, pin: !!d.userPinned }])));
+  const navKey = () => st.view === 'focus' ? 'focus:' + st.sel : st.view ? 'overview:' + (st.system || '') : null;
+  function navPush(next) {
+    const cur = navKey();
+    if (navRestoring || !cur || cur === next) return;
+    navStack.push({ view: st.view, sel: st.sel, sub: st.sub, system: st.system, t: d3.zoomTransform(svg.node()) });
+    navSave();
+    if (navStack.length > 60) navStack.shift();
+    document.getElementById('navback').disabled = false;
+  }
+  function navBack() {
+    const s_ = navStack.pop(); if (!s_) return;
+    document.getElementById('navback').disabled = !navStack.length;
+    navRestoring = true;
+    try { if (s_.view === 'focus') focusView(s_.sel, s_.sub); else overviewView(s_.system, s_.pos); } finally { navRestoring = false; }
+    setTimeout(() => svg.interrupt().call(zoom.transform, s_.t), 60);  // after the view's own fit
+  }
+  function overviewView(system, pos) {
+    navPush('overview:' + (system && systems[system] ? system : ''));
     st.view = 'overview'; st.sel = null; st.system = system && systems[system] ? system : null; hide();
     document.getElementById('crumb').hidden = !st.system; wrap.classList.toggle('focus', !!st.system);
     document.getElementById('crumb-name').textContent = st.system ? 'System: ' + st.system : '';
@@ -553,6 +588,8 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
       .force('collide', d3.forceCollide(d => radius(d.id) + 34))
       .stop();
     for (let i = 0; i < 400; i++) sim.tick();  // settle before the first frame
+    if (pos) for (const d of nodes) { const p = pos.get(d.id); if (p) { d.x = p.x; d.y = p.y; d.vx = d.vy = 0; if (p.pin) { d.userPinned = true; d.fx = p.x; d.fy = p.y; } } }
+    curNodes = nodes; node.classed('pinned', d => !!d.userPinned);
 
     // ---- cursor lens, repulsion, snap ----
     // Layout space is d.x/d.y (physics). Display space is d.px/d.py/d.pz, recomputed every frame through the lens.
@@ -744,7 +781,8 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
 
   function focusView(n, sub) {
     if (!E[n]) return;
-    st.view = 'focus'; st.sel = n; hide(); showTab('details');
+    navPush('focus:' + n);
+    st.view = 'focus'; st.sel = n; st.sub = sub; hide(); showTab('details');
     if (sim) sim.stop();
     root.selectAll('*').remove(); fitTarget = null;
     document.getElementById('crumb').hidden = false; wrap.classList.add('focus');
@@ -939,14 +977,39 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
     saveSettings(); overviewView(st.system);
   });
   // side panel: tabs and collapse
-  const side = document.querySelector('.main'), tabD = document.getElementById('tab-details'), tabS = document.getElementById('tab-settings');
-  const setsEl = document.getElementById('settings');
+  const side = document.querySelector('.main');
+  const TABS = { details: panel, systems: document.getElementById('systems'), settings: document.getElementById('settings') };
   function showTab(t) {
-    tabD.setAttribute('aria-selected', t === 'details'); tabS.setAttribute('aria-selected', t === 'settings');
-    panel.hidden = t !== 'details'; setsEl.hidden = t !== 'settings';
+    for (const [k, el] of Object.entries(TABS)) { document.getElementById('tab-' + k).setAttribute('aria-selected', k === t); el.hidden = k !== t; }
+    if (t === 'systems') renderSystems();
   }
-  tabD.addEventListener('click', () => showTab('details'));
-  tabS.addEventListener('click', () => showTab('settings'));
+  for (const k of Object.keys(TABS)) document.getElementById('tab-' + k).addEventListener('click', () => showTab(k));
+  // systems tab: every system, grouped by the leading word of its name; click to see what it touches
+  const sysQ = document.getElementById('sys-q'), sysList = document.getElementById('sys-list');
+  const createdBy = {};
+  for (const [n, e] of Object.entries(E)) for (const sy of arr(e.created_by)) (createdBy[sy] = createdBy[sy] || []).push(n);
+  function renderSystems() {
+    const q = sysQ.value.trim().toLowerCase(), groups = {};
+    for (const n of Object.keys(systems).sort()) {
+      const sy = systems[n], cr = createdBy[n] || [];
+      if (q && ![n, sy.comment || '', ...cr, ...arr(sy.writes)].some(x => x.toLowerCase().includes(q))) continue;
+      const g = (n.match(/^[A-Z][a-z]+/) || [n])[0]; (groups[g] = groups[g] || []).push(n);
+    }
+    // one-system groups read better together
+    for (const g of Object.keys(groups)) if (groups[g].length === 1 && !q) { (groups.Other = groups.Other || []).push(...groups[g]); delete groups[g]; }
+    if (groups.Other) { const o = groups.Other.sort(); delete groups.Other; groups.Other = o; }
+    const item = n => { const sy = systems[n], cr = createdBy[n] || [];
+      return `<button class="sys-item${st.system === n ? ' on' : ''}" data-sys="${esc(n)}"><code>${esc(n)}</code>`
+        + (sy.comment ? `<span class="muted small">${esc(sy.comment.replace(/^@notice\s*/, ''))}</span>` : '')
+        + `<span class="muted small">${cr.length ? 'creates ' + esc(cr.join(', ')) + ' · ' : ''}writes ${arr(sy.writes).length} fields</span></button>`; };
+    const names = Object.keys(groups);
+    sysList.innerHTML = names.length ? names.map(g => `<section class="sys-group"><h3>${esc(g)} (${groups[g].length})</h3>${groups[g].map(item).join('')}</section>`).join('')
+      : '<p class="muted small">No system matches.</p>';
+  }
+  sysQ.addEventListener('input', renderSystems);
+  document.getElementById('navback').addEventListener('click', navBack);
+  document.addEventListener('keydown', ev => { if (ev.key === 'Backspace' && !(ev.target.closest && ev.target.closest('input, textarea'))) { navBack(); ev.preventDefault(); } });
+  sysList.addEventListener('click', ev => { const b = ev.target.closest('[data-sys]'); if (b) { overviewView(b.dataset.sys); renderSystems(); } });
   const handle = document.getElementById('sidehandle');
   function setCollapsed(c, instant) {
     cfg.collapsed = c; saveSettings();

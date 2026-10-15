@@ -103,6 +103,7 @@ h1 small { display: block; font: 400 12px/1.3 var(--f-mono); color: var(--muted)
 .legend .lg-row[data-hl]:hover { background: color-mix(in srgb, var(--ink) 9%, transparent); }
 .legend .lg-title + .lg-row { margin-top: 5px; }
 .lg-off { opacity: .08 !important; transition: opacity .12s; }
+.preview-hint { margin: 0 0 10px; }
 .legend .lg-row { display: grid; grid-template-columns: 28px auto minmax(0, 1fr); align-items: center; gap: 0 8px; line-height: 1.35; }
 .legend .lg-row b { font-weight: 500; white-space: nowrap; }
 .legend .lg-row i { font-style: normal; color: var(--muted); font-size: 10.5px; }
@@ -620,7 +621,10 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
     const ov = content.append('g').attr('class', 'lens-ov').style('pointer-events', 'none');
     const ring = ov.append('circle').attr('fill', 'none').style('stroke', 'var(--ink)').attr('stroke-width', 2).attr('vector-effect', 'non-scaling-stroke').attr('display', 'none');
     const tether = ov.append('line').style('stroke', 'var(--ink)').attr('stroke-width', 1).attr('stroke-dasharray', '3 3').attr('opacity', 0.35).attr('vector-effect', 'non-scaling-stroke').attr('display', 'none');
+    // with the details panel showing the preview, the tooltip would only repeat it
+    const panelShows = d => !d.singleton && !st.system && !cfg.collapsed && !panel.hidden && window.matchMedia('(min-width: 901px)').matches;
     const tipAtNode = d => {
+      if (panelShows(d)) { tip.hidden = true; return; }
       const t = d3.zoomTransform(svg.node()), [x, y] = t.apply([d.px, d.py]), r = drawnR(d) * t.k;
       tip.innerHTML = tipFor(d); tip.hidden = false;
       const w = tip.offsetWidth, h = tip.offsetHeight;
@@ -681,6 +685,7 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
         focusId = fid; edgeHover = false;
         highlight(fid);
         if (!fid) hide();
+        previewPanel(f && !f.singleton ? fid : null);
       }
       if (f && !drag) tipAtNode(f);
       // draw through the lens, magnified nodes on top
@@ -705,7 +710,17 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
     sim.alpha(0.02).restart();
     legend(['ownership', 'registry', 'directed', 'attachment', 'classifier'], 'map');
     applySystem();
-    if (st.system) systemPanel(st.system, role); else overviewPanel();
+    // the details panel previews the focused entity; it falls back to the overview after a short grace
+    // period, so sweeping across gaps between nodes doesn't flash the overview
+    const basePanel = () => { if (st.system) systemPanel(st.system, role); else overviewPanel(); };
+    let previewing = null, baseScroll = 0, revertT = 0;
+    const previewPanel = id => {
+      clearTimeout(revertT);
+      if (id) { if (!previewing) baseScroll = panel.scrollTop; previewing = id; focusPanel(id, null, true); return; }
+      if (!previewing) return;
+      revertT = setTimeout(() => { if (gen !== viewGen || focusId) return; previewing = null; basePanel(); panel.scrollTop = baseScroll; }, 350);
+    };
+    basePanel();
     try { history.replaceState(null, '', st.system ? '#sys.' + st.system : location.pathname); } catch (e) {}
     setTimeout(() => fit(0), 30);
   }
@@ -861,9 +876,9 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
       <div class="muted small">down: ${esc(l.navigate?.down || '')}</div>
       ${r.note ? `<div class="small">${esc(r.note)}</div>` : ''}</div>`;
   }
-  function focusPanel(n, sub) {
+  function focusPanel(n, sub, preview) {
     const e = E[n], nt = NE[n] || {}, { out, in: inn } = relsOf(n), subs = subsOf(n), cb = changedBy(n);
-    panel.innerHTML = `<span class="pill" style="background:var(--${e.layer})">${esc(LAYER_NAME[e.layer])}</span>
+    panel.innerHTML = `${preview ? '<p class="muted small preview-hint">Previewing · click the entity to open it</p>' : ''}<span class="pill" style="background:var(--${e.layer})">${esc(LAYER_NAME[e.layer])}</span>
       <h2>${esc(n)}</h2>
       ${nt.what ? `<p class="what">${esc(nt.what)}</p>` : '<p class="what muted">No description in notes yet.</p>'}
       ${e.extends ? `<p class="small">Built on ${entBtn(e.extends)}: it has the same fields plus its own.</p>` : ''}

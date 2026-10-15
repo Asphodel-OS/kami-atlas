@@ -221,7 +221,7 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
     <div class="map" id="map">
       <div class="crumb" id="crumb" hidden><button class="chip" id="back">← All entities</button><span id="crumb-name"></span></div>
       <div class="maptools"><button class="chip" id="zin" aria-label="Zoom in">+</button><button class="chip" id="zout" aria-label="Zoom out">−</button><button class="chip" id="fit">Fit</button></div>
-      <div class="hint" id="hint">drag to pan · scroll to zoom · the cursor snaps to the nearest entity: click to open, drag to pin, double-click to release · arrows follow links · + − 0 keys</div>
+      <div class="hint" id="hint">drag to pan · scroll to zoom · the cursor snaps to the nearest entity: click to open, drag to pin · arrows follow links · + − 0 keys</div>
       <svg id="svg" role="img" aria-label="Map of Kamigotchi entities and their relationships"></svg>
       <div class="legend" id="legend">
         <button class="lg-head" id="lg-toggle" aria-expanded="true" aria-controls="legend-body" title="Collapse the legend (L)">Legend
@@ -660,7 +660,7 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
     const nearest = () => { let best = null, bd = Infinity; for (const d of nodes) { const g = screenGap(d); if (g < bd) { best = d; bd = g; } } return [best, bd]; };
     const setSnap = d => {
       if (d === snapped) return;
-      if (snapped && snapped !== drag && !snapped.userPinned) { snapped.fx = null; snapped.fy = null; }
+      if (snapped && snapped !== drag && snapped !== kbd && !snapped.userPinned) { snapped.fx = null; snapped.fy = null; }
       snapped = d;
       if (snapped && !snapped.userPinned) { snapped.fx = snapped.x; snapped.fy = snapped.y; }  // so physics can't slide it away
     };
@@ -676,7 +676,7 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
       const [n, g] = nearest(); if (g < reach) setSnap(n);
     };
     sim.force('push', alpha => {   // repulsion: clears space around the cursor; links spring nodes back
-      if (!cfg.pushOn || !mouse.inside || drag) return;
+      if (!cfg.pushOn || !mouse.inside || drag || kbd) return;
       const k = kNow(), R = cfg.lensRadius * 0.6 / k, strength = cfg.pushStrength * 0.9 / k;
       for (const d of nodes) {
         if (d === snapped || d.fx != null) continue;
@@ -703,9 +703,15 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
     };
     const pointer = ev => { const [sx, sy] = d3.pointer(ev, svg.node()), t = d3.zoomTransform(svg.node()), [x, y] = t.invert([sx, sy]); return { sx, sy, x, y }; };
     let kbd = null, kbdAt = null;   // entity chosen with the arrow keys; cleared once the mouse really moves
+    // the keyboard choice holds still (fixed in place, lens jumps straight to it) so stepping doesn't make it wobble
+    const setKbd = d => {
+      if (kbd && kbd !== d && !kbd.userPinned && kbd !== snapped) { kbd.fx = null; kbd.fy = null; }
+      kbd = d || null; kbdAt = null;
+      if (kbd) { if (!kbd.userPinned) { kbd.fx = kbd.x; kbd.fy = kbd.y; } kbd.vx = kbd.vy = 0; lens.x = kbd.x; lens.y = kbd.y; ensureVisible(kbd.x, kbd.y); }
+    };
     svg.on('pointermove.atlas', ev => {
       const p = pointer(ev);
-      if (kbd && (!kbdAt || Math.hypot(p.sx - kbdAt[0], p.sy - kbdAt[1]) > 6)) { if (kbdAt) kbd = null; else kbdAt = [p.sx, p.sy]; }
+      if (kbd && (!kbdAt || Math.hypot(p.sx - kbdAt[0], p.sy - kbdAt[1]) > 6)) { if (kbdAt) setKbd(null); else kbdAt = [p.sx, p.sy]; }
       if (!mouse.inside) { lens.x = p.x; lens.y = p.y; }
       Object.assign(mouse, p, { inside: true });
       if (drag) {
@@ -749,10 +755,10 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
         } else {      // follow a relationship that way; with none, the nearest entity that way
           cur = pickToward(cur, DIRS[k], nbrs(cur)) || pickToward(cur, DIRS[k], nodes) || cur;
         }
-        kbd = cur; kbdAt = null; ensureVisible(cur.x, cur.y);
+        setKbd(cur);
       },
-      enter() { if (kbd && !kbd.singleton) { const d = kbd; kbd = null; flyTo(d); return true; } return false; },
-      select(id) { const d = id && nodes.find(x => x.id === id); kbd = d || null; kbdAt = null; if (d) ensureVisible(d.x, d.y); },
+      enter() { if (kbd && !kbd.singleton) { const d = kbd; setKbd(null); flyTo(d); return true; } return false; },
+      select(id) { setKbd(id && nodes.find(x => x.id === id)); },
     };
     const frame = () => {
       if (gen !== viewGen || st.view !== 'overview') return;

@@ -48,6 +48,13 @@ SkillRespec:
     - UPON_LIQUIDATION
   data: [ITEM_COUNT, ITEM_USE]
   writes_without_access: [BlockReveal, Experience, IndexRoom, ProxyVIPScore, State, TimeNext]
+  writes_without_access_paths:
+    BlockReveal: [SkillRespecSystem.execute, LibItem.applyAllos, "LibAllo.distribute(uint256[],uint256,uint256)", LibAllo.giveDT, LibDroptable.commit, "LibCommit.commit(uint256,uint256,string)"]
+    Experience: [SkillRespecSystem.execute, LibItem.applyAllos, "LibAllo.distribute(uint256[],uint256,uint256)", LibAllo.giveBasic, LibSetter.update, LibExperience.inc]
+    IndexRoom: [SkillRespecSystem.execute, LibItem.applyAllos, "LibAllo.distribute(uint256[],uint256,uint256)", LibAllo.giveBasic, LibSetter.update, LibRoom.set]
+    ProxyVIPScore: [SkillRespecSystem.execute, LibItem.applyAllos, "LibAllo.distribute(uint256[],uint256,uint256)", LibAllo.giveBasic, LibSetter.update, LibVIP.inc]
+    State: [SkillRespecSystem.execute, LibItem.applyAllos, "LibAllo.distribute(uint256[],uint256,uint256)", LibAllo.giveBasic, LibSetter.update, LibSetter.setState, LibKami.setStateFromIndex]
+    TimeNext: [SkillRespecSystem.execute, LibItem.applyAllos, "LibAllo.distribute(uint256[],uint256,uint256)", LibAllo.giveBasic, LibSetter.update, LibCooldown.modify]
   access_not_written: [TimeReset, TimeStart]
   steps:
     - LibAccount.getByOperator

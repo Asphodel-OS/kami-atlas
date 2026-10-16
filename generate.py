@@ -365,6 +365,22 @@ def flat_events(sts):
         elif st[0] == 'loop': yield from flat_events(st[2])
 
 
+def write_path(ix, roots, comp):
+    """Shortest call chain from a system's entry points to a function that writes comp directly, as function keys."""
+    def direct(fid):
+        return any(st[0] == 'access' and cname(st[1]) == comp and st[2].startswith(WRITE_PREFIXES) for st in flat_events(ix.events(fid)))
+    seen, queue = {r: None for r in roots}, list(roots)
+    while queue:
+        x = queue.pop(0)
+        if direct(x):
+            path = []
+            while x is not None: path.append(ix.key(x)); x = seen[x]
+            return path[::-1]
+        for y in called(ix, x):
+            if y not in seen: seen[y] = x; queue.append(y)
+    return None
+
+
 def called(ix, fid):
     out = []
     def go(sts):
@@ -694,6 +710,7 @@ def classify_namespaces(ix, ns_struct):
 SHAPE_NAMES = {'LibConditional': 'CONDITION', 'LibRoom.createGate': 'ROOM_GATE', 'LibCommit': 'COMMIT',
                'LibKill._logBounty': 'KILL_BOUNTY_LOG'}  # names for untyped shapes; others default to the library name
 SINGLETON_NAMES = {'gacha.id': 'GACHA_POOL'}
+DEPRECATED = {'KILL_BOUNTY_LOG': 'deprecated, to be deleted from the contracts (Acheron, 2026-10-16)'}  # why a dead shape is dead, when someone has said
 ADDRESS_KEYED_NAMES = {'CacheOperator': 'operator.cache'}
 # records whose index key means different things depending on a string key next to it (a stat counter's index is an
 # item, a node, ... by `type_`): no single entity to draw a key-derived link to
@@ -1315,10 +1332,14 @@ def main():
         }
         for k in ('events', 'stats', 'config', 'bonuses', 'flags', 'data'):
             if keys.get(k): rec[k] = sorted(keys[k])
+        disabled = [ev[0][1] for e in entries for ev in [ix.events(fns[e]['id'])] if ev and ev[0][0] == 'revert']
+        if disabled and len(disabled) == len(entries): rec['disabled'] = disabled[0]  # every entry point reverts before doing anything
         if wa and wa != ['*']:
             missing = sorted(c for c in allw if c not in wa and '[' not in c and c not in protected)
             unused = sorted(c for c in wa if c not in allw)
-            if missing: rec['writes_without_access'] = missing
+            if missing:
+                rec['writes_without_access'] = missing
+                rec['writes_without_access_paths'] = {c: write_path(ix, sys_entry_fids[name], c) for c in missing}
             if unused: rec['access_not_written'] = unused
         rec = {k: v for k, v in rec.items() if v not in (None, [], False) or k == 'deployed'}
         rec['steps'] = traces if len(traces) > 1 else next(iter(traces.values()), [])
@@ -1441,7 +1462,7 @@ def main():
     dropped = {}
     for et in list(untyped):
         if not any(any(c in r for c in creators[et]) for n, r in sys_reach.items() if not n.startswith('__')):
-            dropped[et] = 'untyped shape made in %s; no deployed system reaches it' % ', '.join(sorted(ents[et]['created_in']))
+            dropped[et] = 'untyped shape made in %s; no deployed system reaches it%s' % (', '.join(sorted(ents[et]['created_in'])), ('; ' + DEPRECATED[et]) if et in DEPRECATED else '')
             untyped.discard(et); ents.pop(et); creators.pop(et)
     repo, repo_path = source_web()
     model_meta = {'contracts': source_label(), 'ref': source_ref(), 'commit': source_rev(), 'repo': repo, 'repo_path': repo_path,
@@ -1517,7 +1538,7 @@ def main():
     os.makedirs(vd, exist_ok=True)
     with open(os.path.join(vd, 'domain-model.json'), 'w') as f_: json.dump(model, f_)
     with open(os.path.join(vd, 'systems.json'), 'w') as f_:
-        json.dump({n: {k: r.get(k) for k in ('comment', 'args', 'writes', 'reads', 'events', 'config', 'deployed') if r.get(k) is not None}
+        json.dump({n: {k: r.get(k) for k in ('comment', 'args', 'writes', 'reads', 'events', 'config', 'deployed', 'disabled', 'writes_without_access', 'writes_without_access_paths') if r.get(k) is not None}
                    for n, r in systems.items()}, f_)
     with open(os.path.join(vd, 'components.json'), 'w') as f_:
         json.dump({n: {k: c.get(k) for k in ('type', 'comment') if c.get(k)} for n, c in comps.items()}, f_)

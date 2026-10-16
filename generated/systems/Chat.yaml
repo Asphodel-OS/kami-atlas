@@ -11,6 +11,12 @@ Chat:
   events: [MESSAGE]
   data: [MESSAGES]
   writes_without_access: [For, IDAnchor, Index, LogicType, Type]
+  writes_without_access_paths:
+    For: [ChatSystem.removeRequirement, "LibConditional.remove(uint256[])", "LibFor.remove(uint256[])"]
+    IDAnchor: [ChatSystem.addRequirement, LibConditional.createFor]
+    Index: [ChatSystem.removeRequirement, "LibConditional.remove(uint256[])"]
+    LogicType: [ChatSystem.removeRequirement, "LibConditional.remove(uint256[])"]
+    Type: [ChatSystem.removeRequirement, "LibConditional.remove(uint256[])"]
   steps:
     execute:
       - LibAccount.getByOperator

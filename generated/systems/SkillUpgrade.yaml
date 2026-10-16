@@ -14,6 +14,8 @@ SkillUpgrade:
   bonuses: [HARV_BOUNTY_BOOST, HARV_FERTILITY_BOOST, HARV_INTENSITY_BOOST, REST_METABOLISM_BOOST, STND_STRAIN_BOOST]
   data: [SKILL_POINTS_USE]
   writes_without_access: [Time]
+  writes_without_access_paths:
+    Time: [SkillUpgradeSystem.execute, LibSkill.upgradeFor, LibBonus.incBy, LibBonus.assign]
   access_not_written: [TimeStart, Type]
   steps:
     - LibAccount.getByOperator

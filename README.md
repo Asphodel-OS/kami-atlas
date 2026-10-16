@@ -87,6 +87,12 @@ The generator finds record references by following pointer fields (`IDType`, `Id
 
 **Keyed** references have no pointer field at all: the id is hashed from another entity's key (`registry.scavenge("NODE", nodeIndex)`, `amm.pool(lo, hi)`). The generator resolves each key of an entity's id formula the same way it resolves pointer values: by name (`nodeIndex`), then through callers, then by how the function that received it checks it (a value passed as the `index` of `LibItem.getByIndex`, or into a parameter named `itemIndex`, is an item), through locals assigned from a registry getter (`regID = LibItem.getByIndex(...)` is an item; a getter counts as producing its namespace when every return is the generated id or 0), and through pure helpers that only rearrange their arguments (`(lo, hi) = sortIndices(indexA, indexB)`). Keys that resolve to the same entity become one link (`key:lo,hi`, one POOL per ITEM per ITEM); a key that a stored pointer already covers is not drawn twice. The `derived` line on each link says which of these steps produced it.
 
+### What the contracts do two ways
+
+`notes/domain-model.yaml` keeps three lists beside the descriptions: `inconsistencies`, places where the contracts model the same kind of thing differently (typed and untyped shapes, two id-namespace conventions, `ID` against `Id` pointer names, requirements keyed by index for most registries but by use-case reference for items); `answered`, questions settled with the team, dated, so the reasoning survives; and `open_questions`. Nothing in the first list needs changing, but the atlas and the indexer have to know about each one.
+
+Two things the generator notices about systems: a system whose every entry point reverts before doing anything is marked `disabled` with the message (KamiOnyxRespec, KamiOnyxRename), and shown as such in the atlas; and a system that can reach a component write it is not granted in `deploy.json` gets `writes_without_access` with, for each component, the shortest call path from the entry point (`writes_without_access_paths`). The atlas lists these under the system. Reachability is over-approximate: a write behind a branch the data never takes is listed too, so the path is there to judge it.
+
 ## Live config values
 
 `config.py` reads config values from Yominet on demand: read-only `eth_call`, no keys.

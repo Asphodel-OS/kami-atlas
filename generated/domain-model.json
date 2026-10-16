@@ -6,7 +6,7 @@
   "repo": "https://github.com/Asphodel-OS/kamigotchi",
   "repo_path": "packages/contracts",
   "left_out": {
-   "KILL_BOUNTY_LOG": "untyped shape made in LibKill._logBounty; no deployed system reaches it"
+   "KILL_BOUNTY_LOG": "untyped shape made in LibKill._logBounty; no deployed system reaches it; deprecated, to be deleted from the contracts (Acheron, 2026-10-16)"
   }
  },
  "relationship_types": {
@@ -1055,7 +1055,7 @@
       "recipientID"
      ],
      "settled_in_notes": true,
-     "note": "whoever receives the cut: a front-end or guild's entity"
+     "note": "whoever receives the cut. As of 2026-10-16 only kamibots (front-end operators); guilds may come later (Acheron)"
     }
    },
    "components": [
@@ -1475,7 +1475,7 @@
       "targetID"
      ],
      "settled_in_notes": true,
-     "note": "a skill's registry entry says which it is for (its For field); SkillUpgradeSystem checks the holder is that shape, so both kamis and accounts can hold skills. Which skills are account skills is registry data, not code."
+     "note": "a skill's registry entry says which it is for (its For field); SkillUpgradeSystem checks the holder is that shape, so both kamis and accounts can hold skills. Which skills are account skills is registry data, not code: as of 2026-10-16 there are none (Acheron)."
     }
    },
    "components": [
@@ -1743,7 +1743,7 @@
       "IdSource = sourceID in LibBonus.regCreate (traced through callers)"
      ],
      "inferred": true,
-     "note": "the registry entry that grants the bonus: a node, a skill, or an item (through the item's bonus allocation)"
+     "note": "the registry entry that grants the bonus: a node, a skill, or an item (through the item's bonus allocation). Only item use cases create bonus allocations; nodes, goals and quests don't grant bonuses as rewards, by design (Acheron, 2026-10-16)"
     }
    },
    "components": [

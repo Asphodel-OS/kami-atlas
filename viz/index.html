@@ -1035,9 +1035,11 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
     const sy = systems[n] || {};
     const by = r => Object.keys(role).filter(k => role[k] === r).sort();
     const sec = (title, xs) => xs.length ? `<section class="block"><h3>${title} (${xs.length})</h3><div class="chips">${xs.map(entBtn).join(' ')}</div></section>` : '';
-    panel.innerHTML = `<span class="pill" style="background:var(--muted)">System</span>
+    const wwa = sy.writes_without_access_paths || {};
+    panel.innerHTML = `<span class="pill" style="background:var(--muted)">System</span>${sy.disabled ? ' <span class="pill" style="background:var(--warn,#a33)">Disabled</span>' : ''}
       <h2>${esc(n)}</h2>
       ${sy.comment ? `<p class="what">${esc(sy.comment)}</p>` : ''}
+      ${sy.disabled ? `<p class="small">Every entry point reverts before doing anything: <code>${esc(sy.disabled)}</code> What follows is what it does once re-enabled.</p>` : ''}
       <section class="block"><div class="kv">
         ${sy.args ? `<span class="k">args</span><code>${esc(sy.args)}</code>` : ''}
         ${arr(sy.events).length ? `<span class="k">events</span><span>${arr(sy.events).map(x => '<code>' + esc(x) + '</code>').join(', ')}</span>` : ''}
@@ -1046,7 +1048,10 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
       </div></section>
       ${sec('Creates', by('creates'))}${sec('Changes', by('changes'))}${sec('Reads', by('reads'))}
       <section class="block"><h3>Writes (${arr(sy.writes).length} components)</h3><div class="chips">${arr(sy.writes).map(c => `<span class="cmp ${compUse[c] && compUse[c].length === 1 ? 'own' : ''}">${esc(c)}</span>`).join('')}</div>
-        <p class="muted small" style="margin:6px 0 0">An entity counts as changed or read when the system touches a field only that entity has; shared fields like Value can't be attributed.</p></section>`;
+        <p class="muted small" style="margin:6px 0 0">An entity counts as changed or read when the system touches a field only that entity has; shared fields like Value can't be attributed.</p></section>
+      ${arr(sy.writes_without_access).length ? `<section class="block"><h3>Writes without a deploy grant (${arr(sy.writes_without_access).length})</h3>
+        <p class="muted small" style="margin:0 0 6px">Reachable writes to components this system is not granted in deploy.json. A write that actually runs reverts; whether it runs depends on the branch and the data.</p>
+        <ul class="plain">${arr(sy.writes_without_access).map(c => `<li><span class="cmp">${esc(c)}</span> <span class="muted small">${wwa[c] ? esc(wwa[c].slice(1).join(' → ')) : 'path not found'}</span></li>`).join('')}</ul></section>` : ''}`;
     panel.scrollTop = 0;
   }
   function relRow(r, dir) {
@@ -1146,7 +1151,7 @@ details summary { cursor: pointer; font: 500 12px var(--f-mono); color: var(--mu
     for (const g of Object.keys(groups)) if (groups[g].length === 1 && !q) { (groups.Other = groups.Other || []).push(...groups[g]); delete groups[g]; }
     if (groups.Other) { const o = groups.Other.sort(); delete groups.Other; groups.Other = o; }
     const item = n => { const sy = systems[n], cr = createdBy[n] || [];
-      return `<button class="sys-item${st.system === n ? ' on' : ''}" data-sys="${esc(n)}"><code>${esc(n)}</code>`
+      return `<button class="sys-item${st.system === n ? ' on' : ''}" data-sys="${esc(n)}"><code>${esc(n)}</code>${sy.disabled ? ' <span class="tag warn">disabled</span>' : ''}`
         + (sy.comment ? `<span class="muted small">${esc(sy.comment.replace(/^@notice\s*/, ''))}</span>` : '')
         + `<span class="muted small">${cr.length ? 'creates ' + esc(cr.join(', ')) + ' · ' : ''}writes ${arr(sy.writes).length} fields</span></button>`; };
     const names = Object.keys(groups);

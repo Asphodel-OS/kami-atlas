@@ -50,11 +50,11 @@ entities:
 links:   # for links the generator left unresolved (to: null)
   FRIENDSHIP.IdTarget: {to: ACCOUNT, note: "the other account"}
   TRADE.IdTarget: {to: ACCOUNT, note: "the counterparty, if the trade is addressed to one"}
-  TAX.IdTarget: {to: "any", note: "whoever receives the cut: a front-end or guild's entity"}
-  SKILL.IDOwnsSkill: {to: "KAMI | ACCOUNT", note: "a skill's registry entry says which it is for (its For field); SkillUpgradeSystem checks the holder is that shape, so both kamis and accounts can hold skills. Which skills are account skills is registry data, not code."}
+  TAX.IdTarget: {to: "any", note: "whoever receives the cut. As of 2026-10-16 only kamibots (front-end operators); guilds may come later (Acheron)"}
+  SKILL.IDOwnsSkill: {to: "KAMI | ACCOUNT", note: "a skill's registry entry says which it is for (its For field); SkillUpgradeSystem checks the holder is that shape, so both kamis and accounts can hold skills. Which skills are account skills is registry data, not code: as of 2026-10-16 there are none (Acheron)."}
   ALLOCATION.IDAnchor: {note: "the reward anchor of a quest, a goal tier, a scavenge bar (not the node itself) or an item use case"}
   ALLOCATION.IdSource: {note: "the registry entry the allocation came from: the goal, quest, scavenge bar or item whose reward it is"}
-  BONUS.IdSource: {note: "the registry entry that grants the bonus: a node, a skill, or an item (through the item's bonus allocation)"}
+  BONUS.IdSource: {note: "the registry entry that grants the bonus: a node, a skill, or an item (through the item's bonus allocation). Only item use cases create bonus allocations; nodes, goals and quests don't grant bonuses as rewards, by design (Acheron, 2026-10-16)"}
   KAMI.IDOwnsKami: {note: "GACHA_POOL: unminted kamis belong to the gacha pool constant until they are bought"}
   POOL_SHARE.IdHolder: {note: "POOL: the pool itself holds the locked seed liquidity shares minted at creation"}
   QUEST.IDAnchor: {ignore: true, note: "set on the quest's objective snapshots (snapshot.anchor), not on the quest"}
@@ -116,7 +116,29 @@ sub_entities:   # descriptions; the parent comes from the generated model unless
   goal.reward: {what: "the rewards of one tier"}
 
 open_questions:
-  - "CONDITION, ROOM_GATE and COMMIT have no EntityType. Should the contracts type them, so on-chain state describes itself the way the other 31 do?"
   - "EQUIPMENT: the code comment says the holder can be a kami or an account, but every caller the generator traced passes a kami. Is account equipment planned?"
   - "sacrifice.log and droptable.item.log: the generator could not trace the holder. Account, kami, or both?"
-  - "has.flag: the generator places it under ACCOUNT, but items also carry flags (IDOwnsFlag). Which entities have flags?"
+  - "AccountUseItem is not granted Experience, HasFlag, State, TimeNext or the bonus-instance fields, but LibSetter and LibAllo.giveBonus can write them for XP, FLAG_*, STATE, COOLDOWN and BONUS use-case allocations. Does any item have one of those, or are the grants the intended limit?"
+
+answered:   # questions settled with Acheron, with the date, so the reasoning survives
+  - "2026-10-16 CONDITION, ROOM_GATE, COMMIT untyped: left as is for now. They are sub-structures or temporary records that don't want a label; the cost is that translating ECS events into the domain model is harder without one."
+  - "2026-10-16 has.flag holders: ACCOUNT, KAMI, ITEM, QUEST, ROOM, plus a raw wallet address for WORLD_WHITELIST (read from the LibFlag call sites)."
+  - "2026-10-16 KILL_BOUNTY_LOG (LibKill._logBounty): deprecated, to be deleted."
+  - "2026-10-16 KamiOnyxRespec, KamiOnyxRename: keep as systems that update kamis, shown as disabled (every entry point reverts)."
+  - "2026-10-16 Account skills: the code allows them (SkillUpgradeSystem), none exist in the registry for the time being."
+  - "2026-10-16 Bonus allocations: only item use cases create them; nodes, goals and quests don't grant bonuses as rewards. By design."
+  - "2026-10-16 TAX recipients: kamibots only today; guilds possibly later."
+
+inconsistencies:   # places where the contracts model the same kind of thing two ways; nothing needs to change, but the atlas and the indexer have to know
+  - "Typing: CONDITION, ROOM_GATE and COMMIT carry no EntityType while every other shape does; SCAVENGE's registry entry is typed but its per-account record (scavenge.instance) is not, whereas QUEST, SKILL and RELATIONSHIP type both halves."
+  - "Id namespaces: registry ids are registry.<x>(index) for item, quest, skill, recipe, scavenge and trait, bare <x>(index) for node, room, goal, faction, auction, listing and NPC (upper case), bonus.registry for bonuses, kami.id for kamis. Instance ids are <x>.instance for most but bare friendship(), harvest(), relationship(); reward.instance and reference.instance are registry-layer entities despite the suffix."
+  - "Counter ids: COMMIT, CONDITION, ROOM_GATE, TRADE, TOKEN_RECEIPT and the kami-market trio use world.getUniqueEntityId(); everything else is a keccak of a namespace and keys."
+  - "Pointer naming: IDOwns*, IDAnchor, IDType, IDFrom, IDTo against IdHolder, IdSource, IdTarget (ID vs Id); LibAllo imports IdSource's id as IDSourceCompID, LibBonus as IdSourceCompID."
+  - "Holder pointers: owned things mostly use IDOwns<Thing>; inventory of pools and trades, pool shares, commits and sub-records use IdHolder."
+  - "Anchor keys: requirements hang off the registry index (node, goal, quest, skill, recipe; listing and auction off their ids) but items hang requirements and allocations off the use case's REFERENCE id; goal rewards hang off the tier id, not the goal."
+  - "Bonus anchoring: nodes and skills anchor bonuses on their own anchor key; items anchor them on an ALLOCATION entry, so an item bonus is two hops from the item."
+  - "Skill holders: whether a skill sits on a kami or an account is registry data (For), checked by shape string at runtime; IDOwnsSkill is the only ownership pointer whose target type is not fixed by code."
+  - "Flags on non-entities: has.flag is keyed by entity id everywhere except WORLD_WHITELIST, which is keyed by a wallet address."
+  - "GACHA_POOL: a constant id that owns unminted kamis but has nothing stored at it, unlike the other singletons."
+  - "Disabled systems: KamiOnyxRespec and KamiOnyxRename are switched off by an unconditional revert at the top of execute rather than removed from deploy.json."
+  - "Deploy grants: seven systems can reach component writes they are not granted (see each system's 'Writes without a deploy grant' in the atlas); KamiMarketBuy and Kami721Stake reach them on their main path."

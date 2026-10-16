@@ -35,6 +35,10 @@ KamiMarketBuy:
   config: [KAMI_MARKET_ENABLED, KAMI_MARKET_FEE_RATE, KAMI_MARKET_FEE_RECIPIENT, KAMI_MARKET_PURCHASE_COOLDOWN, NEWBIE_VENDOR_TWAP_WINDOW]
   data: [KAMI_MARKET_BUY]
   writes_without_access: [Balance, IndexKami, Max]
+  writes_without_access_paths:
+    Balance: [KamiMarketBuySystem.execute, KamiMarketBuySystem._buy, LibKamiMarket.fillListing, LibKamiMarket._markFilled, LibKamiMarket._cleanup, LibKamiMarketIndex.cleanup]
+    IndexKami: [KamiMarketBuySystem.execute, KamiMarketBuySystem._buy, LibKamiMarket.fillListing, LibKamiMarket._markFilled, LibKamiMarket._cleanup, LibKamiMarketIndex.cleanup]
+    Max: [KamiMarketBuySystem.execute, KamiMarketBuySystem._buy, LibKamiMarket.fillListing, LibKamiMarket._markFilled, LibKamiMarket._cleanup, LibKamiMarketIndex.cleanup]
   steps:
     execute: [KamiMarketBuySystem._buy]
     executeTyped: [KamiMarketBuySystem._buy]

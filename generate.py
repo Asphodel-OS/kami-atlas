@@ -529,15 +529,31 @@ def classify_namespaces(ix, ns_struct):
         while isinstance(e, dict) and e.get('nodeType') == 'FunctionCall' and e.get('kind') == 'typeConversion': e = e['arguments'][0]
         return e
     changed = True
-    while changed:  # wrappers: function W returns genX(...) -> W also produces that namespace
+    def returned_ns(f):
+        """The namespace a function hands back, if every return is a generator call, a local assigned from one, or 0:
+        `return genID(i)`, and getters like `uint256 id = genID(i); return exists ? id : 0`."""
+        local, out = {}, set()
+        for n in walk(f['body']):
+            if n.get('nodeType') == 'VariableDeclarationStatement' and n.get('initialValue') and len(n['declarations']) == 1 and n['declarations'][0]:
+                e = unwrap(n['initialValue'])
+                if e.get('nodeType') == 'FunctionCall' and e['expression'].get('referencedDeclaration') in gen: local[n['declarations'][0]['id']] = gen[e['expression']['referencedDeclaration']]
+        def branches(e):
+            e = unwrap(e)
+            return branches(e['trueExpression']) + branches(e['falseExpression']) if e.get('nodeType') == 'Conditional' else [e]
+        for n in walk(f['body']):
+            if n.get('nodeType') != 'Return' or not n.get('expression'): continue
+            for e in branches(n['expression']):
+                if e.get('nodeType') == 'Literal' and str(e.get('value')) == '0': continue
+                if e.get('nodeType') == 'FunctionCall' and e['expression'].get('referencedDeclaration') in gen: out.add(gen[e['expression']['referencedDeclaration']])
+                elif e.get('nodeType') == 'Identifier' and e.get('referencedDeclaration') in local: out.add(local[e['referencedDeclaration']])
+                else: return None
+        return next(iter(out)) if len(out) == 1 else None
+    while changed:  # wrappers: a function that returns what genX(...) produces also produces that namespace
         changed = False
         for fid, (c, f, path) in ix.fn.items():
             if fid in gen or not f.get('body'): continue
-            for n in walk(f['body']):
-                if n.get('nodeType') == 'Return' and n.get('expression'):
-                    e = unwrap(n['expression'])
-                    if e.get('nodeType') == 'FunctionCall' and e['expression'].get('referencedDeclaration') in gen:
-                        gen[fid] = gen[e['expression']['referencedDeclaration']]; changed = True; break
+            ns_ = returned_ns(f)
+            if ns_: gen[fid] = ns_; changed = True
     role_cache, ptr_roles = {}, defaultdict(list)   # ptr_roles[(fid, pi)]: pointer sets on the id passed as parameter pi
     ns_local_cache = {}
     def ns_locals(fid):
@@ -701,9 +717,37 @@ def derive_domain(ix, ents, creators, ns_struct, systems, indexed=None, untyped=
         lib = m.group(1) or where_lib
         fid = key_fid.get('%s.%s' % (lib, m.group(2)))
         if fid is None or fid not in gen_ns: return None, None
+        return owner_of_ns(fid)
+
+    def owner_of_ns(fid):
+        """(namespace, entity) for a generator or getter: the entity whose id the namespace is (node(index) -> NODE), else
+        the one whose library defines it, in which case the namespace is an anchor key the reference passes through."""
+        ns_ = gen_ns[fid]
+        if ns_ in claimed: return ns_, claimed[ns_]
         owners = lib_creates.get(ix.fn[fid][0]) or {e for e, cs in creators.items() if any(stem(ix.fn[c][0]) == stem(ix.fn[fid][0]) for c in cs)}
         owners = {o for o in owners if o not in untyped}
-        return gen_ns[fid], (next(iter(owners)) if len(owners) == 1 else None)
+        if len(owners) != 1: return ns_, None
+        via_anchor.append(ns_)
+        return ns_, next(iter(owners))
+
+    gl_cache = {}
+    def gen_locals(fid):
+        """Locals assigned from a namespace generator or getter (`uint256 regID = LibItem.getByIndex(comps, index)`):
+        local id and name -> the generator's function id."""
+        if fid in gl_cache: return gl_cache[fid]
+        out = {}
+        f = ix.fn[fid][1] if fid in ix.fn else None
+        for n in walk((f or {}).get('body') or {}):
+            if n.get('nodeType') == 'VariableDeclarationStatement' and n.get('initialValue') and len(n['declarations']) == 1 and n['declarations'][0]:
+                e, keys = n['initialValue'], (n['declarations'][0]['id'], n['declarations'][0]['name'])
+            elif n.get('nodeType') == 'Assignment' and n['leftHandSide'].get('nodeType') == 'Identifier':
+                e, keys = n['rightHandSide'], (n['leftHandSide'].get('referencedDeclaration'), n['leftHandSide'].get('name'))
+            else: continue
+            while e.get('nodeType') == 'FunctionCall' and e.get('kind') == 'typeConversion': e = e['arguments'][0]
+            if e.get('nodeType') == 'FunctionCall' and e['expression'].get('referencedDeclaration') in gen_ns:
+                for k in keys: out[k] = e['expression']['referencedDeclaration']
+        gl_cache[fid] = out
+        return out
 
     trace_notes = []  # evidence gathered while resolving the current link: how a value was validated along the way
     pass_cache, alias_cache = {}, {}
@@ -765,7 +809,7 @@ def derive_domain(ix, ents, creators, ns_struct, systems, indexed=None, untyped=
             t = next(iter(lib_creates[ix.fn[caller][0]]))
         if not t and kind == 'expr':
             ns_, owner_ = gen_owner(nm, ix.fn[caller][0])
-            if owner_: t = owner_; via_anchor.append(ns_)
+            if owner_: t = owner_
         if t: return {t}
         if kind != 'ref': return set()
         cps = [x['id'] for x in ix.fn[caller][1]['parameters']['parameters']]
@@ -774,6 +818,10 @@ def derive_domain(ix, ents, creators, ns_struct, systems, indexed=None, untyped=
             if out: return out
             t = used_as(caller, ref)  # nobody upstream names it: fall back to how this function checks it
             return {t} if t else set()
+        gf = gen_locals(caller).get(ref)
+        if gf is not None:  # regID = LibItem.getByIndex(...): the local is that registry's entity
+            ns_, owner_ = owner_of_ns(gf)
+            if owner_: trace_notes.append('%s is %s' % (nm, ix.key(gf))); return {owner_}
         al = tuple_alias(caller).get(ref)
         if al is None: return set()
         out = set()
@@ -792,7 +840,11 @@ def derive_domain(ix, ents, creators, ns_struct, systems, indexed=None, untyped=
     def resolve(fid, argname):
         """Type for an argument name inside fid: by name, else traced through callers if it is a parameter."""
         ns_, owner_ = gen_owner(argname, ix.fn[fid][0] if fid in ix.fn else None)
-        if owner_: via_anchor.append(ns_); return {owner_}, False
+        if owner_: return {owner_}, False
+        gf = gen_locals(fid).get(argname) if fid in ix.fn else None
+        if gf is not None:
+            ns_, owner_ = owner_of_ns(gf)
+            if owner_: return {owner_}, True
         t = name_type(argname)
         if t: return {t}, False
         ps = [x['name'] for x in ix.fn[fid][1]['parameters']['parameters']] if fid in ix.fn else []
@@ -1148,13 +1200,13 @@ def source_web():
     return ('https://github.com/' + m.group(1) if m else None), (os.path.relpath(ROOT, top) if top else None)
 
 
-def read_note_links(path):
-    """The `links:` entries of notes/domain-model.yaml, {'ENTITY.Comp': {to, note, ignore}}: a small reader for that one
-    flow-mapping section, since the generator keeps to the standard library."""
+def read_note_section(path, section):
+    """One top-level section of notes/domain-model.yaml whose entries are flow mappings (`links:`, `sub_entities:`),
+    as {'key': {field: value}}: a small reader, since the generator keeps to the standard library."""
     if not os.path.exists(path): return {}
     out, inside = {}, False
     for line in open(path):
-        if re.match(r'^\w', line): inside = line.startswith('links:'); continue
+        if re.match(r'^\w', line): inside = line.startswith(section + ':'); continue
         if not inside: continue
         m = re.match(r'^  ([\w.:,]+):\s*\{(.*)\}\s*(#.*)?$', line)
         if not m: continue
@@ -1180,6 +1232,8 @@ def fold_note_links(entities, note_links):
             ignored.append({'link': key, **({'note': o['note']} if o.get('note') else {})}); del links[comp]; continue
         if o.get('to'):
             ts = [t.strip() for t in str(o['to']).split('|') if t.strip()]
+            code = [l['to']] if isinstance(l.get('to'), str) else list(l.get('to') or [])
+            if code and sorted(code) != sorted(ts): print('notes override a link the code resolves: %s is %s in code, %s in notes' % (key, '/'.join(sorted(code)), '/'.join(ts)))
             l['to'] = ts[0] if len(ts) == 1 else ts
             l['settled_in_notes'] = True
             if l.get('cardinality'): l['cardinality'] = l['cardinality'].replace('referenced entity', '/'.join(ts))
@@ -1441,7 +1495,11 @@ def main():
     write(os.path.join(GEN, 'formulas.yaml'), src_note, formulas)
     write(os.path.join(GEN, 'components.yaml'), src_note, comps)
     write(os.path.join(GEN, 'entities.yaml'), src_note, {'entity_types': ents, 'id_namespaces': id_ns})
-    ignored_links = fold_note_links(model['entities'], read_note_links(os.path.join(NOTES, 'domain-model.yaml')))
+    ignored_links = fold_note_links(model['entities'], read_note_section(os.path.join(NOTES, 'domain-model.yaml'), 'links'))
+    for ns_, o in read_note_section(os.path.join(NOTES, 'domain-model.yaml'), 'sub_entities').items():  # held_by: who holds a shared record, when the code can't say
+        if o.get('held_by') and ns_ in model.get('shared_sub_entities', {}):
+            model['shared_sub_entities'][ns_]['held_by'] = [h.strip() for h in str(o['held_by']).split('|') if h.strip()]
+            model['shared_sub_entities'][ns_]['held_by_from_notes'] = True
     model = {'source': model_meta, **model, **({'links_ignored_in_notes': ignored_links} if ignored_links else {})}
     if '--diff' in sys.argv:  # what this run changed against a committed output (default HEAD) before overwriting it
         i = sys.argv.index('--diff'); ref = sys.argv[i + 1] if i + 1 < len(sys.argv) and not sys.argv[i + 1].startswith('-') else 'HEAD'

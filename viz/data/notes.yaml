@@ -52,7 +52,11 @@ links:   # for links the generator left unresolved (to: null)
   TRADE.IdTarget: {to: ACCOUNT, note: "the counterparty, if the trade is addressed to one"}
   TAX.IdTarget: {to: "any", note: "whoever receives the cut: a front-end or guild's entity"}
   SKILL.IDOwnsSkill: {to: "KAMI | ACCOUNT", note: "a skill's registry entry says which it is for (its For field); SkillUpgradeSystem checks the holder is that shape, so both kamis and accounts can hold skills. Which skills are account skills is registry data, not code."}
-  ALLOCATION.IDAnchor: {to: "QUEST | GOAL | ITEM | NODE", note: "the registry entry the reward is attached to"}
+  ALLOCATION.IDAnchor: {note: "the reward anchor of a quest, a goal tier, a scavenge bar (not the node itself) or an item use case"}
+  ALLOCATION.IdSource: {note: "the registry entry the allocation came from: the goal, quest, scavenge bar or item whose reward it is"}
+  BONUS.IdSource: {note: "the registry entry that grants the bonus: a node, a skill, or an item (through the item's bonus allocation)"}
+  KAMI.IDOwnsKami: {note: "GACHA_POOL: unminted kamis belong to the gacha pool constant until they are bought"}
+  POOL_SHARE.IdHolder: {note: "POOL: the pool itself holds the locked seed liquidity shares minted at creation"}
   QUEST.IDAnchor: {ignore: true, note: "set on the quest's objective snapshots (snapshot.anchor), not on the quest"}
   FRIENDSHIP.IDAnchor: {ignore: true, note: "set on the friendship counters (friendship.ptr), not on the friendship"}
   TRAIT.IDAnchor: {ignore: true, note: "set on the trait-type reverse lookup (registry.trait.type)"}
@@ -72,7 +76,7 @@ sub_entities:   # descriptions; the parent comes from the generated model unless
   quest.objective.snapshot: {what: "progress baseline taken when a quest is accepted"}
   is.data: {what: "stat counters, any holder"}
   is.score: {what: "leaderboard score per epoch, any holder"}
-  has.flag: {what: "a boolean flag on an entity"}
+  has.flag: {what: "a boolean flag on an entity: NOT_NAMEABLE on a kami, CAN_RESET_SKILLS on a kami or account, REPEATABLE on a quest, admin flags on items and rooms; WORLD_WHITELIST is set on a raw wallet address, not an entity", held_by: "ACCOUNT | KAMI | ITEM | QUEST | ROOM"}
   is.config: {what: "a global config value (see config.py)"}
   room.gate.from: {what: "anchor key grouping the gates that apply when leaving a given room"}
   room.gate.to: {what: "anchor key grouping the gates guarding entry to a room"}

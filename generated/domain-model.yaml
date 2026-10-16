@@ -466,6 +466,7 @@ entities:
           down: "reverse lookup on IDOwnsKami (indexed)"
         derived: ["IDOwnsKami = GACHA_ID in LibKamiCreate.setBase (from the name)", "IDOwnsKami = accID in LibKami.setOwner, after creation"]
         inferred: true
+        note: "GACHA_POOL: unminted kamis belong to the gacha pool constant until they are bought"
       bonus.instance.IdSource:
         to: BONUS
         type: directed
@@ -591,17 +592,18 @@ entities:
           down: "compute amm.pool.share(poolID, holderID), or reverse lookup on IDType (indexed)"
         derived: ["IDType = poolID in LibPool.mintShares (from the name)"]
       IdHolder:
-        to: ACCOUNT
+        to: [ACCOUNT, POOL]
         type: ownership
         stored_on: POOL_SHARE
         required: false
         only_when: ["!has"]
-        cardinality: "one POOL_SHARE per ACCOUNT per poolID"
+        cardinality: "one POOL_SHARE per ACCOUNT/POOL per poolID"
         navigate:
           up: "read IdHolder on POOL_SHARE"
           down: "compute amm.pool.share(poolID, holderID), or reverse lookup on IdHolder (indexed)"
         derived: ["IdHolder = holderID in LibPool.mintShares (traced through callers)"]
         inferred: true
+        note: "POOL: the pool itself holds the locked seed liquidity shares minted at creation"
     components: [IDType, IdHolder, Value]
   TAX:
     layer: runtime
@@ -919,30 +921,31 @@ entities:
       registry: "reward.instance(anchorID, type_, index)"
     links:
       IDAnchor:
-        to: [QUEST, GOAL, ITEM, NODE]
+        to: [GOAL, ITEM, QUEST, SCAVENGE]
         type: attachment
         stored_on: ALLOCATION
         required: true
-        cardinality: "one ALLOCATION per QUEST/GOAL/ITEM/NODE per type_, index"
+        cardinality: "one ALLOCATION per GOAL/ITEM/QUEST/SCAVENGE per type_, index"
         navigate:
           up: "read IDAnchor on ALLOCATION"
           down: "compute reward.instance(anchorID, type_, index), or reverse lookup on IDAnchor (indexed)"
-        derived: ["IDAnchor = anchorID in LibAllo.createBase (not resolved)"]
+        derived: ["IDAnchor = anchorID in LibAllo.createBase (traced through callers); through anchor keys goal.reward, item.allo, registry.quest.reward, scavenge.reward"]
+        via:
+          anchor_keys: [goal.reward, item.allo, registry.quest.reward, scavenge.reward]
         inferred: true
-        unresolved_from: [anchorID]
-        settled_in_notes: true
-        note: "the registry entry the reward is attached to"
+        note: "the reward anchor of a quest, a goal tier, a scavenge bar (not the node itself) or an item use case"
       IdSource:
-        to: [GOAL, QUEST]
+        to: [GOAL, ITEM, QUEST, SCAVENGE]
         type: directed
         stored_on: ALLOCATION
         required: true
-        cardinality: "many ALLOCATION per GOAL/QUEST"
+        cardinality: "many ALLOCATION per GOAL/ITEM/QUEST/SCAVENGE"
         navigate:
           up: "read IdSource on ALLOCATION"
           down: "reverse lookup on IdSource (indexed)"
         derived: ["IdSource = sourceID in LibAllo.createBase (traced through callers)"]
         inferred: true
+        note: "the registry entry the allocation came from: the goal, quest, scavenge bar or item whose reward it is"
     components: [IDAnchor, IdSource, Index, Type]
   AUCTION:
     layer: registry
@@ -1007,18 +1010,17 @@ entities:
           anchor_keys: [node.bonus, registry.skill.bonus]
         inferred: true
       IdSource:
-        to: [NODE, SKILL]
+        to: [ITEM, NODE, SKILL]
         type: directed
         stored_on: BONUS
         required: true
-        cardinality: "many BONUS per NODE/SKILL"
+        cardinality: "many BONUS per ITEM/NODE/SKILL"
         navigate:
           up: "read IdSource on BONUS"
           down: "reverse lookup on IdSource (indexed)"
-        derived: ["IdSource = sourceID in LibBonus.regCreate (traced through callers); through anchor keys node"]
-        via:
-          anchor_keys: [node]
+        derived: ["IdSource = sourceID in LibBonus.regCreate (traced through callers)"]
         inferred: true
+        note: "the registry entry that grants the bonus: a node, a skill, or an item (through the item's bonus allocation)"
     components: [IDAnchor, IdSource, IsRegistry, Subtype, Time, Type, Value]
   CONDITION:
     layer: registry
@@ -1142,11 +1144,40 @@ entities:
       registry: "registry.item(index)"
     index: IndexItem
     components: [Description, HasFlag, IDOwnsFlag, IDType, IndexItem, IsRegistry, MediaURI, Name, Rarity, Type]
+    links:
+      "item.allo.key:refID":
+        to: REFERENCE
+        type: keyed
+        stored_on: item.allo
+        via:
+          record: item.allo
+        required: false
+        only_when: ["a item.allo record exists for the ITEM"]
+        cardinality: "one item.allo per ITEM"
+        navigate:
+          up: "compute item.allo(refID)"
+          down: "from the key values"
+        derived: ["key refID of item.allo(refID) resolves to REFERENCE (traced through callers)"]
+        inferred: true
+      "item.requirement.key:refID":
+        to: REFERENCE
+        type: keyed
+        stored_on: item.requirement
+        via:
+          record: item.requirement
+        required: false
+        only_when: ["a item.requirement record exists for the ITEM"]
+        cardinality: "one item.requirement per ITEM"
+        navigate:
+          up: "compute item.requirement(refID)"
+          down: "from the key values"
+        derived: ["key refID of item.requirement(refID) resolves to REFERENCE (traced through callers)"]
+        inferred: true
     sub_entities:
       item.allo:
         id: "item.allo(refID)"
         keys:
-          refID: null
+          refID: REFERENCE
         parent_from: "defined in LibItem"
         relation:
           type: keyed
@@ -1159,7 +1190,7 @@ entities:
       item.requirement:
         id: "item.requirement(refID)"
         keys:
-          refID: null
+          refID: REFERENCE
         parent_from: "defined in LibItem"
         relation:
           type: keyed
@@ -1356,7 +1387,7 @@ entities:
           - "registry keys lo, hi of amm.pool(lo, hi) resolve to ITEM (traced through callers: indexA is passed as index to LibItem.getByIndex; indexA is passed as itemIndex to LibInventory.getBalanceOf; indexA is passed as itemIndex to LibInventory.transferForNoLog; indexB is passed as index to LibItem.getByIndex)"
         inferred: true
     components: [Keys, Rate, TimeStart]
-    owns: [INVENTORY]
+    owns: [INVENTORY, POOL_SHARE]
   RECIPE:
     layer: registry
     created_by: [_RecipeRegistry]
@@ -1672,6 +1703,8 @@ shared_sub_entities:
         stored_on: has.flag
         required: true
         derived: ["IDType = genTypeAnchor(parentType, flagType) in LibFlag.setFull (an anchor key)"]
+    held_by: [ACCOUNT, KAMI, ITEM, QUEST, ROOM]
+    held_by_from_notes: true
   is.config:
     id: "is.config(name)"
     keys:

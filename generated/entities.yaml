@@ -324,8 +324,8 @@ entity_types:
     created_by_players: [RelationshipAdvance]
     links_set_at_creation:
       IDOwnsRelationship: ["accID  (in LibRelationship.create)"]
-      IndexNPC: ["npcIndex  (in LibRelationshipRegistry.create)", "npcIndex  (in LibRelationship.create)"]
-      IndexRelationship: ["relIndex  (in LibRelationshipRegistry.create)", "relIndex  (in LibRelationship.create)"]
+      IndexNPC: ["npcIndex  (in LibRelationship.create)", "npcIndex  (in LibRelationshipRegistry.create)"]
+      IndexRelationship: ["relIndex  (in LibRelationship.create)", "relIndex  (in LibRelationshipRegistry.create)"]
   ROOM:
     created_in: [LibRoom.create]
     components_at_creation: [Description, EntityType, IndexRoom, Location, Name]

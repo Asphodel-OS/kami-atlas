@@ -78,8 +78,8 @@ def build():
 
 def load_units():
     units, out = {}, os.path.join(CACHE, 'out')
-    for d in os.listdir(out):
-        for f in os.listdir(os.path.join(out, d)):
+    for d in sorted(os.listdir(out)):   # sorted: directory order differs between macOS and Linux, and unit order decides ties
+        for f in sorted(os.listdir(os.path.join(out, d))):
             if not f.endswith('.json'): continue
             j = json.load(open(os.path.join(out, d, f)))
             ast = j.get('ast')

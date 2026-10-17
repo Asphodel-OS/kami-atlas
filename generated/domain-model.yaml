@@ -1791,16 +1791,16 @@ shared_sub_entities:
     kind: "anchor key"
     pointed_at_by: [IDType]
 singletons:
-  NEWBIE_VENDOR_TWAP:
-    id: "keccak256(\"newbie.vendor.twap\")"
-    constant: TWAP_ENTITY
-    defined_in: src/systems/_NewbieVendorRegistrySystem.sol
-    used_in: [LibTWAP, _NewbieVendorRegistrySystem]
-  NEWBIE_VENDOR:
-    id: "keccak256(\"newbie.vendor\")"
-    constant: VENDOR_ENTITY
-    defined_in: src/systems/_NewbieVendorRegistrySystem.sol
-    used_in: [NewbieVendorBuySystem, _NewbieVendorRegistrySystem]
+  GACHA_POOL:
+    id: "keccak256(\"gacha.id\")"
+    constant: GACHA_ID
+    defined_in: src/libraries/LibGacha.sol
+    used_in: [LibGacha, LibKamiCreate, _721BatchMinterSystem]
+  KAMI_MARKET_LISTING_INDEX:
+    id: "keccak256(\"kami.market.listing.index\")"
+    constant: ACTIVE_LISTING_INDEX_ENTITY
+    defined_in: src/libraries/LibKamiMarketIndex.sol
+    used_in: [LibKamiMarket, LibKamiMarketIndex]
   DROPTABLE_SACRIFICE_NORMAL:
     id: "keccak256(\"droptable.sacrifice.normal\")"
     constant: SACRIFICE_DT_NORMAL
@@ -1816,16 +1816,16 @@ singletons:
     constant: SACRIFICE_DT_RARE_PITY
     defined_in: src/libraries/LibSacrifice.sol
     used_in: [LibSacrifice, _SacrificeRegistrySystem]
-  KAMI_MARKET_LISTING_INDEX:
-    id: "keccak256(\"kami.market.listing.index\")"
-    constant: ACTIVE_LISTING_INDEX_ENTITY
-    defined_in: src/libraries/LibKamiMarketIndex.sol
-    used_in: [LibKamiMarket, LibKamiMarketIndex]
-  GACHA_POOL:
-    id: "keccak256(\"gacha.id\")"
-    constant: GACHA_ID
-    defined_in: src/libraries/LibGacha.sol
-    used_in: [LibGacha, LibKamiCreate, _721BatchMinterSystem]
+  NEWBIE_VENDOR_TWAP:
+    id: "keccak256(\"newbie.vendor.twap\")"
+    constant: TWAP_ENTITY
+    defined_in: src/systems/_NewbieVendorRegistrySystem.sol
+    used_in: [LibTWAP, _NewbieVendorRegistrySystem]
+  NEWBIE_VENDOR:
+    id: "keccak256(\"newbie.vendor\")"
+    constant: VENDOR_ENTITY
+    defined_in: src/systems/_NewbieVendorRegistrySystem.sol
+    used_in: [NewbieVendorBuySystem, _NewbieVendorRegistrySystem]
 links_ignored_in_notes:
   - link: QUEST.IDAnchor
     note: "set on the quest's objective snapshots (snapshot.anchor), not on the quest"

@@ -3099,22 +3099,23 @@
   }
  },
  "singletons": {
-  "NEWBIE_VENDOR_TWAP": {
-   "id": "keccak256(\"newbie.vendor.twap\")",
-   "constant": "TWAP_ENTITY",
-   "defined_in": "src/systems/_NewbieVendorRegistrySystem.sol",
+  "GACHA_POOL": {
+   "id": "keccak256(\"gacha.id\")",
+   "constant": "GACHA_ID",
+   "defined_in": "src/libraries/LibGacha.sol",
    "used_in": [
-    "LibTWAP",
-    "_NewbieVendorRegistrySystem"
+    "LibGacha",
+    "LibKamiCreate",
+    "_721BatchMinterSystem"
    ]
   },
-  "NEWBIE_VENDOR": {
-   "id": "keccak256(\"newbie.vendor\")",
-   "constant": "VENDOR_ENTITY",
-   "defined_in": "src/systems/_NewbieVendorRegistrySystem.sol",
+  "KAMI_MARKET_LISTING_INDEX": {
+   "id": "keccak256(\"kami.market.listing.index\")",
+   "constant": "ACTIVE_LISTING_INDEX_ENTITY",
+   "defined_in": "src/libraries/LibKamiMarketIndex.sol",
    "used_in": [
-    "NewbieVendorBuySystem",
-    "_NewbieVendorRegistrySystem"
+    "LibKamiMarket",
+    "LibKamiMarketIndex"
    ]
   },
   "DROPTABLE_SACRIFICE_NORMAL": {
@@ -3144,23 +3145,22 @@
     "_SacrificeRegistrySystem"
    ]
   },
-  "KAMI_MARKET_LISTING_INDEX": {
-   "id": "keccak256(\"kami.market.listing.index\")",
-   "constant": "ACTIVE_LISTING_INDEX_ENTITY",
-   "defined_in": "src/libraries/LibKamiMarketIndex.sol",
+  "NEWBIE_VENDOR_TWAP": {
+   "id": "keccak256(\"newbie.vendor.twap\")",
+   "constant": "TWAP_ENTITY",
+   "defined_in": "src/systems/_NewbieVendorRegistrySystem.sol",
    "used_in": [
-    "LibKamiMarket",
-    "LibKamiMarketIndex"
+    "LibTWAP",
+    "_NewbieVendorRegistrySystem"
    ]
   },
-  "GACHA_POOL": {
-   "id": "keccak256(\"gacha.id\")",
-   "constant": "GACHA_ID",
-   "defined_in": "src/libraries/LibGacha.sol",
+  "NEWBIE_VENDOR": {
+   "id": "keccak256(\"newbie.vendor\")",
+   "constant": "VENDOR_ENTITY",
+   "defined_in": "src/systems/_NewbieVendorRegistrySystem.sol",
    "used_in": [
-    "LibGacha",
-    "LibKamiCreate",
-    "_721BatchMinterSystem"
+    "NewbieVendorBuySystem",
+    "_NewbieVendorRegistrySystem"
    ]
   }
  },

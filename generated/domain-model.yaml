@@ -1379,7 +1379,7 @@ entities:
         stored_on: POOL
         required: true
         key: [lo, hi]
-        cardinality: "one POOL per ITEM per ITEM (lo, hi)"
+        cardinality: "one POOL per pair of ITEMs (lo, hi)"
         navigate:
           up: "the lo, hi keys of amm.pool"
           down: "compute amm.pool(lo, hi)"

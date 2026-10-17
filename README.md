@@ -17,6 +17,9 @@ notes/                       written by people; the generator never touches it
   components.yaml            meaning, units, invariants, keyed by component name
   domain-model.yaml          entity descriptions, links the code can't resolve, confirmed facts, open questions
 viz/                         the Kami Domain Atlas (interactive map); viz/data/ is written by generate.py
+  index.html                 the page: markup only
+  atlas.css                  its styles
+  js/                        ES modules: main (wires them up), util, state, data, tips, canvas, nav, panels, focus, map, ui
 generate.py                  builds generated/ and viz/data/ from the contracts
 dev.py                       local dev server for the atlas, with live reload
 config.py                    reads live config values from Yominet
@@ -51,13 +54,13 @@ Where notes and code disagree, the code wins: fix the note or add an open questi
     python3 generate.py --no-build  # reuse .cache as is (about 1 second)
     python3 generate.py --no-build --diff [ref]   # also print every model value this run changed against the committed output (default HEAD)
 
-By default it reads **`origin/main`** of `kami/kamigotchi`, through a private worktree under `.cache/src/main` that it fetches and fast-forwards on every build, so the atlas tracks main regardless of what branch the checkout is on (the checkout's `node_modules` are symlinked in for forge). `--ref <branch-or-tag>` tracks something else; `--local` (or `KAMI_CONTRACTS=<path to packages/contracts>`) reads the checkout as is. `dev.py` takes the same two flags. Needs Foundry and Python 3, nothing else.
+By default it reads **`origin/main`** of `kami/kamigotchi`, through a private worktree under `.cache/src/main` that it fetches and fast-forwards on every build, so the atlas tracks main regardless of what branch the checkout is on (the checkout's `node_modules` are symlinked in for forge). `--ref <branch-or-tag>` tracks something else; `--local` (or `KAMI_CONTRACTS=<path to packages/contracts>`) reads the checkout as is. `dev.py` takes the same two flags. Needs Foundry and Python 3, nothing else. Runs are serialised through a lock in `.cache/`, so a manual run while `dev.py` is regenerating waits instead of interleaving writes.
 
 ## Domain model and the atlas
 
 `generated/domain-model.yaml` (and `.json`) is derived from the code: the 31 typed entities with their layer (runtime, registry, or hybrid), id, links, owners and sub-entities. Links the generator resolved by tracing variable names are marked `inferred`. `notes/domain-model.yaml` adds what the code can't say: descriptions, targets for the links the code leaves open, confirmed facts and open questions. The generator folds the notes' link settlements into the generated files, so they say what the atlas shows: a target taken from notes is marked `settled_in_notes` (what the code gave stays in `unresolved_from`), and a pointer the notes say is not a link is dropped and listed under `links_ignored_in_notes`. It reports any entity without a description and any open link not settled in notes.
 
-`viz/index.html` is the Kami Domain Atlas. It reads `viz/data/`, which each generator run rewrites, and merges the notes in the browser. For local work, run the dev server:
+`viz/` is the Kami Domain Atlas: `index.html` holds the markup, `atlas.css` the styles, and `js/` the code as ES modules. `main.js` loads `viz/data/`, which each generator run rewrites, then installs the modules in dependency order onto one shared context (`state`, `data`, `tips`, `canvas`, `nav`, `panels`, `focus`, `map`, `ui`); each reads what earlier ones defined and adds its own, and the notes are merged in the browser. For local work, run the dev server:
 
     python3 dev.py     # http://127.0.0.1:8765/index.html  (#KAMI opens one entity, #sys.HarvestStart one system)
 
@@ -124,7 +127,7 @@ It depends on:
 - **the compiler:** solc is pinned by the contracts' `foundry.toml` (0.8.28); Foundry itself is not pinned, and a release that changes the AST format could change the output;
 - **the rules in `generate.py`:** the few hand-written tables (stat names, untyped-shape names, singleton names, admin modifiers) are versioned with the script.
 
-Only `notes/` is written by hand. To check that committed output is current, as CI could:
+Only `notes/` is written by hand. CI (`.github/workflows/check.yml`) regenerates against kamigotchi's `main` on every push and pull request, and on Monday mornings, and fails if `generated/` or `viz/data/` would change: either a generator change was committed without its output, or kamigotchi moved and the atlas needs a `python3 generate.py`. It needs a repository secret `KAMIGOTCHI_READ_TOKEN` with read access to `Asphodel-OS/kamigotchi`. The same check by hand:
 
     rm -rf .cache && python3 generate.py && git diff --exit-code generated viz/data
 

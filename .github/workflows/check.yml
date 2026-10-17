@@ -1,0 +1,51 @@
+# The committed model must be what the generator produces from the contracts it says it was built from.
+# Regenerates against kamigotchi's main and fails when generated/ or viz/data/ would change: either a generator
+# change was committed without its output, or kamigotchi main moved and the atlas needs a `python3 generate.py`.
+# Needs the KAMIGOTCHI_READ_TOKEN secret: a fine-grained token with read access to Asphodel-OS/kamigotchi.
+name: generated output is current
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: '0 9 * * 1'   # Mondays 09:00 UTC: catches kamigotchi main moving on with no atlas commit
+  workflow_dispatch:
+jobs:
+  regenerate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: kami-atlas
+      - uses: actions/checkout@v4   # generate.py expects the game checkout beside this repo, as ../kamigotchi
+        with:
+          repository: Asphodel-OS/kamigotchi
+          ref: main
+          token: ${{ secrets.KAMIGOTCHI_READ_TOKEN }}
+          path: kamigotchi
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.13.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+          cache-dependency-path: kamigotchi/pnpm-lock.yaml
+      - name: Install the contracts' dependencies (forge resolves solady, solmate, openzeppelin from node_modules)
+        working-directory: kamigotchi
+        run: pnpm install --frozen-lockfile
+      - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+      - name: Regenerate
+        working-directory: kami-atlas
+        run: python3 generate.py
+      - name: Compare with what is committed
+        working-directory: kami-atlas
+        run: |
+          if ! git diff --quiet -- generated viz/data; then
+            echo "::error::generated/ or viz/data/ is out of date. Run python3 generate.py and commit the result."
+            git --no-pager diff --stat -- generated viz/data
+            python3 generate.py --no-build --diff HEAD | head -60
+            exit 1
+          fi

@@ -15,7 +15,7 @@ Calls are resolved by the compiler (overloads exact). Component access is found 
 is fetched by its ID (getAddrByID / getCompByID) and a method is called on it; stat components
 fetched by name ("HEALTH", ...) are resolved at the call site that passes the literal.
 """
-import json, os, re, subprocess, sys
+import fcntl, json, os, re, subprocess, sys
 from collections import defaultdict
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -1037,7 +1037,8 @@ def derive_domain(ix, ents, creators, ns_struct, systems, indexed=None, untyped=
                 by_tgt[tgt] = (ks + [k], inf0 or inf, notes0 + [x for x in dict.fromkeys(trace_notes) if x not in notes0])
             for tgt, (ks, inf, notes) in by_tgt.items():
                 rest = [x for x in keys_ if x not in ks]
-                per = ' per '.join([tgt] * len(ks)) + (' (%s)' % ', '.join(ks) if len(ks) > 1 else '')
+                # amm.pool(lo, hi): one POOL per pair of ITEMs, not "per ITEM per ITEM"
+                per = tgt if len(ks) == 1 else '%s of %ss (%s)' % ('pair' if len(ks) == 2 else 'set of %d' % len(ks), tgt, ', '.join(ks))
                 traced = (' (traced through callers%s)' % (': ' + '; '.join(notes[:4]) if notes else '')) if inf else ''
                 links['key:' + ','.join(ks)] = {'to': tgt, 'type': 'keyed', 'stored_on': et, 'required': True, 'key': ks[0] if len(ks) == 1 else ks,
                                                 'cardinality': 'one %s per %s%s' % (et, per, (' per ' + ', '.join(rest)) if rest else ''),
@@ -1269,6 +1270,14 @@ def diff_model(old, new):
 
 
 def main():
+    # one run at a time: dev.py regenerates on every notes change, and a manual run alongside it would interleave
+    # writes to generated/ and viz/data/. The second run waits for the first instead.
+    os.makedirs(os.path.join(HERE, '.cache'), exist_ok=True)
+    lock = open(os.path.join(HERE, '.cache', 'generate.lock'), 'w')
+    try: fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except OSError:
+        print('another generate.py is running; waiting for it to finish…', flush=True)
+        fcntl.flock(lock, fcntl.LOCK_EX)
     if '--no-build' not in sys.argv: build()
     ix = Index(load_units())
     deploy = json.load(open(os.path.join(ROOT, 'deploy.json')))

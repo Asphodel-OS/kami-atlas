@@ -70,7 +70,7 @@ It reloads the page whenever `viz/` changes, keeping the current view, and rerun
 
 The overview opens the same way for everyone: `notes/layout.json` holds each entity's position (the generator copies it to `viz/data/`), and entities it doesn't name settle around the held ones with seeded physics. To change the picture, drag entities where they read best, press **Export layout** in Settings, and commit the download as `notes/layout.json`. First-load defaults show the stored pointers only (keyed ids and passthrough edges are off), with the cursor lens, repulsion and snap on; everything is in Settings, which are saved per browser.
 
-For the team it is deployed on Vercel at **https://kami-atlas.vercel.app** (project `asphodel/kami-atlas`, root directory `viz/`). Vercel Authentication is on for every URL, so only people logged into the Asphodel Vercel team can open it. Every push to `main` redeploys, so regenerate, commit `viz/data/` and push to update it.
+It is deployed on Vercel at **https://atlas.kamigotchi.io** (also https://kami-atlas.vercel.app; project `asphodel/kami-atlas`, root directory `viz/`). Production is public; preview deployments are behind Vercel Authentication. Every push to `main` redeploys, so regenerate, commit `viz/data/` and push to update it.
 
 ### What counts as an entity, and who named it
 

@@ -24,6 +24,7 @@ viz/                         the Kami Domain Atlas (interactive map); viz/data/ 
 generate.py                  builds generated/ and viz/data/ from the contracts
 dev.py                       local dev server for the atlas, with live reload
 config.py                    reads live config values from Yominet
+grants.py                    asks the chain whether the flagged deploy grants are really missing
 .cache/                      compiler output with syntax trees (about 90 MB; safe to delete)
 ```
 

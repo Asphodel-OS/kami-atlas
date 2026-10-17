@@ -168,7 +168,6 @@ export function install(A) {
     });
     const ov = content.append('g').attr('class', 'lens-ov').style('pointer-events', 'none');
     const ring = ov.append('circle').attr('fill', 'none').style('stroke', 'var(--ink)').attr('stroke-width', 2).attr('vector-effect', 'non-scaling-stroke').attr('display', 'none');
-    const tether = ov.append('line').style('stroke', 'var(--ink)').attr('stroke-width', 1).attr('stroke-dasharray', '3 3').attr('opacity', 0.35).attr('vector-effect', 'non-scaling-stroke').attr('display', 'none');
     // with the details panel showing the preview, the tooltip would only repeat it
     const panelShows = d => !d.singleton && !st.system && !cfg.collapsed && !panel.hidden && window.matchMedia('(min-width: 901px)').matches;
     const tipAtNode = d => {
@@ -277,9 +276,7 @@ export function install(A) {
       node.sort((p, q) => (p.pz || 1) - (q.pz || 1));
       if (f) {
         ring.attr('display', null).attr('cx', f.px).attr('cy', f.py).attr('r', drawnR(f) + 4 / kNow());
-        if (!drag && cfg.snapOn) tether.attr('display', null).attr('x1', mouse.x).attr('y1', mouse.y).attr('x2', f.px).attr('y2', f.py);
-        else tether.attr('display', 'none');
-      } else { ring.attr('display', 'none'); tether.attr('display', 'none'); }
+      } else ring.attr('display', 'none');
       requestAnimationFrame(frame);
     };
     project();

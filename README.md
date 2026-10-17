@@ -131,7 +131,7 @@ It depends on:
 - **the compiler:** solc is pinned by the contracts' `foundry.toml` (0.8.28); Foundry itself is not pinned, and a release that changes the AST format could change the output;
 - **the rules in `generate.py`:** the few hand-written tables (stat names, untyped-shape names, singleton names, admin modifiers) are versioned with the script.
 
-Only `notes/` is written by hand. CI (`.github/workflows/check.yml`) regenerates against kamigotchi's `main` on every push and pull request, and on Monday mornings, and fails if `generated/` or `viz/data/` would change: either a generator change was committed without its output, or kamigotchi moved and the atlas needs a `python3 generate.py`. It needs a repository secret `KAMIGOTCHI_READ_TOKEN` with read access to `Asphodel-OS/kamigotchi`. The same check by hand:
+Only `notes/` is written by hand. CI (`.github/workflows/check.yml`) regenerates against kamigotchi's `main` on every push and pull request, and on Monday mornings, and fails if `generated/` or `viz/data/` would change: either a generator change was committed without its output, or kamigotchi moved and the atlas needs a `python3 generate.py`. It reads the public mirror `Asphodel-OS/kamigotchi-open`, which carries the same commits as the private main, so it needs no secret. The atlas's commit links point at the mirror for the same reason. The same check by hand:
 
     rm -rf .cache && python3 generate.py && git diff --exit-code generated viz/data
 

@@ -3,7 +3,7 @@
   "contracts": "kamigotchi/packages/contracts",
   "ref": "origin/main",
   "commit": "157ad472c81d",
-  "repo": "https://github.com/Asphodel-OS/kamigotchi",
+  "repo": "https://github.com/Asphodel-OS/kamigotchi-open",
   "repo_path": "packages/contracts",
   "left_out": {
    "KILL_BOUNTY_LOG": "untyped shape made in LibKill._logBounty; no deployed system reaches it; deprecated, to be deleted from the contracts (Acheron, 2026-10-16)"

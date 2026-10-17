@@ -1215,7 +1215,10 @@ def source_web():
     except OSError:
         return None, None
     m = re.match(r'(?:git@github\.com:|https://github\.com/)([^/]+/[^/]+?)(?:\.git)?$', url)
-    return ('https://github.com/' + m.group(1) if m else None), (os.path.relpath(ROOT, top) if top else None)
+    repo = m.group(1) if m else None
+    # the atlas is public and links to commits: point at the public mirror of main (same commits), not the private repo
+    if repo == 'Asphodel-OS/kamigotchi': repo = 'Asphodel-OS/kamigotchi-open'
+    return ('https://github.com/' + repo if repo else None), (os.path.relpath(ROOT, top) if top else None)
 
 
 def read_note_section(path, section):

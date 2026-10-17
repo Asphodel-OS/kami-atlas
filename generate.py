@@ -164,7 +164,27 @@ class Index:
                 return ANY
             if nm == 'getStatComp':
                 return STAT
+            # a component chosen by name at runtime: LibTraitRegistry.getIndexComp(comps, "BODY") returns one of five
+            # Index* components depending on the string. Enumerate what the callee can return, so a write through the
+            # result counts as a possible write to each of them ('any-of').
+            cands = self.returned_components(callee.get('referencedDeclaration'))
+            if cands: return ('any-of', frozenset(cands))
         return None
+
+    def returned_components(self, fid, depth=0):
+        """Component names a function can return: the component ID constants in its return statements, following
+        one level of helper calls (getIndexComp -> IndexBodyCompID…; getStatComp -> typeToCompID -> HealthCompID…)."""
+        if fid not in self.fn or depth > 2: return set()
+        out = set()
+        for n in walk(self.fn[fid][1].get('body') or {}):
+            if n.get('nodeType') != 'Return' or not n.get('expression'): continue
+            for x in walk(n['expression']):
+                if x.get('nodeType') == 'Identifier' and x.get('referencedDeclaration') in self.comp_id_decl:
+                    out.add(self.comp_id_decl[x['referencedDeclaration']])
+                elif x.get('nodeType') == 'FunctionCall' and x.get('kind') == 'functionCall':
+                    ref = x['expression'].get('referencedDeclaration')
+                    if ref in self.fn and ref != fid: out |= self.returned_components(ref, depth + 1)
+        return out
 
     # -- ordered events of one function --
     def events(self, fid):
@@ -198,7 +218,11 @@ class Index:
                     comp = self.comp_of(callee['expression'], locals_)
                     if comp:
                         argt = [self.text(path, x['src'], 60) for x in n['arguments']]
-                        out.append(('access', comp, callee['memberName'], argt)); return out
+                        if isinstance(comp, tuple):   # chosen by name at runtime: one possible access per candidate
+                            for c_ in sorted(comp[1]): out.append(('access', c_, callee['memberName'], argt))
+                        else:
+                            out.append(('access', comp, callee['memberName'], argt))
+                        return out
                 nm = callee.get('name')
                 if nm == 'require' and len(n['arguments']) >= 2:
                     m2 = n['arguments'][-1]
@@ -459,7 +483,7 @@ def write(path, header, data):
         f.write(y(data) + '\n')
 
 
-def write_spec(model, ents, comps, systems, id_ns, src_note):
+def write_spec(ix, model, ents, comps, systems, id_ns, src_note):
     """generated/recognition.json: the machine-readable contract an indexer needs to turn ECS events into domain
     records. Everything here is already in the model; this is the same facts arranged by what a consumer does with
     them: look up a component or system by its on-chain id, classify an entity, and know which column a write lands in."""
@@ -491,6 +515,7 @@ def write_spec(model, ents, comps, systems, id_ns, src_note):
         spec = {'entity_type': et if typed else None, 'layer': e['layer'],
                 'id': e.get('id') or {}, 'index': e.get('index'),
                 'components': rec.get('components_at_creation') or e.get('components') or [],
+                'components_later': e.get('components_later') or [], 'components_later_in': e.get('components_later_in') or {},
                 'created_by': e.get('created_by') or [], 'created_in': e.get('created_in') or [],
                 'pointers': {c: pointer(c, l) for c, l in (e.get('links') or {}).items() if not c.startswith('key:') and '.' not in c},
                 'keyed_by': {c: pointer(c, l) for c, l in (e.get('links') or {}).items() if c.startswith('key:')},
@@ -502,12 +527,19 @@ def write_spec(model, ents, comps, systems, id_ns, src_note):
                                  'signature': sorted(c for c in spec['components'] if c != 'EntityType'), 'named_by': e.get('name_from')}
         entities[et] = spec
     shared = {ns: record(ns, s) for ns, s in (model.get('shared_sub_entities') or {}).items()}
+    # the ECS framework's own registries are components too (the World registers components and systems in them);
+    # an indexer sees their writes like any other and should know to skip them
+    try: consts = open(os.path.join(ROOT, 'src', 'solecs', 'constants.sol')).read()   # no contract in it, so not among the compiled units
+    except OSError: consts = ''
+    framework = {m.group(1): {'id': m.group(2), 'what': 'the World\'s registry of %s: entity = contract address, value = id' % m.group(1).split('_')[0].lower()}
+                 for m in re.finditer(r'(\w+)_COMPONENT_ID = uint256\(keccak256\("([^"]+)"\)\)', consts)}
     spec = {'source': model['source'], 'generated_from': src_note,
             'about': 'Recognition spec for indexers: components and systems by on-chain id; entities by EntityType value or, for untyped shapes, by creating system and write signature; records by id namespace and keys. See README: Recognition spec.',
             'components': {n: {'id': c.get('id'), 'type': c.get('type'), 'indexed': bool(c.get('indexed')),
                                **({'client_name': c['client_name']} if c.get('client_name') else {})} for n, c in comps.items()},
             'systems': {n: {'id': r.get('id'), 'deployed': bool(r.get('deployed')), 'writes': r.get('writes') or [],
                             **({'disabled': r['disabled']} if r.get('disabled') else {})} for n, r in systems.items() if not n.startswith('__')},
+            'framework_components': framework,
             'entities': entities, 'shared_records': shared,
             'singletons': model.get('singletons') or {},
             'id_namespaces': {ns: {'entity': ent_ns.get(ns)} for ns in id_ns},
@@ -670,6 +702,7 @@ def classify_namespaces(ix, ns_struct):
     def comp_name(callee):
         t = callee['expression'].get('typeDescriptions', {}).get('typeString', '')
         c = ix.comp_of(callee['expression'], {})
+        if isinstance(c, tuple): c = None   # chosen by name at runtime: fall back to the declared type's name
         return c if c and not c.startswith('@') else re.sub(r'^contract\s+|Component$', '', t)
     def call_args(n):
         callee = n['expression']; args = list(n['arguments'])
@@ -775,7 +808,7 @@ POLYMORPHIC_KEYS = {'is.data', 'is.score', 'is.config', 'has.flag', 'score.total
 ADMIN_MODIFIERS = {'onlyAdmin', 'onlyOwner', 'onlyCommManager', 'onlyLocal'}  # entry points players can't call
 
 
-def derive_domain(ix, ents, creators, ns_struct, systems, indexed=None, untyped=(), singletons=None, ns_kind=None, gen_ns=None):
+def derive_domain(ix, ents, creators, ns_struct, systems, indexed=None, untyped=(), singletons=None, ns_kind=None, gen_ns=None, reach_fids=None):
     indexed, ns_kind, gen_ns = indexed or {}, ns_kind or {}, gen_ns or {}
     via_anchor = []  # anchor keys passed through while resolving the current link
     """Top-level entities, their links and sub-entities, inferred from the code. `inferred` marks name-based guesses."""
@@ -911,6 +944,18 @@ def derive_domain(ix, ents, creators, ns_struct, systems, indexed=None, untyped=
             out |= arg_types(caller, args[pi], depth, seen + ((fid, pi),))
         return out
 
+    def own_of_bare(fid):
+        """What a bare `id` means in fid when its library makes more than one kind of thing: the kind this function
+        creates (LibRoom.createGate -> ROOM_GATE), else the one kind whose creation reaches it, else the typed kind
+        (LibRoom.setExits is for rooms, not gates). Empty when still ambiguous."""
+        own = lib_creates.get(ix.fn[fid][0], set()) if fid in ix.fn else set()
+        if len(own) <= 1: return set(own)
+        mine = {et for et in own if fid in creators.get(et, [])}
+        if len(mine) == 1: return mine
+        via = {et for et in own if any(fid in reach(c) for c in creators.get(et, []))}
+        if len(via) == 1: return via
+        typed_own = {et for et in own if et not in untyped}
+        return typed_own if len(typed_own) == 1 else set()
     def resolve(fid, argname):
         """Type for an argument name inside fid: by name, else traced through callers if it is a parameter."""
         ns_, owner_ = gen_owner(argname, ix.fn[fid][0] if fid in ix.fn else None)
@@ -926,14 +971,16 @@ def derive_domain(ix, ents, creators, ns_struct, systems, indexed=None, untyped=
         own = lib_creates.get(ix.fn[fid][0], set()) if fid in ix.fn else set()
         if base in ps:
             t = trace(fid, ps.index(base))
-            if not t and base in ('regID', 'registryID') and len(own) == 1: t = set(own)  # a bare regID in LibBonus is a BONUS entry
+            if not t and base in ('id', 'entityID', 'regID', 'registryID'): t = own_of_bare(fid)  # a bare regID in LibBonus is a BONUS entry
             return t, True
         al = tuple_alias(fid).get(base) if fid in ix.fn else None
         if al is not None:  # (lo, hi) = sortIndices(indexA, indexB): lo and hi are whatever the arguments are
             t = set()
             for a in al: t |= arg_types(fid, a, 0, ())
             return t, True
-        if base in ('id', 'entityID', 'regID', 'registryID') and len(own) == 1: return set(own), True  # a bare `id` in LibHarvest is a harvest
+        if base in ('id', 'entityID', 'regID', 'registryID'):
+            o = own_of_bare(fid)   # a bare `id` in LibHarvest is a harvest; in LibRoom.createGate a gate
+            if o: return o, True
         return set(), True
 
     lib_of = lambda fid: ix.fn[fid][0]
@@ -1236,6 +1283,32 @@ def derive_domain(ix, ents, creators, ns_struct, systems, indexed=None, untyped=
                 if parent: model[parent].setdefault('sub_entities', {})[name] = rec_
                 else: shared[name] = rec_
 
+    # columns written after creation: every component write, anywhere a system can reach, whose id argument resolves to
+    # the entity type (kamiID -> KAMI, or traced through callers). An indexer's table for the type needs these columns
+    # too; the creation list alone misses a kami's trait indexes or an account's name. Recorded with where they are set.
+    if reach_fids:
+        later, later_in = defaultdict(set), defaultdict(lambda: defaultdict(set))
+        for z in reach_fids:
+            if z not in ix.fn or ix.fn[z][2].startswith('src/solecs/'): continue
+            for st in flat_events(ix.events(z)):
+                # a value being set is evidence of a column; a bare remove is not (LibItem.remove clears every component
+                # an entry might have, including ones no item ever gets)
+                if st[0] != 'access' or not st[2].startswith(('set', 'inc', 'dec', 'push', 'extend', 'transfer')) or len(st) < 4 or not st[3]: continue
+                comp = cname(st[1])
+                if comp == 'EntityType' or comp.startswith('@') or '[' in comp: continue
+                idarg = st[3][0].strip()
+                if idarg.startswith('uint256(uint160('): continue   # address-keyed records, handled below
+                t, inf = resolve(z, idarg)
+                if os.environ.get('ATLAS_DEBUG_COLS') and comp.startswith(os.environ['ATLAS_DEBUG_COLS']):
+                    print('  cols: %s writes %s with id %r -> %s' % (ix.key(z), comp, idarg, sorted(t) or 'unresolved'))
+                for et in t:
+                    if et in model: later[et].add(comp); later_in[et][comp].add(ix.key(z))
+        for et, e in model.items():
+            extra = sorted(c for c in later.get(et, ()) if c not in e['components'])
+            if extra:
+                e['components_later'] = extra
+                e['components_later_in'] = {c: sorted(later_in[et][c])[:4] for c in extra}
+
     order = sorted(model, key=lambda k: ({'runtime': 0, 'hybrid': 1, 'registry': 2}[model[k]['layer']], k))
     model_out = {'relationship_types': REL_TYPES, 'entities': {k: model[k] for k in order}, 'shared_sub_entities': shared}
     if singletons: model_out['singletons'] = singletons
@@ -1536,15 +1609,16 @@ def main():
     repo, repo_path = source_web()
     model_meta = {'contracts': source_label(), 'ref': source_ref(), 'commit': source_rev(), 'repo': repo, 'repo_path': repo_path,
                   'left_out': dropped}
-    model = derive_domain(ix, ents, creators, ns_struct, systems, {c['comp']: bool(c.get('indexed')) for c in deploy['components']},
-                          untyped, singletons, ns_kind, gen_ns)
-
-    # function table: every library function reachable from a system, written once
+    # every library function reachable from a system (the function table, and the columns pass in derive_domain)
     reach, todo = set(), list(reach_roots)
     while todo:
         x = todo.pop()
         if x in reach: continue
         reach.add(x); todo += called(ix, x)
+    model = derive_domain(ix, ents, creators, ns_struct, systems, {c['comp']: bool(c.get('indexed')) for c in deploy['components']},
+                          untyped, singletons, ns_kind, gen_ns, reach_fids=reach)
+
+    # function table: written once per library
     tables = defaultdict(dict)
     for x in sorted(reach, key=ix.key):
         c, f, path = ix.fn[x]
@@ -1601,7 +1675,7 @@ def main():
         except subprocess.CalledProcessError as ex: print('diff: cannot read %s:generated/domain-model.json (%s)' % (ref, ex.stderr.strip()))
     write(os.path.join(GEN, 'domain-model.yaml'), src_note, model)
     with open(os.path.join(GEN, 'domain-model.json'), 'w') as f_: json.dump(model, f_, indent=1)
-    spec = write_spec(model, ents, comps, systems, id_ns, src_note)
+    spec = write_spec(ix, model, ents, comps, systems, id_ns, src_note)
 
     # data for the visualizer (viz/): the model, a compact per-system summary, and the notes as written
     vd = os.path.join(HERE, 'viz', 'data')

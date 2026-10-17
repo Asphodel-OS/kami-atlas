@@ -13,9 +13,6 @@ LibScore.genTypeID:
 LibScore.get:
   sig: "(uint256 id) internal view"
   steps: ["safeGet Value"]
-LibScore.getCurrentEpoch:
-  sig: "() internal view"
-  steps: ["LibConfig.get(string) \"SCORE_EPOCH\""]
 "LibScore.incFor(uint256,uint256,uint256,uint256)":
   sig: "(uint256 id, uint256 holderID, uint256 typeID, uint256 amt) internal"
   writes: [IDType, IdHolder, Value]
@@ -27,4 +24,4 @@ LibScore.getCurrentEpoch:
 "LibScore.incFor(uint256,uint32,string,uint256)":
   sig: "(uint256 holderID, uint32 index, string _type, uint256 amt) internal"
   writes: [IDType, IdHolder, Value]
-  steps: [LibScore.getCurrentEpoch, "LibScore.incFor(uint256,uint256,uint32,string,uint256)"]
+  steps: ["LibScore.incFor(uint256,uint256,uint32,string,uint256)"]

@@ -19,7 +19,7 @@ _RoomRegistry:
       - "revert if !(bytes(name).length > 0): Room: name cannot be empty"
       - LibRoom.create
       - "if exits.length > 0 && exits[0] != 0": [LibRoom.setExits]
-    setTexts: [LibRoom.getByIndex, "revert if roomID == 0: Room: does not exist", LibRoom.setName, LibRoom.setDescription]
+    setTexts: ["revert if roomID == 0: Room: does not exist", LibRoom.setName, LibRoom.setDescription]
     addGate:
       - LibRoom.getByIndex
       - LibRoom.getByIndex
@@ -29,5 +29,5 @@ _RoomRegistry:
       - "revert if !(sourceIndex == 0 || LibRoom.getByIndex(components, sourceIndex) != 0): Room: source does not exists"
       - LibRoom.createGate
     addFlag: [LibRoom.addFlag]
-    remove: [LibRoom.getByIndex, "revert if !(roomID != 0): Room: does not exist", LibRoom.remove]
+    remove: ["revert if !(roomID != 0): Room: does not exist", LibRoom.remove]
     execute: ["revert if !(false): not implemented"]

@@ -26,15 +26,13 @@ ScavengeClaim:
     - TimeNext
     - Type
     - Value
-  reads: [Affinity, CacheOperator, IDOwnsKami, Index, Subtype, TokenAddress]
+  reads: [CacheOperator, IDOwnsKami, Index, Subtype, TokenAddress]
   write_access: "*"
   events: [SCAVENGE_REWARDS]
-  config: [VIP_SCORE_ADDRESS, VIP_STAGE]
   bonuses: [TIMED, UPON_COOLDOWN_SET, UPON_DEATH, UPON_HARVEST_ACTION, UPON_HARVEST_STOP, UPON_KILL_OR_KILLED, UPON_LIQUIDATION]
   steps:
     - LibAccount.getByOperator
     - LibScavenge.verifyIsScavenge
-    - LibScavenge.getBase
     - LibScavenge.extractNumTiers
     - "revert if rolls == 0: no scav rolls. node modal may be out of sync, showing already claimed rolls"
     - LibScavenge.distributeRewards

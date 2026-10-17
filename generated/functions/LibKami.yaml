@@ -8,13 +8,13 @@ LibKami._sync:
         - "if state.eq(\"RESTING\")": [LibKami.calcRecovery, LibKami.heal]
 LibKami.calcMetabolism:
   sig: "(uint256 id) internal view"
-  steps: ["LibConfig.getArray(\"KAMI_REST_METABOLISM\")", "LibBonus.getFor(\"REST_METABOLISM_BOOST\")", "LibStat.getTotal(\"HARMONY\")"]
+  steps: ["LibBonus.getFor(\"REST_METABOLISM_BOOST\")", "LibStat.getTotal(\"HARMONY\")"]
 LibKami.calcRecovery:
   sig: "(uint256 id) internal view"
   steps: [LibKami.calcMetabolism, LibKami.getLastTs]
 LibKami.calcStrain:
   sig: "(uint256 id, uint256 amt) internal view"
-  steps: ["LibConfig.getArray(\"KAMI_HARV_STRAIN\")", "LibBonus.getFor(\"STND_STRAIN_BOOST\")", "LibStat.getTotal(\"HARMONY\")"]
+  steps: ["LibBonus.getFor(\"STND_STRAIN_BOOST\")", "LibStat.getTotal(\"HARMONY\")"]
 LibKami.checkAccount:
   sig: "(uint256 id, uint256 accID) internal view"
   steps: ["get IDOwnsKami"]
@@ -33,18 +33,12 @@ LibKami.getAccount:
 LibKami.getAffinities:
   sig: "(uint256 id) internal view"
   steps: ["LibTraitRegistry.getByEntity(\"BODY\")", "LibTraitRegistry.getByEntity(\"HAND\")", "safeGet Affinity"]
-LibKami.getBodyAffinity:
-  sig: "(uint256 id) internal view"
-  steps: ["LibTraitRegistry.getByEntity(\"BODY\")", "safeGet Affinity"]
 LibKami.getByIndex:
   sig: "(uint32 index) internal view"
   steps: [LibKami.genID, "LibEntityType.isShape(uint256,string) \"KAMI\""]
 LibKami.getByName:
   sig: "(string name) internal view"
   steps: ["LibEntityType.queryWithValue(\"KAMI\")"]
-LibKami.getHandAffinity:
-  sig: "(uint256 id) internal view"
-  steps: ["LibTraitRegistry.getByEntity(\"HAND\")", "safeGet Affinity"]
 LibKami.getHarvest:
   sig: "(uint256 id) internal view"
   steps: [LibHarvest.getForKami]
@@ -57,10 +51,11 @@ LibKami.getLastTs:
 LibKami.getRoom:
   sig: "(uint256 id) internal view"
   steps:
-    - LibKami.getState
-    - "if state.eq(\"HARVESTING\")": [LibKami.getHarvest, LibHarvest.getNode, LibNode.getRoom]
+    - "eq State"
+    - "if state.eq(\"HARVESTING\")": [LibNode.getRoom]
       else:
-        - "unless state.eq(\"721_EXTERNAL\")": [LibKami.getAccount, LibAccount.getRoom]
+        - "eq State"
+        - "unless state.eq(\"721_EXTERNAL\")": [LibAccount.getRoom]
 LibKami.getState:
   sig: "(uint256 id) internal view"
   steps: ["get State"]

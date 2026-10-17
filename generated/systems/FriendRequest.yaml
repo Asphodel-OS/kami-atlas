@@ -18,9 +18,7 @@ FriendRequest:
     - "revert if LibFriend.getRequestCount(components, targetID) >= LibConfig.get(comp…: Max friend requests reached"
     - LibFriend.getFriendship
     - "revert if LibFriend.getFriendship(components, accID, targetID) != 0: FriendRequest: already exists"
-    - LibFriend.getFriendship
     - "if incomingReq != 0":
-        - LibFriend.getState
         - "revert if LibString.eq(state, \"REQUEST\"): FriendRequest: inbound request exists"
         - "revert if LibString.eq(state, \"FRIENDS\"): FriendRequest: already friends"
         - "revert if LibString.eq(state, \"BLOCKED\"): FriendRequest: blocked"

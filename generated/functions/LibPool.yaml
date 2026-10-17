@@ -6,12 +6,9 @@ LibPool.addLiquidity:
   sig: "(uint256 poolID, uint256 accID, AddLiqParams p) public"
   writes: [EntityType, IDOwnsInventory, IDType, IdHolder, IndexItem, Value]
   steps:
-    - LibInventory.getBalanceOf
-    - LibInventory.getBalanceOf
     - LibPool.quote
     - "if amountBOptimal <= p.amountBDesired": ["revert if !(amountBOptimal >= p.amountBMin): Pool: insufficient B amount"]
       else: [LibPool.quote, "revert if !(amountAOptimal <= p.amountADesired): Pool: excessive A amount", "revert if !(amountAOptimal >= p.amountAMin): Pool: insufficient A amount"]
-    - LibPool.getTotalSupply
     - FixedPointMathLib.mulDivDown
     - FixedPointMathLib.mulDivDown
     - LibPool.min
@@ -46,8 +43,6 @@ LibPool.forceExitAll:
     - LibPoolRegistry.getItemIndices
     - "for each (i < shares.length)":
         - "get IdHolder"
-        - LibPool.getShares
-        - LibPool.getTotalSupply
         - LibInventory.getBalanceOf
         - LibInventory.getBalanceOf
         - LibPool.burnShares
@@ -58,9 +53,6 @@ LibPool.genShareID:
 LibPool.getShares:
   sig: "(uint256 poolID, uint256 holderID) internal view"
   steps: [LibPool.genShareID, "safeGet Value"]
-LibPool.getTotalSupply:
-  sig: "(uint256 poolID) internal view"
-  steps: ["safeGet Value"]
 LibPool.liquidityEventSchema:
   sig: "() internal pure"
 LibPool.logLiquidity:
@@ -99,7 +91,6 @@ LibPool.removeLiquidity:
   writes: [EntityType, IDOwnsInventory, IDType, IdHolder, IndexItem, Value]
   steps:
     - "revert if !(p.shares > 0): Pool: zero shares"
-    - LibPool.getTotalSupply
     - LibInventory.getBalanceOf
     - FixedPointMathLib.mulDivDown
     - LibInventory.getBalanceOf
@@ -114,8 +105,6 @@ LibPool.swap:
   writes: [EntityType, IDOwnsInventory, IndexItem, Value]
   steps:
     - "revert if !(amountIn > 0): Pool: zero input"
-    - LibInventory.getBalanceOf
-    - LibInventory.getBalanceOf
     - LibPoolRegistry.getFeeBps
     - LibPool.calcAmountOut
     - "revert if !(amountOut > 0): Pool: insufficient output"

@@ -6,9 +6,9 @@ KamiGachaReveal:
   args: "bytes arguments"
   entry_points: [reveal, forceReveal, execute]
   deployed: true
-  writes: [BlockReveal, IDOwnsKami, IdHolder, Reroll, Type, Value]
+  writes: [BlockReveal, IDOwnsKami, IdHolder, Reroll, Value]
   data: [GACHA_COMMITS_PENDING]
-  access_not_written: [State]
+  access_not_written: [State, Type]
   steps:
     reveal: ["revert if commitIDs.length == 0: need commits to reveal", LibArray.sortAndVerifyNoRepeats, LibGacha.checkAndExtractIsCommit, LibGacha.selectPets, LibGacha.withdrawPets]
     forceReveal:

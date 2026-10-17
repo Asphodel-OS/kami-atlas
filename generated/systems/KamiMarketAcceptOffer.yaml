@@ -32,7 +32,7 @@ KamiMarketAcceptOffer:
     - Values
   reads: [CacheOperator, TokenAddress]
   events: [KAMI_MARKET_ACCEPT, KAMI_MARKET_CANCEL]
-  config: [KAMI_MARKET_ENABLED, KAMI_MARKET_FEE_RATE, KAMI_MARKET_FEE_RECIPIENT, KAMI_MARKET_PURCHASE_COOLDOWN, KAMI_MARKET_VAULT, NEWBIE_VENDOR_TWAP_WINDOW]
+  config: [KAMI_MARKET_ENABLED, KAMI_MARKET_FEE_RECIPIENT, KAMI_MARKET_PURCHASE_COOLDOWN]
   data: [KAMI_MARKET_ACCEPT, KAMI_MARKET_CANCEL]
   steps:
     execute:
@@ -50,9 +50,7 @@ KamiMarketAcceptOffer:
       - LibKamiMarket.verifyNotOwner
       - "LibKamiMarket.verifyIsType(\"KAMI_COLLECTION_OFFER\")"
       - LibKamiMarket.verifyCollectionOfferQuantity
-      - LibKamiMarket.getOwner
       - LibAccount.getOwner
-      - LibKamiMarket.getPrice
       - "for each (i < kamiIndices.length)":
           - LibKamiMarket.verifyKamiOwnedRestingOrListed
           - LibKami.getByIndex
@@ -61,9 +59,8 @@ KamiMarketAcceptOffer:
           - LibKamiMarket.emitAcceptOffer
           - LibKamiMarket.logAcceptOffer
       - LibKamiMarket.calcFee
-      - LibKamiMarket.getVault
-      - KamiMarketVault.transferWETH
-      - "if totalFee > 0": [LibKamiMarket.getFeeRecipient, KamiMarketVault.transferWETH]
+      - "transferWETH Value"
+      - "if totalFee > 0": [LibKamiMarket.getFeeRecipient, "transferWETH Value"]
       - LibTWAP.poke
       - LibAccount.updateLastTs
     KamiMarketAcceptOfferSystem._acceptSingle:
@@ -76,16 +73,13 @@ KamiMarketAcceptOffer:
       - LibKamiMarket.verifyKamiOwnedRestingOrListed
       - LibKami.getByIndex
       - LibSoulbound.verify
-      - LibKamiMarket.getOwner
-      - LibEntityType.get
       - "if keccak256(bytes(orderType)) == keccak256(bytes(\"KAMI_OFFER\"))": [LibKamiMarket.getKamiIndex, "revert if LibKamiMarket.getKamiIndex(components, offerID) != kamiIndex: KamiMarketAcceptKamiMismatch", LibKamiMarket.fillOffer]
         else:
           - "if keccak256(bytes(orderType)) == keccak256(bytes(\"KAMI_COLLECTION_OFFER…": [LibKamiMarket.fillCollectionOffer]
             else: ["revert: KamiMarketAcceptInvalidOrderType"]
-      - LibKamiMarket.getVault
       - LibKamiMarket.calcFee
-      - KamiMarketVault.transferWETH
-      - "if fee > 0": [LibKamiMarket.getFeeRecipient, KamiMarketVault.transferWETH]
+      - "transferWETH Value"
+      - "if fee > 0": [LibKamiMarket.getFeeRecipient, "transferWETH Value"]
       - LibTWAP.poke
       - LibKamiMarket.emitAcceptOffer
       - LibKamiMarket.logAcceptOffer

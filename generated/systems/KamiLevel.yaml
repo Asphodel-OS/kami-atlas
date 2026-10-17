@@ -8,9 +8,8 @@ KamiLevel:
   also: [executeTyped]
   deployed: true
   writes: [Experience, Health, Level, SkillPoint, TimeLast, Value]
-  reads: [Affinity, CacheOperator, EntityType, IDOwnsKami, IDType, IdHolder, IdSource, IndexKami, State, TimeReset]
+  reads: [Affinity, CacheOperator, EntityType, Harmony, IDOwnsKami, IdSource, IndexKami, Power, Slots, Stamina, State, TimeReset, Violence]
   stats: [HARMONY, HEALTH, POWER, VIOLENCE]
-  config: [KAMI721_ADDRESS, KAMI_HARV_BOUNTY, KAMI_HARV_FERTILITY, KAMI_HARV_INTENSITY, KAMI_HARV_STRAIN, KAMI_LVL_REQ_BASE, KAMI_LVL_REQ_MULT_BASE, KAMI_REST_METABOLISM]
   bonuses: [HARV_BOUNTY_BOOST, HARV_FERTILITY_BOOST, HARV_INTENSITY_BOOST, REST_METABOLISM_BOOST, STND_STRAIN_BOOST]
   data: [KAMI_LEVELS_TOTAL]
   access_not_written: [ProxyPermissionsERC721, Rate, TimeStart]

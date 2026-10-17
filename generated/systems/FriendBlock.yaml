@@ -13,7 +13,6 @@ FriendBlock:
     - LibAccount.getByOperator
     - LibAccount.getByOwner
     - "revert if accID == targetID: FriendBlock: cannot block self"
-    - LibFriend.getFriendship
     - "LibFriend.isState(\"BLOCKED\")"
     - "if targetToAcc != 0 && !LibFriend.isState(components, targetToAcc, \"BLOC…": [LibFriend.remove]
     - "LibFriend.create(\"BLOCKED\")"

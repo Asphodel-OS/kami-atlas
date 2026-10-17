@@ -10,5 +10,5 @@ _TraitRegistry:
   write_access: "*"
   steps:
     create: [LibTraitRegistry.create]
-    remove: [LibTraitRegistry.getByIndex, "revert if !(traitID != 0): Trait: does not exist", LibTraitRegistry.remove]
+    remove: ["revert if !(traitID != 0): Trait: does not exist", LibTraitRegistry.remove]
     execute: ["revert if !(false): not implemented"]

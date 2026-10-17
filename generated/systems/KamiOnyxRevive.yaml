@@ -8,17 +8,14 @@ KamiOnyxRevive:
   also: [executeTyped]
   deployed: true
   writes: [EntityType, Health, IDOwnsInventory, IndexItem, State, TimeLast, Value]
-  reads: [Affinity, CacheOperator, IDOwnsKami, IDType, IdHolder, IdSource, Level, TimeReset]
+  reads: [Affinity, CacheOperator, Harmony, IDOwnsKami, IdSource, Level, Power, Slots, Stamina, TimeReset, Violence]
   stats: [HARMONY, HEALTH, POWER, VIOLENCE]
-  config: [KAMI_HARV_BOUNTY, KAMI_HARV_FERTILITY, KAMI_HARV_INTENSITY, KAMI_HARV_STRAIN, KAMI_REST_METABOLISM]
   bonuses: [HARV_BOUNTY_BOOST, HARV_FERTILITY_BOOST, HARV_INTENSITY_BOOST, REST_METABOLISM_BOOST, STND_STRAIN_BOOST]
   data: [ITEM_COUNT, TOKEN_SPEND, TOKEN_SPEND_REVIVE]
   access_not_written: [TokenAllowance]
   steps:
-    - LibKami.getByIndex
     - LibAccount.getByOperator
     - "LibKami.verifyAccount(uint256,uint256)"
-    - LibKami.getState
     - "revert if !(LibString.eq(state, \"DEAD\")): kami is not dead"
     - "LibInventory.decFor(uint256,uint32,uint256)"
     - "LibKami.sync(uint256)"

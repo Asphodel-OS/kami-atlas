@@ -8,38 +8,15 @@ ListingBuy:
   also: [executeTyped]
   deployed: true
   writes: [Balance, EntityType, IDOwnsInventory, IDType, IdHolder, IndexItem, TimeLast, TimeStart, Value]
-  reads:
-    - CacheOperator
-    - Decay
-    - For
-    - HasFlag
-    - IDAnchor
-    - IDOwnsKami
-    - IdSource
-    - Index
-    - IndexCurrency
-    - IndexRoom
-    - IsComplete
-    - Level
-    - LogicType
-    - Period
-    - Rate
-    - SkillPoint
-    - State
-    - TimeNext
-    - TokenAddress
-    - Type
+  reads: [CacheOperator, Decay, For, HasFlag, IDOwnsKami, Index, IndexCurrency, IndexRoom, IsComplete, Level, LogicType, Period, Rate, SkillPoint, State, TimeNext, TokenAddress, Type]
   events: [LISTING_BUY]
-  config: [SCORE_EPOCH]
   data: [ITEM_COUNT, ITEM_SPEND]
   access_not_written: [Index, TokenAllowance, Type]
   steps:
     - LibAccount.getByOperator
-    - LibNPC.get
     - "revert if merchantID == 0: merchant does not exist"
     - LibNPC.verifyRoom
     - "for each (i < itemIndices.length)":
-        - LibListingRegistry.get
         - "revert if !(listingID != 0): listing does not exist"
         - "revert if listingID == 0: listing does not exist"
         - LibListing.verifyRequirements

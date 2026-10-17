@@ -37,24 +37,9 @@ LibSkillRegistry.genTreeType:
 LibSkillRegistry.getByIndex:
   sig: "(uint32 index) internal view"
   steps: ["LibSkillRegistry.genID(uint32)", "LibEntityType.isShape(uint256,string) \"SKILL\""]
-"LibSkillRegistry.getCost(uint256)":
-  sig: "(uint256 id) internal view"
-  steps: ["get Cost"]
-"LibSkillRegistry.getCost(uint256[])":
-  sig: "(uint256[] ids) internal view"
-  steps: ["get Cost"]
-LibSkillRegistry.getMax:
-  sig: "(uint256 id) internal view"
-  steps: ["get Max"]
 LibSkillRegistry.getTree:
   sig: "(uint256 id) internal view"
   steps: ["has Type", "get Type", LibSkillRegistry.genTreeType, "get Level"]
-LibSkillRegistry.queryBonuses:
-  sig: "(uint32 skillIndex) internal view"
-  steps: [LibSkillRegistry.genBonusAnchor, "LibBonus.queryByParent(uint256)"]
-LibSkillRegistry.queryRequirements:
-  sig: "(uint32 index) internal view"
-  steps: [LibSkillRegistry.genReqAnchor, "LibConditional.queryFor(uint256)"]
 LibSkillRegistry.remove:
   sig: "(uint32 index) internal"
   writes: [Cost, Description, EntityType, For, IDAnchor, IdSource, Index, IndexSkill, IsRegistry, Level, LogicType, Max, MediaURI, Name, Subtype, Time, Type, Value]
@@ -71,7 +56,5 @@ LibSkillRegistry.remove:
     - "LibFor.remove(uint256)"
     - "remove Level"
     - "remove Type"
-    - LibSkillRegistry.queryRequirements
     - "for each (i < reqs.length)": ["LibConditional.remove(uint256)"]
-    - LibSkillRegistry.queryBonuses
     - LibBonus.regRemove

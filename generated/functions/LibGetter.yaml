@@ -2,8 +2,9 @@
 LibGetter.getAccount:
   sig: "(uint256 id) internal view"
   steps:
-    - LibEntityType.get
+    - "eq EntityType"
     - "unless shape.eq(\"ACCOUNT\")":
+        - "eq EntityType"
         - "if shape.eq(\"KAMI\")": [LibKami.getAccount]
           else: ["revert: LibGetter: invalid entity shape (no acc)"]
 LibGetter.getBal:
@@ -39,9 +40,9 @@ LibGetter.getBool:
                       else:
                         - "if _type.eq(\"COOLDOWN\")": ["LibCooldown.isActive(uint256)"]
                           else:
-                            - "if _type.eq(\"STATE\")": [LibEntityType.get, LibGetter.getState]
+                            - "if _type.eq(\"STATE\")": [LibGetter.getState]
                               else:
-                                - "if _type.eq(\"KAMI_CAN_EAT\")": [LibKami.getState]
+                                - "if _type.eq(\"KAMI_CAN_EAT\")": ["eq State"]
                                   else: [LibFlag.has]
 LibGetter.getMinLevelAmt:
   sig: "(uint256[] ids, uint256 minLevel) internal view"
@@ -50,7 +51,7 @@ LibGetter.getMinLevelAmt:
 LibGetter.getRoom:
   sig: "(uint256 id) internal view"
   steps:
-    - LibEntityType.get
+    - "eq EntityType"
     - "if shape.eq(\"KAMI\")": [LibKami.getRoom]
       else: [LibRoom.get]
 LibGetter.getState:

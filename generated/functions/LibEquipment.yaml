@@ -22,7 +22,6 @@ LibEquipment.equip:
     - "LibItem.verifyType(uint32,string) \"EQUIPMENT\""
     - LibEquipment.getItemSlot
     - "revert if !(!slot.eq(\"\")): Equipment: no slot"
-    - LibEquipment.getEquipped
     - "if existingEquipID != 0": [LibEquipment.unequip]
       else:
         - LibEquipment.getEquippedCount
@@ -47,9 +46,6 @@ LibEquipment.getCapacity:
 LibEquipment.getEquipBonusAlloID:
   sig: "(uint32 itemIndex) internal pure"
   steps: [LibItem.genRefAnchor, "LibReference.genID(string,uint256) \"EQUIP\"", LibItem.genAlloAnchor, "LibAllo.genID(\"BONUS\")"]
-LibEquipment.getEquipped:
-  sig: "(uint256 holderID, string slot) internal view"
-  steps: [LibEquipment.genID, "LibEntityType.isShape(uint256,string) \"EQUIPMENT\""]
 LibEquipment.getEquippedCount:
   sig: "(uint256 holderID) internal view"
   steps: [LibEquipment.getAllEquipped]
@@ -69,12 +65,11 @@ LibEquipment.setItemSlot:
 LibEquipment.unequip:
   sig: "(uint256 holderID, uint256 inventoryID, string slot) internal"
   writes: [EntityType, For, IDAnchor, IDOwnsEquipment, IDOwnsInventory, IDType, IdSource, IndexItem, Level, Time, Value]
-  steps: [LibEquipment.getEquipped, "revert if !(equipID != 0): Equipment: slot empty", LibEquipment._unequipByID]
+  steps: ["revert if !(equipID != 0): Equipment: slot empty", LibEquipment._unequipByID]
 LibEquipment.unequipAll:
   sig: "(uint256 holderID, uint256 inventoryID) internal"
   writes: [EntityType, For, IDAnchor, IDOwnsEquipment, IDOwnsInventory, IDType, IdSource, IndexItem, Level, Time, Value]
   steps:
-    - LibEquipment.getAllEquipped
     - "for each (i < equipIDs.length)": [LibEquipment._unequipByID]
 LibEquipment.verifyKamiCanEquip:
   sig: "(uint256 kamiID) internal view"

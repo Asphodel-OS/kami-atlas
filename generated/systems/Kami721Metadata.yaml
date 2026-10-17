@@ -5,9 +5,8 @@ Kami721Metadata:
   comment: "@title  System that handles metadata for Kami721 @dev    does not implement execute, only views tokenURI @dev    URI is structured in a system to allow for upgradibility"
   entry_points: [tokenURI, execute, executeTyped]
   deployed: true
-  reads: [Affinity, EntityType, Level, MediaURI, Name, "Stat[by name]", Value]
+  reads: [Affinity, Level, MediaURI, Name, "Stat[by name]"]
   stats: [HARMONY, HEALTH, POWER, VIOLENCE]
-  config: [BASE_URI]
   steps:
     tokenURI: [LibKami721.getJsonBase64]
     execute: ["revert if !(false): Kami721MetadataSystem: no execute"]

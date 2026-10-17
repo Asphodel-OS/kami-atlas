@@ -9,7 +9,6 @@ TradeCancel:
   writes: [EntityType, IDOwnsInventory, IDOwnsTrade, IdTarget, IndexItem, Keys, State, TimeLast, Value, Values]
   reads: [IndexRoom]
   events: [TRADE_CANCEL]
-  config: [TRADE_DELIVERY_FEE]
   data: [ITEM_COUNT, TRADE_CANCEL]
   steps:
     execute:

@@ -8,23 +8,9 @@ HarvestLiquidate:
   also: [executeTyped]
   deployed: true
   writes: [EntityType, Experience, Health, IDAnchor, IDOwnsInventory, IDType, IdHolder, IdSource, IndexItem, Level, State, Time, TimeLast, TimeNext, Value]
-  reads: [Affinity, CacheOperator, IDOwnsKami, IndexAccount, IndexNode, IndexRoom, TimeReset, TokenAddress]
+  reads: [Affinity, CacheOperator, Harmony, IDOwnsKami, IndexAccount, IndexRoom, Power, Slots, Stamina, TimeReset, TokenAddress, Violence]
   events: [KILL]
   stats: [HARMONY, HEALTH, POWER, VIOLENCE]
-  config:
-    - KAMI_HARV_BOUNTY
-    - KAMI_HARV_FERTILITY
-    - KAMI_HARV_INTENSITY
-    - KAMI_HARV_STRAIN
-    - KAMI_LIQ_ANIMOSITY
-    - KAMI_LIQ_KARMA
-    - KAMI_LIQ_RECOIL
-    - KAMI_LIQ_SALVAGE
-    - KAMI_LIQ_SPOILS
-    - KAMI_LIQ_THRESHOLD
-    - KAMI_REST_METABOLISM
-    - KAMI_STANDARD_COOLDOWN
-    - SCORE_EPOCH
   bonuses:
     - ATK_RECOIL_BOOST
     - ATK_SPOILS_RATIO
@@ -58,19 +44,15 @@ HarvestLiquidate:
     - "revert if !LibHarvest.isActive(components, victimHarvID): harvest inactive"
     - "LibKami.sync(uint256)"
     - "LibKami.verifyHealthy(uint256)"
-    - LibKami.getHarvest
-    - LibHarvest.getNode
     - LibHarvest.getNode
     - LibHarvest.getNode
     - "revert if !(nodeID == LibHarvest.getNode(components, victimHarvID)): target too far"
     - LibRoom.sharesRoom
     - LibRoom.sharesRoom
     - "revert if !(LibRoom.sharesRoom(components, accID, nodeID)): node too far"
-    - "LibHarvest.getKami(uint256)"
     - "LibKami.sync(uint256)"
     - LibKill.isLiquidatableBy
     - "revert if !LibKill.isLiquidatableBy(components, victimID, killerID): kami lacks violence (weak)"
-    - LibHarvest.getBalance
     - LibKill.calcSalvage
     - LibNode.getItem
     - LibKill.sendSalvage

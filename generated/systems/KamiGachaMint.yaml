@@ -16,6 +16,11 @@ KamiGachaMint:
     - IDOwnsInventory
     - IDOwnsKami
     - IdHolder
+    - IndexBackground
+    - IndexBody
+    - IndexColor
+    - IndexFace
+    - IndexHand
     - IndexItem
     - IndexKami
     - Level
@@ -30,9 +35,9 @@ KamiGachaMint:
     - Value
     - Violence
   reads: [Rarity]
-  config: [BASE_KAMI_NAME, KAMI721_ADDRESS]
+  config: [BASE_KAMI_NAME]
   data: [GACHA_COMMITS_PENDING, ITEM_COUNT, KAMI_GACHA_MINT]
-  access_not_written: [Affinity, IndexBackground, IndexBody, IndexColor, IndexFace, IndexHand, ProxyPermissionsERC721, Reroll]
+  access_not_written: [Affinity, ProxyPermissionsERC721, Reroll]
   steps:
     - "revert if !(amount <= 5): too many mints"
     - LibAccount.getByOwner

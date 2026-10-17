@@ -1012,6 +1012,11 @@
     "IDOwnsInventory",
     "IDOwnsKami",
     "IdHolder",
+    "IndexBackground",
+    "IndexBody",
+    "IndexColor",
+    "IndexFace",
+    "IndexHand",
     "IndexItem",
     "IndexKami",
     "Level",
@@ -1058,7 +1063,6 @@
     "IDOwnsKami",
     "IdHolder",
     "Reroll",
-    "Type",
     "Value"
    ]
   },
@@ -1226,7 +1230,6 @@
     "IDType",
     "IdSource",
     "IndexItem",
-    "IndexSkill",
     "Level",
     "SkillPoint",
     "Time",
@@ -1282,7 +1285,6 @@
     "IdSource",
     "IndexItem",
     "TimeLast",
-    "Type",
     "Value"
    ]
   },
@@ -1517,7 +1519,6 @@
     "IdSource",
     "IndexItem",
     "IndexRoom",
-    "IndexSkill",
     "Level",
     "ProxyVIPScore",
     "SkillPoint",
@@ -2028,6 +2029,16 @@
    ]
   }
  },
+ "framework_components": {
+  "COMPONENTS": {
+   "id": "world.component.components",
+   "what": "the World's registry of components: entity = contract address, value = id"
+  },
+  "SYSTEMS": {
+   "id": "world.component.systems",
+   "what": "the World's registry of systems: entity = contract address, value = id"
+  }
+ },
  "entities": {
   "ACCOUNT": {
    "entity_type": "ACCOUNT",
@@ -2047,6 +2058,31 @@
     "TimeStart",
     "Value"
    ],
+   "components_later": [
+    "Description",
+    "Experience",
+    "Name",
+    "State",
+    "TimeNext"
+   ],
+   "components_later_in": {
+    "Description": [
+     "LibAccount.setBio"
+    ],
+    "Experience": [
+     "LibExperience.inc",
+     "LibRecipe.afterCraft"
+    ],
+    "Name": [
+     "LibAccount.setName"
+    ],
+    "State": [
+     "LibKami.setStateFromIndex"
+    ],
+    "TimeNext": [
+     "LibCooldown.modify"
+    ]
+   },
    "created_by": [
     "AccountRegister"
    ],
@@ -2234,6 +2270,8 @@
     "IdHolder",
     "Type"
    ],
+   "components_later": [],
+   "components_later_in": {},
    "created_by": [
     "AccountUseItem",
     "GoalClaim",
@@ -2297,6 +2335,8 @@
     "IDOwnsEquipment",
     "IndexItem"
    ],
+   "components_later": [],
+   "components_later_in": {},
    "created_by": [
     "KamiEquip"
    ],
@@ -2339,6 +2379,8 @@
     "IdTarget",
     "State"
    ],
+   "components_later": [],
+   "components_later_in": {},
    "created_by": [
     "FriendAccept",
     "FriendBlock",
@@ -2382,6 +2424,35 @@
     "IdHolder",
     "IdSource"
    ],
+   "components_later": [
+    "State",
+    "TimeLast",
+    "TimeReset",
+    "TimeStart",
+    "Value"
+   ],
+   "components_later_in": {
+    "State": [
+     "LibHarvest.start",
+     "LibHarvest.stop"
+    ],
+    "TimeLast": [
+     "LibHarvest.start",
+     "LibHarvest.sync"
+    ],
+    "TimeReset": [
+     "LibHarvest.resetIntensity",
+     "LibHarvest.start"
+    ],
+    "TimeStart": [
+     "LibHarvest.start"
+    ],
+    "Value": [
+     "LibHarvest.claim",
+     "LibHarvest.incBounty",
+     "LibHarvest.stop"
+    ]
+   },
    "created_by": [
     "HarvestStart"
    ],
@@ -2422,6 +2493,8 @@
     "IndexItem",
     "Value"
    ],
+   "components_later": [],
+   "components_later_in": {},
    "created_by": [
     "AccountUseItem",
     "AuctionBuy",
@@ -2501,6 +2574,11 @@
     "Harmony",
     "Health",
     "IDOwnsKami",
+    "IndexBackground",
+    "IndexBody",
+    "IndexColor",
+    "IndexFace",
+    "IndexHand",
     "IndexKami",
     "Level",
     "MediaURI",
@@ -2511,6 +2589,27 @@
     "State",
     "Violence"
    ],
+   "components_later": [
+    "IndexRoom",
+    "Reroll",
+    "TimeLast",
+    "TimeNext"
+   ],
+   "components_later_in": {
+    "IndexRoom": [
+     "LibRoom.set"
+    ],
+    "Reroll": [
+     "LibGacha.withdrawPets"
+    ],
+    "TimeLast": [
+     "LibKami.setLastTs(uint256,uint256)"
+    ],
+    "TimeNext": [
+     "LibCooldown.modify",
+     "LibCooldown.set"
+    ]
+   },
    "created_by": [
     "KamiGachaMint"
    ],
@@ -2527,6 +2626,61 @@
      "required": true,
      "cardinality": "many KAMI per ACCOUNT/GACHA_POOL",
      "inferred": true
+    },
+    "IndexBackground": {
+     "to": [],
+     "relation": "registry",
+     "required": false,
+     "only_when": [
+      "for each (i < 5)",
+      "for each (i < amt) and for each (i < 5)"
+     ],
+     "cardinality": "many KAMI per referenced entity",
+     "inferred": true
+    },
+    "IndexBody": {
+     "to": [],
+     "relation": "registry",
+     "required": false,
+     "only_when": [
+      "for each (i < 5)",
+      "for each (i < amt) and for each (i < 5)"
+     ],
+     "cardinality": "many KAMI per referenced entity",
+     "inferred": true
+    },
+    "IndexColor": {
+     "to": [],
+     "relation": "registry",
+     "required": false,
+     "only_when": [
+      "for each (i < 5)",
+      "for each (i < amt) and for each (i < 5)"
+     ],
+     "cardinality": "many KAMI per referenced entity",
+     "inferred": true
+    },
+    "IndexFace": {
+     "to": [],
+     "relation": "registry",
+     "required": false,
+     "only_when": [
+      "for each (i < 5)",
+      "for each (i < amt) and for each (i < 5)"
+     ],
+     "cardinality": "many KAMI per referenced entity",
+     "inferred": true
+    },
+    "IndexHand": {
+     "to": [],
+     "relation": "registry",
+     "required": false,
+     "only_when": [
+      "for each (i < 5)",
+      "for each (i < amt) and for each (i < 5)"
+     ],
+     "cardinality": "many KAMI per referenced entity",
+     "inferred": true
     }
    },
    "keyed_by": {},
@@ -2539,6 +2693,18 @@
      "kind": "record",
      "fields": [
       "Value"
+     ]
+    },
+    "bonus.type": {
+     "id": "bonus.type(type_, holderID)",
+     "keys": {
+      "type_": null,
+      "holderID": "KAMI"
+     },
+     "kind": "anchor key",
+     "fields": [],
+     "pointed_at_by": [
+      "IDType"
      ]
     }
    }
@@ -2558,6 +2724,8 @@
     "TimeStart",
     "Value"
    ],
+   "components_later": [],
+   "components_later_in": {},
    "created_by": [
     "KamiMarketOffer"
    ],
@@ -2592,6 +2760,8 @@
     "Value",
     "Values"
    ],
+   "components_later": [],
+   "components_later_in": {},
    "created_by": [
     "KamiMarketList"
    ],
@@ -2633,6 +2803,8 @@
     "TimeStart",
     "Value"
    ],
+   "components_later": [],
+   "components_later_in": {},
    "created_by": [
     "KamiMarketOffer"
    ],
@@ -2673,6 +2845,8 @@
     "IdHolder",
     "Value"
    ],
+   "components_later": [],
+   "components_later_in": {},
    "created_by": [
     "Pool",
     "_PoolRegistry"
@@ -2722,6 +2896,8 @@
     "IdTarget",
     "Value"
    ],
+   "components_later": [],
+   "components_later_in": {},
    "created_by": [
     "HarvestStart"
    ],
@@ -2766,6 +2942,8 @@
     "TokenAddress",
     "Value"
    ],
+   "components_later": [],
+   "components_later_in": {},
    "created_by": [
     "TokenPortal"
    ],
@@ -2809,6 +2987,8 @@
     "Value",
     "Values"
    ],
+   "components_later": [],
+   "components_later_in": {},
    "created_by": [
     "TradeCreate"
    ],
@@ -2886,6 +3066,22 @@
     "Type",
     "Value"
    ],
+   "components_later": [
+    "IsComplete",
+    "Time",
+    "TimeLast"
+   ],
+   "components_later_in": {
+    "IsComplete": [
+     "LibQuest.setCompleted"
+    ],
+    "Time": [
+     "LibQuestRegistry.setRepeatable"
+    ],
+    "TimeLast": [
+     "LibQuest.complete"
+    ]
+   },
    "created_by": [
     "QuestAccept",
     "_QuestRegistry"
@@ -2990,6 +3186,22 @@
     "IndexRelationship",
     "IsRegistry"
    ],
+   "components_later": [
+    "Blacklist",
+    "Name",
+    "Whitelist"
+   ],
+   "components_later_in": {
+    "Blacklist": [
+     "LibRelationshipRegistry.setBlacklist"
+    ],
+    "Name": [
+     "LibRelationshipRegistry.setName"
+    ],
+    "Whitelist": [
+     "LibRelationshipRegistry.setWhitelist"
+    ]
+   },
    "created_by": [
     "RelationshipAdvance",
     "_RelationshipRegistry"
@@ -3048,6 +3260,8 @@
     "Type",
     "Value"
    ],
+   "components_later": [],
+   "components_later_in": {},
    "created_by": [
     "SkillUpgrade",
     "_SkillRegistry"
@@ -3109,6 +3323,24 @@
     "Index",
     "Type"
    ],
+   "components_later": [
+    "Keys",
+    "Value",
+    "Weights"
+   ],
+   "components_later_in": {
+    "Keys": [
+     "LibDroptable.set"
+    ],
+    "Value": [
+     "LibAllo.createBasic",
+     "LibAllo.createDT",
+     "LibAllo.createStat"
+    ],
+    "Weights": [
+     "LibDroptable.set"
+    ]
+   },
    "created_by": [
     "_GoalRegistry",
     "_ItemRegistry",
@@ -3174,6 +3406,8 @@
     "TimeStart",
     "Value"
    ],
+   "components_later": [],
+   "components_later_in": {},
    "created_by": [
     "_AuctionRegistry"
    ],
@@ -3230,6 +3464,14 @@
     "Type",
     "Value"
    ],
+   "components_later": [
+    "IDType"
+   ],
+   "components_later_in": {
+    "IDType": [
+     "LibBonus.setTypeIDFromReg"
+    ]
+   },
    "created_by": [
     "_ItemRegistry",
     "_NodeRegistry",
@@ -3286,6 +3528,8 @@
     "Type",
     "Value"
    ],
+   "components_later": [],
+   "components_later_in": {},
    "created_by": [
     "Chat",
     "_AuctionRegistry",
@@ -3372,6 +3616,22 @@
     "MediaURI",
     "Name"
    ],
+   "components_later": [
+    "IDType",
+    "IdHolder",
+    "Value"
+   ],
+   "components_later_in": {
+    "IDType": [
+     "LibScore.createFor"
+    ],
+    "IdHolder": [
+     "LibScore.createFor"
+    ],
+    "Value": [
+     "LibScore.incFor(uint256,uint256,uint256,uint256)"
+    ]
+   },
    "created_by": [
     "_FactionRegistry"
    ],
@@ -3401,6 +3661,23 @@
     "Type",
     "Value"
    ],
+   "components_later": [
+    "IDType",
+    "IdHolder",
+    "IsComplete"
+   ],
+   "components_later_in": {
+    "IDType": [
+     "LibScore.createFor"
+    ],
+    "IdHolder": [
+     "LibScore.createFor"
+    ],
+    "IsComplete": [
+     "LibGoal.setClaimed",
+     "LibGoal.setComplete"
+    ]
+   },
    "created_by": [
     "_GoalRegistry"
    ],
@@ -3493,6 +3770,27 @@
     "Rarity",
     "Type"
    ],
+   "components_later": [
+    "For",
+    "IsDisabled",
+    "Scale",
+    "TokenAddress"
+   ],
+   "components_later_in": {
+    "For": [
+     "LibEquipment.setItemSlot",
+     "LibFor.set"
+    ],
+    "IsDisabled": [
+     "LibDisabled.set"
+    ],
+    "Scale": [
+     "LibItem.setERC20"
+    ],
+    "TokenAddress": [
+     "LibItem.setERC20"
+    ]
+   },
    "created_by": [
     "_ItemRegistry"
    ],
@@ -3553,6 +3851,30 @@
     "TimeStart",
     "Value"
    ],
+   "components_later": [
+    "Decay",
+    "Period",
+    "Rate",
+    "Scale",
+    "Type"
+   ],
+   "components_later_in": {
+    "Decay": [
+     "LibListingRegistry.setBuyGDA"
+    ],
+    "Period": [
+     "LibListingRegistry.setBuyGDA"
+    ],
+    "Rate": [
+     "LibListingRegistry.setBuyGDA"
+    ],
+    "Scale": [
+     "LibListingRegistry.setSellScaled"
+    ],
+    "Type": [
+     "LibListingRegistry.setType"
+    ]
+   },
    "created_by": [
     "_ListingRegistry"
    ],
@@ -3647,6 +3969,8 @@
     "Name",
     "Type"
    ],
+   "components_later": [],
+   "components_later_in": {},
    "created_by": [
     "_NodeRegistry"
    ],
@@ -3710,6 +4034,8 @@
     "IndexRoom",
     "Name"
    ],
+   "components_later": [],
+   "components_later_in": {},
    "created_by": [
     "_NPCRegistry"
    ],
@@ -3742,6 +4068,20 @@
     "Rate",
     "TimeStart"
    ],
+   "components_later": [
+    "IsDisabled",
+    "Value"
+   ],
+   "components_later_in": {
+    "IsDisabled": [
+     "LibDisabled.set"
+    ],
+    "Value": [
+     "LibPool.burnLockedShares",
+     "LibPool.burnShares",
+     "LibPool.mintShares"
+    ]
+   },
    "created_by": [
     "_PoolRegistry"
    ],
@@ -3783,6 +4123,8 @@
     "Type",
     "Values"
    ],
+   "components_later": [],
+   "components_later_in": {},
    "created_by": [
     "_RecipeRegistry"
    ],
@@ -3838,6 +4180,8 @@
     "EntityType",
     "IDAnchor"
    ],
+   "components_later": [],
+   "components_later_in": {},
    "created_by": [
     "_GoalRegistry",
     "_ItemRegistry"
@@ -3880,6 +4224,14 @@
     "Location",
     "Name"
    ],
+   "components_later": [
+    "Exits"
+   ],
+   "components_later_in": {
+    "Exits": [
+     "LibRoom.setExits"
+    ]
+   },
    "created_by": [
     "_RoomRegistry"
    ],
@@ -3907,6 +4259,8 @@
     "Type",
     "Value"
    ],
+   "components_later": [],
+   "components_later_in": {},
    "created_by": [
     "_RoomRegistry"
    ],
@@ -3994,6 +4348,8 @@
     "Type",
     "Value"
    ],
+   "components_later": [],
+   "components_later_in": {},
    "created_by": [
     "_NodeRegistry"
    ],
@@ -4040,6 +4396,11 @@
     "Harmony",
     "Health",
     "IDAnchor",
+    "IndexBackground",
+    "IndexBody",
+    "IndexColor",
+    "IndexFace",
+    "IndexHand",
     "IsRegistry",
     "Name",
     "Power",
@@ -4047,13 +4408,61 @@
     "Slots",
     "Violence"
    ],
+   "components_later": [],
+   "components_later_in": {},
    "created_by": [
     "_TraitRegistry"
    ],
    "created_in": [
     "LibTraitRegistry.create"
    ],
-   "pointers": {},
+   "pointers": {
+    "IndexBackground": {
+     "to": [
+      "TRAIT"
+     ],
+     "relation": "registry",
+     "required": true,
+     "cardinality": "one TRAIT per TRAIT per _type",
+     "inferred": true
+    },
+    "IndexBody": {
+     "to": [
+      "TRAIT"
+     ],
+     "relation": "registry",
+     "required": true,
+     "cardinality": "one TRAIT per TRAIT per _type",
+     "inferred": true
+    },
+    "IndexColor": {
+     "to": [
+      "TRAIT"
+     ],
+     "relation": "registry",
+     "required": true,
+     "cardinality": "one TRAIT per TRAIT per _type",
+     "inferred": true
+    },
+    "IndexFace": {
+     "to": [
+      "TRAIT"
+     ],
+     "relation": "registry",
+     "required": true,
+     "cardinality": "one TRAIT per TRAIT per _type",
+     "inferred": true
+    },
+    "IndexHand": {
+     "to": [
+      "TRAIT"
+     ],
+     "relation": "registry",
+     "required": true,
+     "cardinality": "one TRAIT per TRAIT per _type",
+     "inferred": true
+    }
+   },
    "keyed_by": {},
    "records": {
     "registry.trait.type": {
@@ -4134,25 +4543,6 @@
    "held_by": [
     "ACCOUNT",
     "KAMI"
-   ]
-  },
-  "bonus.type": {
-   "id": "bonus.type(type_, holderID)",
-   "keys": {
-    "type_": null,
-    "holderID": [
-     "ACCOUNT",
-     "KAMI"
-    ]
-   },
-   "kind": "anchor key",
-   "fields": [],
-   "held_by": [
-    "ACCOUNT",
-    "KAMI"
-   ],
-   "pointed_at_by": [
-    "IDType"
    ]
   },
   "droptable.item.log": {

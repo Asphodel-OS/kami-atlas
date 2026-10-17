@@ -20,7 +20,7 @@ LibSetter.setState:
   sig: "(uint32 index, uint256 targetID) internal"
   writes: [State]
   steps:
-    - LibEntityType.get
+    - "eq EntityType"
     - "if entityType.eq(\"KAMI\")": [LibKami.setStateFromIndex]
       else: ["revert: LibSetter: invalid entity state type"]
 LibSetter.update:

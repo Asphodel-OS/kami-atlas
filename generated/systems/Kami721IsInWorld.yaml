@@ -5,8 +5,8 @@ Kami721IsInWorld:
   comment: "@notice a view check to check if pet is in world. Used to allow upgradibiliy"
   entry_points: [isInWorld, execute, executeTyped]
   deployed: true
-  reads: [EntityType, State]
+  reads: [State]
   steps:
-    isInWorld: [LibKami.getByIndex, LibKami.isInWorld]
+    isInWorld: [LibKami.isInWorld]
     execute: ["revert if !(false): Kami721IsInWorld: no execute"]
     executeTyped: ["revert if !(false): Kami721IsInWorld: no execute"]

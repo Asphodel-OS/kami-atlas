@@ -8,7 +8,7 @@ GachaBuyTicket:
   writes: [EntityType, IDOwnsInventory, IndexItem, TimeLast, Value]
   reads: [HasFlag, TokenAddress]
   events: [MINT]
-  config: [MINT_MAX_PUBLIC, MINT_MAX_TOTAL, MINT_MAX_WL, MINT_PRICE_PUBLIC, MINT_PRICE_WL, MINT_START_PUBLIC, MINT_START_WL]
+  config: [MINT_PRICE_PUBLIC, MINT_START_PUBLIC, MINT_START_WL]
   flags: [MINT_WHITELISTED]
   data: [ITEM_COUNT, MINT_NUM_PUBLIC, MINT_NUM_TOTAL, MINT_NUM_WL]
   access_not_written: [HasFlag, TokenAllowance]
@@ -28,7 +28,6 @@ GachaBuyTicket:
       - LibAccount.getByOwner
       - GachaBuyTicketSystem.verifyGlobal
       - GachaBuyTicketSystem.verifyAccWL
-      - "LibConfig.get(string) \"MINT_PRICE_WL\""
       - "LibInventory.decFor(uint256,uint32,uint256)"
       - "LibInventory.incFor(uint256,uint32,uint256)"
       - GachaBuyTicketSystem.logMint
@@ -37,15 +36,11 @@ GachaBuyTicket:
       - LibAccount.updateLastTs
     execute: ["revert if !(false): not implemented"]
   internal:
-    GachaBuyTicketSystem.verifyGlobal:
-      - "LibConfig.get(string) \"MINT_MAX_TOTAL\""
-      - "LibData.get(uint256,uint32,string) \"MINT_NUM_TOTAL\""
-      - "revert if LibData.get(components, 0, 0, \"MINT_NUM_TOTAL\") + amount > max: max mints reached"
+    GachaBuyTicketSystem.verifyGlobal: ["LibData.get(uint256,uint32,string) \"MINT_NUM_TOTAL\"", "revert if LibData.get(components, 0, 0, \"MINT_NUM_TOTAL\") + amount > max: max mints reached"]
     GachaBuyTicketSystem.verifyAccPublic:
       - "revert if amount == 0: cannot mint 0 tickets"
       - "LibConfig.get(string) \"MINT_START_PUBLIC\""
       - "revert if block.timestamp < LibConfig.get(components, \"MINT_START_PUBLIC\"): public mint has not yet started"
-      - "LibConfig.get(string) \"MINT_MAX_PUBLIC\""
       - "LibData.get(uint256,uint32,string) \"MINT_NUM_PUBLIC\""
       - "revert if LibData.get(components, accID, 0, \"MINT_NUM_PUBLIC\") + amount > max: max public mint per account reached"
     GachaBuyTicketSystem.logMint: ["LibData.inc(uint256,uint32,string,uint256) \"MINT_NUM_TOTAL\"", "LibData.inc(uint256,uint32,string,uint256) \"MINT_NUM_TOTAL\"", "LibEmitter.emitEvent(\"MINT\")"]
@@ -54,6 +49,5 @@ GachaBuyTicket:
       - "revert if !LibFlag.has(components, accID, \"MINT_WHITELISTED\"): not whitelisted"
       - "LibConfig.get(string) \"MINT_START_WL\""
       - "revert if block.timestamp < LibConfig.get(components, \"MINT_START_WL\"): whitelist mint has not yet started"
-      - "LibConfig.get(string) \"MINT_MAX_WL\""
       - "LibData.get(uint256,uint32,string) \"MINT_NUM_WL\""
       - "revert if LibData.get(components, accID, 0, \"MINT_NUM_WL\") + 1 > max: max whitelist mint per account reached"

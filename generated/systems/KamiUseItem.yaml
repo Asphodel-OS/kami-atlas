@@ -29,10 +29,9 @@ KamiUseItem:
     - TimeReset
     - Type
     - Value
-  reads: [Affinity, CacheOperator, For, IDOwnsKami, Index, IsComplete, IsDisabled, LogicType, SkillPoint, Subtype, TokenAddress]
+  reads: [Affinity, CacheOperator, For, Harmony, IDOwnsKami, Index, IsComplete, IsDisabled, LogicType, Power, SkillPoint, Slots, Stamina, Subtype, TokenAddress, Violence]
   write_access: "*"
   stats: [HARMONY, HEALTH, POWER, VIOLENCE]
-  config: [KAMI_HARV_BOUNTY, KAMI_HARV_FERTILITY, KAMI_HARV_INTENSITY, KAMI_HARV_STRAIN, KAMI_REST_METABOLISM, VIP_SCORE_ADDRESS, VIP_STAGE]
   bonuses:
     - HARV_BOUNTY_BOOST
     - HARV_FERTILITY_BOOST

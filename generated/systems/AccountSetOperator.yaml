@@ -15,6 +15,5 @@ AccountSetOperator:
     - LibAccount.isAccount
     - "revert if LibAccount.isAccount(components, uint256(uint160(operator))): Account: Operator is an account owner"
     - LibAccount.getByOwner
-    - LibAccount.getOperator
     - LibAccount.setOperator
     - LibAccount.updateLastTs

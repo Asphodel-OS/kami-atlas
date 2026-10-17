@@ -13,7 +13,6 @@ Pool:
   steps:
     swap:
       - LibAccount.getByOperator
-      - LibPoolRegistry.get
       - "revert if !(poolID != 0): Pool does not exist"
       - LibDisabled.verifyEnabled
       - PoolSystem.verifyTradable
@@ -23,7 +22,6 @@ Pool:
       - LibAccount.updateLastTs
     addLiquidity:
       - LibAccount.getByOperator
-      - LibPoolRegistry.get
       - "revert if !(poolID != 0): Pool does not exist"
       - LibDisabled.verifyEnabled
       - PoolSystem.verifyTradable
@@ -31,14 +29,7 @@ Pool:
       - LibPool.logLiquidity
       - LibPool.logSync
       - LibAccount.updateLastTs
-    removeLiquidity:
-      - LibAccount.getByOperator
-      - LibPoolRegistry.get
-      - "revert if !(poolID != 0): Pool does not exist"
-      - LibPool.removeLiquidity
-      - LibPool.logLiquidity
-      - LibPool.logSync
-      - LibAccount.updateLastTs
+    removeLiquidity: [LibAccount.getByOperator, "revert if !(poolID != 0): Pool does not exist", LibPool.removeLiquidity, LibPool.logLiquidity, LibPool.logSync, LibAccount.updateLastTs]
     execute: ["revert if !(false): not implemented"]
   internal:
     PoolSystem.verifyTradable: [LibInventory.verifyTransferable]

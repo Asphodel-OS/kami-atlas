@@ -6,8 +6,6 @@ Kami721Transfer:
   args: "bytes arguments"
   entry_points: [batchTransfer, batchTransferToMany, execute]
   deployed: true
-  reads: [Value]
-  config: [KAMI721_ADDRESS]
   steps:
     batchTransfer:
       - LibKami721.getContract

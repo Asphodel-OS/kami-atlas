@@ -6,7 +6,7 @@ LibTraitRegistry.checkType:
   steps: ["revert if !(_type.eq(\"BACKGROUND\") || _type.eq(\"BODY\") || _type.eq(\"COLOR\") || _t…): LibTraitRegistry: unknown type"]
 LibTraitRegistry.create:
   sig: "(uint32 index, string _type, TraitValues vals) internal"
-  writes: [Affinity, EntityType, Harmony, Health, IDAnchor, IsRegistry, Name, Power, Rarity, Slots, Violence]
+  writes: [Affinity, EntityType, Harmony, Health, IDAnchor, IndexBackground, IndexBody, IndexColor, IndexFace, IndexHand, IsRegistry, Name, Power, Rarity, Slots, Violence]
   steps:
     - LibTraitRegistry.getByIndex
     - LibTraitRegistry.getByIndex
@@ -34,13 +34,10 @@ LibTraitRegistry.getAllOfType:
   steps: [LibTraitRegistry.genReverseMappingPtr, LibQuery.query]
 LibTraitRegistry.getByEntity:
   sig: "(uint256 entityID, string _type) internal view"
-  steps: [LibTraitRegistry.getIndex, LibTraitRegistry.getByIndex]
+  steps: [LibTraitRegistry.getByIndex]
 LibTraitRegistry.getByIndex:
   sig: "(uint32 index, string _type) internal view"
   steps: [LibTraitRegistry.checkType, LibTraitRegistry.genID, "LibEntityType.isShape(uint256,string) \"TRAIT\""]
-LibTraitRegistry.getIndex:
-  sig: "(uint256 id, string _type) internal view"
-  steps: [LibTraitRegistry.getIndexComp, "Uint32Component.get(uint256)"]
 LibTraitRegistry.getIndexComp:
   sig: "(string _type) internal view"
   steps:
@@ -51,16 +48,13 @@ LibTraitRegistry.getIndexComp:
                     - "unless _type.eq(\"HAND\")": ["revert: LibTraitRegistry: unknown type"]
 LibTraitRegistry.getIndices:
   sig: "(uint256[] ids, string _type) internal view"
-  steps: [LibTraitRegistry.getIndexComp, "Uint32Component.get(uint256[])"]
+  steps: ["get IndexBackground", "get IndexBody", "get IndexColor", "get IndexFace", "get IndexHand"]
 LibTraitRegistry.getNameOf:
   sig: "(uint256 id, string _type) internal view"
-  steps: [LibTraitRegistry.getByEntity, "get Name"]
+  steps: ["get Name"]
 LibTraitRegistry.getRarities:
   sig: "(string _type) internal view"
   steps: [LibTraitRegistry.getAllOfType, LibTraitRegistry.getIndices, LibTraitRegistry.getWeights]
-LibTraitRegistry.getStatsByIndex:
-  sig: "(uint32 index, string _type) internal view"
-  steps: [LibTraitRegistry.getByIndex, "safeGet Health", "safeGet Power", "safeGet Violence", "safeGet Harmony", "safeGet Slots"]
 LibTraitRegistry.getTypeNames:
   sig: "() internal pure"
 LibTraitRegistry.getWeights:
@@ -99,7 +93,7 @@ LibTraitRegistry.setHealth:
   steps: [LibStat.setHealth]
 LibTraitRegistry.setIndex:
   sig: "(uint256 id, uint32 index, string _type) internal"
-  steps: [LibTraitRegistry.getIndexComp, "Uint32Component.set(uint256,uint32)"]
+  steps: [LibTraitRegistry.getIndexComp, "set IndexBackground", "set IndexBody", "set IndexColor", "set IndexFace", "set IndexHand"]
 LibTraitRegistry.setName:
   sig: "(uint256 id, string name) internal"
   steps: ["set Name"]

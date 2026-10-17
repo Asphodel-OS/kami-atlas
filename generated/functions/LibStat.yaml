@@ -32,9 +32,6 @@ LibStat.getStatComp:
 LibStat.getTotal:
   sig: "(string type_, uint256 id) internal view"
   steps: ["LibStat.get(string,uint256)", LibStat.calcTotal]
-LibStat.getWithoutBonus:
-  sig: "(string type_, uint256 id) internal view"
-  steps: [LibStat.getStatComp, "safeGet Stat[by name]"]
 LibStat.indexToCompID:
   sig: "(uint32 index) internal pure"
   steps: ["revert: LibStat: invalid stat type"]
@@ -73,7 +70,7 @@ LibStat.setStamina:
   steps: ["set Stamina"]
 LibStat.setSyncZero:
   sig: "(string type_, uint256 id) internal"
-  steps: [LibStat.getWithoutBonus, LibStat.getStatComp, "set Stat[by name]"]
+  steps: [LibStat.getStatComp, "set Stat[by name]"]
 LibStat.setViolence:
   sig: "(uint256 id, Stat value) internal"
   steps: ["set Violence"]

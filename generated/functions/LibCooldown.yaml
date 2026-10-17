@@ -4,7 +4,7 @@ LibCooldown._getCooldown:
   steps: ["LibBonus.getFor(\"STND_COOLDOWN_SHIFT\")"]
 "LibCooldown.getCooldown(uint256)":
   sig: "(uint256 id) internal view"
-  steps: ["LibConfig.get(string) \"KAMI_STANDARD_COOLDOWN\"", LibCooldown._getCooldown]
+  steps: [LibCooldown._getCooldown]
 "LibCooldown.isActive(uint256)":
   sig: "(uint256 id) internal view"
   steps: ["safeGet TimeNext"]

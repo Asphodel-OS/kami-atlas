@@ -9,10 +9,7 @@ LibTax.genID:
   sig: "(uint256 anchorID, uint256 taxerID) internal pure"
 LibTax.getBillFor:
   sig: "(uint256 originalAmt, uint256 payerID) internal view"
-  steps: [LibTax.getFor, "get IdTarget", "get Value", LibTax.calcBill]
-LibTax.getFor:
-  sig: "(uint256 payerID) internal view"
-  steps: ["getEntitiesWithValue IDOwnsTax"]
+  steps: ["get IdTarget", "get Value", LibTax.calcBill]
 "LibTax.remove(uint256[])":
   sig: "(uint256[] ids) internal"
   writes: [EntityType, IDOwnsTax, IdTarget, Value]
@@ -21,5 +18,4 @@ LibTax.removeFor:
   sig: "(uint256 payerID) internal"
   writes: [EntityType, IDOwnsTax, IdTarget, Value]
   steps:
-    - LibTax.getFor
     - "if ids.length > 0": ["LibTax.remove(uint256[])"]

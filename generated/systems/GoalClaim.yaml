@@ -29,11 +29,9 @@ GoalClaim:
     - Value
   reads: [CacheOperator, IDOwnsKami, Index, IsDisabled, Subtype, TokenAddress]
   write_access: "*"
-  config: [VIP_SCORE_ADDRESS, VIP_STAGE]
   bonuses: [TIMED, UPON_COOLDOWN_SET, UPON_DEATH, UPON_HARVEST_ACTION, UPON_HARVEST_STOP, UPON_KILL_OR_KILLED, UPON_LIQUIDATION]
   steps:
     - LibAccount.getByOperator
-    - LibGoal.getByIndex
     - "revert if goalID == 0: goal not found"
     - LibGoal.verifyEnabled
     - LibGoal.verifyClaimable

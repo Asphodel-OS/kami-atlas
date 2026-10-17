@@ -9,7 +9,6 @@ TradeComplete:
   writes: [EntityType, IDOwnsInventory, IDOwnsTrade, IdTarget, IndexItem, Keys, State, TimeLast, Value, Values]
   reads: [IndexRoom]
   events: [TRADE_COMPLETE]
-  config: [TRADE_DELIVERY_FEE, TRADE_TAX_RATE]
   data: [ITEM_COUNT, TRADE_COMPLETE, TRADE_TAX]
   steps:
     execute:

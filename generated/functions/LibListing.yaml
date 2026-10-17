@@ -60,7 +60,7 @@ LibListing.logSell:
   steps: ["LibData.inc(uint256,uint32[],string[],uint256)", "LibData.inc(uint256,uint32,string,uint256) \"ITEM_REVENUE\"", LibListing.eventSchema, "LibEmitter.emitEvent(\"LISTING_SELL\")"]
 LibListing.meetsRequirements:
   sig: "(uint256 id, uint256 accID) public view"
-  steps: [LibListingRegistry.genReqAnchor, "LibConditional.queryFor(uint256)", "LibConditional.check(uint256[],uint256)"]
+  steps: [LibListingRegistry.genReqAnchor, "LibConditional.check(uint256[],uint256)"]
 LibListing.sell:
   sig: "(uint256 id, uint256 accID, uint32 itemIndex, uint256 amt) internal"
   writes: [Balance, EntityType, IDOwnsInventory, IndexItem, Value]

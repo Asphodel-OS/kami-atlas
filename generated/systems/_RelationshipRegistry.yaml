@@ -8,17 +8,15 @@ _RelationshipRegistry:
   writes: [Blacklist, EntityType, IndexNPC, IndexRelationship, IsRegistry, Name, Whitelist]
   steps:
     create:
-      - LibRelationshipRegistry.get
       - "revert if !(registryID == 0): Registry: Relationship already exists"
       - LibRelationshipRegistry.create
       - "if !LibString.eq(name, \"\")": [LibRelationshipRegistry.setName]
       - "if blacklist.length > 0": [LibRelationshipRegistry.setBlacklist]
       - "if whitelist.length > 0": [LibRelationshipRegistry.setWhitelist]
     update:
-      - LibRelationshipRegistry.get
       - "revert if !(registryID != 0): RegistryUpdateRelationship: flag does not exist"
       - "if !LibString.eq(name, \"\")": [LibRelationshipRegistry.setName]
       - "if blacklist.length > 0": [LibRelationshipRegistry.setBlacklist]
       - "if whitelist.length > 0": [LibRelationshipRegistry.setWhitelist]
-    remove: [LibRelationshipRegistry.get, "revert if !(registryID != 0): RegistryDeleteRelationship: flag does not exist", LibRelationshipRegistry.delete_]
+    remove: ["revert if !(registryID != 0): RegistryDeleteRelationship: flag does not exist", LibRelationshipRegistry.delete_]
     execute: ["revert if !(false): not implemented"]

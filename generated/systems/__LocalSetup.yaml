@@ -28,9 +28,9 @@ __LocalSetup:
     - TimeStart
     - TokenAddress
     - Value
-  reads: [IDType, IndexItem, Level]
+  reads: [IndexItem, Level]
   write_access: "*"
-  config: [ACCOUNT_STAMINA, KAMI_STANDARD_COOLDOWN, ONYX_ADDRESS]
+  config: [ONYX_ADDRESS]
   bonuses: [STND_COOLDOWN_SHIFT]
   data: [TOTAL_NUM_ACCOUNTS]
   steps:
@@ -43,18 +43,15 @@ __LocalSetup:
       - "set IDOwnsKami"
     initHarvests:
       - LibAccount.getByOwner
-      - LibAccount.getKamis
-      - LibNode.getByIndex
       - "for each (i < kamiIDs.length)": [LibHarvest.create, LibHarvest.start, "LibKami.setState(uint256,string) \"HARVESTING\"", LibKami.resetCooldown]
     attachItemERC20:
       - LibItem.getByIndex
       - LibItem.getByIndex
       - "revert if !(LibItem.getByIndex(components, itemIndex) != 0): item not found"
-      - LibItem.getTokenAddr
       - "revert if !(addr != address(0)): item no token attached"
-      - LibItem.getName
       - LibItem.setERC20
-      - OpenMintable.mint
+      - "mint TokenAddress"
+      - "toCase Name"
       - "if name.toCase(true).eq(\"ONYX\")": ["LibConfig.setAddress(\"ONYX_ADDRESS\")"]
       - LibItem.getTokenAddr
     execute: []

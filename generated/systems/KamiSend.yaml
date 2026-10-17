@@ -47,7 +47,6 @@ KamiSend:
       - "if LibConfig.has(components, \"KAMI_MARKET_PURCHASE_COOLDOWN\")": ["LibConfig.get(string) \"KAMI_MARKET_PURCHASE_COOLDOWN\""]
       - "for each (i < kamiIndices.length)":
           - LibKamiMarket.verifyKamiOwnedRestingOrListed
-          - LibKami.getByIndex
           - LibKamiMarket.cancelListingsForKami
           - LibEquipment.unequipAll
           - LibKami.setOwner

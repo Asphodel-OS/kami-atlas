@@ -11,7 +11,6 @@ Getter:
     - EntityType
     - Experience
     - IDOwnsKami
-    - IDType
     - IdSource
     - IndexAccount
     - IndexBackground
@@ -29,10 +28,9 @@ Getter:
     - TimeLastAction
     - Value
   stats: [HARMONY, HEALTH, POWER, STAMINA, VIOLENCE]
-  config: [ACCOUNT_STAMINA]
   steps:
     getAccount: [LibAccount.getIndex, LibAccount.getName, LibAccount.getCurrentStamina, LibAccount.getRoom]
-    getKamiByIndex: [LibKami.getByIndex, "revert if !(id != 0): Kami not found", GetterSystem.getKami]
+    getKamiByIndex: ["revert if !(id != 0): Kami not found", GetterSystem.getKami]
     getKami:
       - LibKami.getIndex
       - "get Name"

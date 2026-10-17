@@ -9,12 +9,4 @@ QuestDrop:
   writes: [EntityType, IDAnchor, IDOwnsQuest, IndexQuest, TimeLast, TimeStart, Value]
   reads: [CacheOperator, IsComplete, IsDisabled]
   access_not_written: [IsComplete]
-  steps:
-    - LibAccount.getByOperator
-    - LibQuest.getIndex
-    - LibQuest.verifyIsQuest
-    - LibQuest.verifyEnabled
-    - LibQuest.verifyOwner
-    - LibQuest.verifyNotCompleted
-    - LibQuest.drop
-    - LibAccount.updateLastTs
+  steps: [LibAccount.getByOperator, LibQuest.verifyIsQuest, LibQuest.verifyEnabled, LibQuest.verifyOwner, LibQuest.verifyNotCompleted, LibQuest.drop, LibAccount.updateLastTs]

@@ -7,7 +7,7 @@ Chat:
   also: [executeTyped]
   deployed: true
   writes: [For, IDAnchor, Index, LogicType, TimeLast, Type, Value]
-  reads: [CacheOperator, EntityType, HasFlag, IDOwnsKami, IdSource, IndexRoom, IsComplete, Level, SkillPoint, State, TimeNext]
+  reads: [CacheOperator, EntityType, HasFlag, IDOwnsKami, IndexRoom, IsComplete, Level, SkillPoint, State, TimeNext]
   events: [MESSAGE]
   data: [MESSAGES]
   writes_without_access: [For, IDAnchor, Index, LogicType, Type]
@@ -20,12 +20,10 @@ Chat:
   steps:
     execute:
       - LibAccount.getByOperator
-      - "LibConditional.queryFor(uint256)"
       - "LibConditional.check(uint256[],uint256)"
       - "revert if !LibConditional.check(components, reqIDs, accID): can't send messages"
-      - LibAccount.getRoom
       - LibAccount.updateLastTs
       - "LibData.inc(uint256,uint32,string,uint256) \"MESSAGES\""
       - LibEmitter.emitMessage
     addRequirement: [LibConditional.createFor]
-    removeRequirement: ["LibConditional.queryFor(uint256)", "LibConditional.remove(uint256[])"]
+    removeRequirement: ["LibConditional.remove(uint256[])"]

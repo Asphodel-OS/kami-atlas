@@ -9,7 +9,6 @@ TradeExecute:
   writes: [EntityType, IDOwnsInventory, IdTarget, IndexItem, State, TimeLast, Value]
   reads: [IDOwnsTrade, IndexRoom, Keys, Values]
   events: [TRADE_EXECUTE]
-  config: [TRADE_DELIVERY_FEE, TRADE_TAX_RATE]
   data: [ITEM_COUNT, TRADE_EXECUTE, TRADE_RECEIVE, TRADE_SPEND, TRADE_TAX]
   access_not_written: [IDOwnsTrade, Keys, Values]
   steps:

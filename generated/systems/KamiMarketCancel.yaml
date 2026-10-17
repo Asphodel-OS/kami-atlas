@@ -8,17 +8,16 @@ KamiMarketCancel:
   also: [executeTyped]
   deployed: true
   writes: [Balance, IDOwnsKamiOrder, IndexKami, IndexKamiListing, Max, State, TimeEnd, TimeLast, TimeStart, Value, Values]
-  reads: [CacheOperator, EntityType]
+  reads: [CacheOperator]
   events: [KAMI_MARKET_CANCEL]
   data: [KAMI_MARKET_CANCEL]
   access_not_written: [EntityType]
   steps:
     execute: [LibAccount.verifyOperator, LibKamiMarket.verifyActive, LibKamiMarket.verifyOwner, KamiMarketCancelSystem._cancel]
     executeAdmin:
-      - "for each (i < ids.length)": [LibKamiMarket.verifyActive, LibKamiMarket.getOwner, KamiMarketCancelSystem._cancel]
+      - "for each (i < ids.length)": [LibKamiMarket.verifyActive, KamiMarketCancelSystem._cancel]
   internal:
     KamiMarketCancelSystem._cancel:
-      - LibEntityType.get
       - "if keccak256(bytes(orderType)) == keccak256(bytes(\"KAMI_LISTING\"))": [LibKamiMarket.cancelListing]
         else: [LibKamiMarket.cancelOffer]
       - LibKamiMarket.emitCancel

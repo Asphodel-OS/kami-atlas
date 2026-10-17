@@ -60,7 +60,6 @@ LibRoom.remove:
   sig: "(uint32 index) internal"
   writes: [Description, EntityType, Exits, For, HasFlag, IDAnchor, IDFrom, IDOwnsFlag, IDTo, IDType, Index, IndexRoom, Location, LogicType, Name, Type, Value]
   steps:
-    - LibRoom.getByIndex
     - "LibEntityType.remove(uint256)"
     - "remove IndexRoom"
     - "remove Location"

@@ -7,15 +7,13 @@ RelationshipAdvance:
   also: [executeTyped]
   deployed: true
   writes: [EntityType, IDOwnsRelationship, IndexNPC, IndexRelationship, TimeLast]
-  reads: [Blacklist, CacheOperator, IndexRoom, Whitelist]
+  reads: [CacheOperator, IndexRoom]
   steps:
     - LibAccount.getByOperator
-    - LibNPC.get
     - "revert if !(npcID != 0): RS: npc does not exist"
     - LibNPC.sharesRoomWith
     - LibNPC.sharesRoomWith
     - "revert if !(LibNPC.sharesRoomWith(components, npcID, accID)): RS: must be in same room"
-    - LibRelationshipRegistry.get
     - "revert if !(registryID != 0): RS: flag does not exist"
     - LibRelationship.has
     - LibRelationship.has

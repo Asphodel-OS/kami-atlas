@@ -200,13 +200,37 @@ entity_types:
       IndexItem: ["index  (in LibItem.createItem)"]
   KAMI:
     created_in: [LibKamiCreate.create]
-    components_at_creation: [EntityType, Experience, Harmony, Health, IDOwnsKami, IndexKami, Level, MediaURI, Name, Power, SkillPoint, Slots, State, Violence]
+    components_at_creation:
+      - EntityType
+      - Experience
+      - Harmony
+      - Health
+      - IDOwnsKami
+      - IndexBackground
+      - IndexBody
+      - IndexColor
+      - IndexFace
+      - IndexHand
+      - IndexKami
+      - Level
+      - MediaURI
+      - Name
+      - Power
+      - SkillPoint
+      - Slots
+      - State
+      - Violence
     checked_in: [LibConditional.parseTargetShape, LibKami.getByIndex, LibKami.getByName, LibKami.verifyIsKami, LibSetter.incInv]
     made_by: "player actions"
     created_by_systems: [KamiGachaMint]
     created_by_players: [KamiGachaMint]
     links_set_at_creation:
       IDOwnsKami: ["GACHA_ID  (in LibKamiCreate.setBase)"]
+      IndexBackground: ["index  (in LibKamiCreate.setTrait)"]
+      IndexBody: ["index  (in LibKamiCreate.setTrait)"]
+      IndexColor: ["index  (in LibKamiCreate.setTrait)"]
+      IndexFace: ["index  (in LibKamiCreate.setTrait)"]
+      IndexHand: ["index  (in LibKamiCreate.setTrait)"]
       IndexKami: ["index  (in LibKamiCreate.setBase)"]
   KAMI_COLLECTION_OFFER:
     created_in: [LibKamiMarket.createCollectionOffer]
@@ -395,13 +419,18 @@ entity_types:
       IdTarget: ["targetID  (in LibTrade.create)"]
   TRAIT:
     created_in: [LibTraitRegistry.create]
-    components_at_creation: [Affinity, EntityType, Harmony, Health, IDAnchor, IsRegistry, Name, Power, Rarity, Slots, Violence]
+    components_at_creation: [Affinity, EntityType, Harmony, Health, IDAnchor, IndexBackground, IndexBody, IndexColor, IndexFace, IndexHand, IsRegistry, Name, Power, Rarity, Slots, Violence]
     checked_in: [LibTraitRegistry.getByIndex]
     made_by: "admin/registry setup"
     created_by_systems: [_TraitRegistry]
     created_by_players: []
     links_set_at_creation:
       IDAnchor: ["genReverseMappingPtr(_type)  (in LibTraitRegistry.setReverseMappingPtr)"]
+      IndexBackground: ["index  (in LibTraitRegistry.setIndex)"]
+      IndexBody: ["index  (in LibTraitRegistry.setIndex)"]
+      IndexColor: ["index  (in LibTraitRegistry.setIndex)"]
+      IndexFace: ["index  (in LibTraitRegistry.setIndex)"]
+      IndexHand: ["index  (in LibTraitRegistry.setIndex)"]
 id_namespaces:
   NPC: ["NPC(index)  in LibNPC.genID"]
   SOULBOUND: ["SOULBOUND(kamiID)  in LibSoulbound._entity"]

@@ -416,6 +416,31 @@
       }
      }
     }
+   },
+   "components_later": [
+    "Description",
+    "Experience",
+    "Name",
+    "State",
+    "TimeNext"
+   ],
+   "components_later_in": {
+    "Description": [
+     "LibAccount.setBio"
+    ],
+    "Experience": [
+     "LibExperience.inc",
+     "LibRecipe.afterCraft"
+    ],
+    "Name": [
+     "LibAccount.setName"
+    ],
+    "State": [
+     "LibKami.setStateFromIndex"
+    ],
+    "TimeNext": [
+     "LibCooldown.modify"
+    ]
    }
   },
   "COMMIT": {
@@ -620,7 +645,36 @@
    ],
    "owns": [
     "TAX"
-   ]
+   ],
+   "components_later": [
+    "State",
+    "TimeLast",
+    "TimeReset",
+    "TimeStart",
+    "Value"
+   ],
+   "components_later_in": {
+    "State": [
+     "LibHarvest.start",
+     "LibHarvest.stop"
+    ],
+    "TimeLast": [
+     "LibHarvest.start",
+     "LibHarvest.sync"
+    ],
+    "TimeReset": [
+     "LibHarvest.resetIntensity",
+     "LibHarvest.start"
+    ],
+    "TimeStart": [
+     "LibHarvest.start"
+    ],
+    "Value": [
+     "LibHarvest.claim",
+     "LibHarvest.incBounty",
+     "LibHarvest.stop"
+    ]
+   }
   },
   "INVENTORY": {
    "layer": "runtime",
@@ -749,6 +803,116 @@
      "inferred": true,
      "note": "GACHA_POOL: unminted kamis belong to the gacha pool constant until they are bought"
     },
+    "IndexBackground": {
+     "to": null,
+     "type": "registry",
+     "stored_on": "KAMI",
+     "required": false,
+     "only_when": [
+      "for each (i < 5)",
+      "for each (i < amt) and for each (i < 5)"
+     ],
+     "cardinality": "many KAMI per referenced entity",
+     "navigate": {
+      "up": "read IndexBackground on KAMI",
+      "down": "not indexed: needs a scan or the indexer"
+     },
+     "derived": [
+      "IndexBackground = index in LibKamiCreate.setTrait (not resolved)"
+     ],
+     "inferred": true,
+     "unresolved_from": [
+      "index"
+     ]
+    },
+    "IndexBody": {
+     "to": null,
+     "type": "registry",
+     "stored_on": "KAMI",
+     "required": false,
+     "only_when": [
+      "for each (i < 5)",
+      "for each (i < amt) and for each (i < 5)"
+     ],
+     "cardinality": "many KAMI per referenced entity",
+     "navigate": {
+      "up": "read IndexBody on KAMI",
+      "down": "not indexed: needs a scan or the indexer"
+     },
+     "derived": [
+      "IndexBody = index in LibKamiCreate.setTrait (not resolved)"
+     ],
+     "inferred": true,
+     "unresolved_from": [
+      "index"
+     ]
+    },
+    "IndexColor": {
+     "to": null,
+     "type": "registry",
+     "stored_on": "KAMI",
+     "required": false,
+     "only_when": [
+      "for each (i < 5)",
+      "for each (i < amt) and for each (i < 5)"
+     ],
+     "cardinality": "many KAMI per referenced entity",
+     "navigate": {
+      "up": "read IndexColor on KAMI",
+      "down": "not indexed: needs a scan or the indexer"
+     },
+     "derived": [
+      "IndexColor = index in LibKamiCreate.setTrait (not resolved)"
+     ],
+     "inferred": true,
+     "unresolved_from": [
+      "index"
+     ]
+    },
+    "IndexFace": {
+     "to": null,
+     "type": "registry",
+     "stored_on": "KAMI",
+     "required": false,
+     "only_when": [
+      "for each (i < 5)",
+      "for each (i < amt) and for each (i < 5)"
+     ],
+     "cardinality": "many KAMI per referenced entity",
+     "navigate": {
+      "up": "read IndexFace on KAMI",
+      "down": "not indexed: needs a scan or the indexer"
+     },
+     "derived": [
+      "IndexFace = index in LibKamiCreate.setTrait (not resolved)"
+     ],
+     "inferred": true,
+     "unresolved_from": [
+      "index"
+     ]
+    },
+    "IndexHand": {
+     "to": null,
+     "type": "registry",
+     "stored_on": "KAMI",
+     "required": false,
+     "only_when": [
+      "for each (i < 5)",
+      "for each (i < amt) and for each (i < 5)"
+     ],
+     "cardinality": "many KAMI per referenced entity",
+     "navigate": {
+      "up": "read IndexHand on KAMI",
+      "down": "not indexed: needs a scan or the indexer"
+     },
+     "derived": [
+      "IndexHand = index in LibKamiCreate.setTrait (not resolved)"
+     ],
+     "inferred": true,
+     "unresolved_from": [
+      "index"
+     ]
+    },
     "bonus.instance.IdSource": {
      "to": "BONUS",
      "type": "directed",
@@ -776,6 +940,11 @@
     "Harmony",
     "Health",
     "IDOwnsKami",
+    "IndexBackground",
+    "IndexBody",
+    "IndexColor",
+    "IndexFace",
+    "IndexHand",
     "IndexKami",
     "Level",
     "MediaURI",
@@ -809,7 +978,48 @@
      "fields": [
       "Value"
      ]
+    },
+    "bonus.type": {
+     "id": "bonus.type(type_, holderID)",
+     "keys": {
+      "type_": null,
+      "holderID": "KAMI"
+     },
+     "parent_from": "holder key",
+     "relation": {
+      "type": "keyed",
+      "required": true,
+      "navigate": {
+       "down": "compute bonus.type(type_, holderID) from the parent",
+       "up": "from the key values"
+      }
+     },
+     "kind": "anchor key",
+     "pointed_at_by": [
+      "IDType"
+     ]
     }
+   },
+   "components_later": [
+    "IndexRoom",
+    "Reroll",
+    "TimeLast",
+    "TimeNext"
+   ],
+   "components_later_in": {
+    "IndexRoom": [
+     "LibRoom.set"
+    ],
+    "Reroll": [
+     "LibGacha.withdrawPets"
+    ],
+    "TimeLast": [
+     "LibKami.setLastTs(uint256,uint256)"
+    ],
+    "TimeNext": [
+     "LibCooldown.modify",
+     "LibCooldown.set"
+    ]
    }
   },
   "KAMI_COLLECTION_OFFER": {
@@ -1378,6 +1588,22 @@
       "IDAnchor"
      ]
     }
+   },
+   "components_later": [
+    "IsComplete",
+    "Time",
+    "TimeLast"
+   ],
+   "components_later_in": {
+    "IsComplete": [
+     "LibQuest.setCompleted"
+    ],
+    "Time": [
+     "LibQuestRegistry.setRepeatable"
+    ],
+    "TimeLast": [
+     "LibQuest.complete"
+    ]
    }
   },
   "RELATIONSHIP": {
@@ -1432,7 +1658,23 @@
     "IndexNPC",
     "IndexRelationship",
     "IsRegistry"
-   ]
+   ],
+   "components_later": [
+    "Blacklist",
+    "Name",
+    "Whitelist"
+   ],
+   "components_later_in": {
+    "Blacklist": [
+     "LibRelationshipRegistry.setBlacklist"
+    ],
+    "Name": [
+     "LibRelationshipRegistry.setName"
+    ],
+    "Whitelist": [
+     "LibRelationshipRegistry.setWhitelist"
+    ]
+   }
   },
   "SKILL": {
    "layer": "hybrid",
@@ -1610,7 +1852,25 @@
     "IdSource",
     "Index",
     "Type"
-   ]
+   ],
+   "components_later": [
+    "Keys",
+    "Value",
+    "Weights"
+   ],
+   "components_later_in": {
+    "Keys": [
+     "LibDroptable.set"
+    ],
+    "Value": [
+     "LibAllo.createBasic",
+     "LibAllo.createDT",
+     "LibAllo.createStat"
+    ],
+    "Weights": [
+     "LibDroptable.set"
+    ]
+   }
   },
   "AUCTION": {
    "layer": "registry",
@@ -1754,7 +2014,15 @@
     "Time",
     "Type",
     "Value"
-   ]
+   ],
+   "components_later": [
+    "IDType"
+   ],
+   "components_later_in": {
+    "IDType": [
+     "LibBonus.setTypeIDFromReg"
+    ]
+   }
   },
   "CONDITION": {
    "layer": "registry",
@@ -1843,7 +2111,23 @@
     "IsRegistry",
     "MediaURI",
     "Name"
-   ]
+   ],
+   "components_later": [
+    "IDType",
+    "IdHolder",
+    "Value"
+   ],
+   "components_later_in": {
+    "IDType": [
+     "LibScore.createFor"
+    ],
+    "IdHolder": [
+     "LibScore.createFor"
+    ],
+    "Value": [
+     "LibScore.incFor(uint256,uint256,uint256,uint256)"
+    ]
+   }
   },
   "GOAL": {
    "layer": "registry",
@@ -1969,6 +2253,23 @@
       "IDAnchor"
      ]
     }
+   },
+   "components_later": [
+    "IDType",
+    "IdHolder",
+    "IsComplete"
+   ],
+   "components_later_in": {
+    "IDType": [
+     "LibScore.createFor"
+    ],
+    "IdHolder": [
+     "LibScore.createFor"
+    ],
+    "IsComplete": [
+     "LibGoal.setClaimed",
+     "LibGoal.setComplete"
+    ]
    }
   },
   "ITEM": {
@@ -2097,6 +2398,27 @@
       "IDAnchor"
      ]
     }
+   },
+   "components_later": [
+    "For",
+    "IsDisabled",
+    "Scale",
+    "TokenAddress"
+   ],
+   "components_later_in": {
+    "For": [
+     "LibEquipment.setItemSlot",
+     "LibFor.set"
+    ],
+    "IsDisabled": [
+     "LibDisabled.set"
+    ],
+    "Scale": [
+     "LibItem.setERC20"
+    ],
+    "TokenAddress": [
+     "LibItem.setERC20"
+    ]
    }
   },
   "LISTING": {
@@ -2230,6 +2552,30 @@
       "Value"
      ]
     }
+   },
+   "components_later": [
+    "Decay",
+    "Period",
+    "Rate",
+    "Scale",
+    "Type"
+   ],
+   "components_later_in": {
+    "Decay": [
+     "LibListingRegistry.setBuyGDA"
+    ],
+    "Period": [
+     "LibListingRegistry.setBuyGDA"
+    ],
+    "Rate": [
+     "LibListingRegistry.setBuyGDA"
+    ],
+    "Scale": [
+     "LibListingRegistry.setSellScaled"
+    ],
+    "Type": [
+     "LibListingRegistry.setType"
+    ]
    }
   },
   "NODE": {
@@ -2385,7 +2731,7 @@
       "down": "compute amm.pool(lo, hi)"
      },
      "derived": [
-      "registry keys lo, hi of amm.pool(lo, hi) resolve to ITEM (traced through callers: indexA is passed as index to LibItem.getByIndex; indexA is passed as itemIndex to LibInventory.getBalanceOf; indexA is passed as itemIndex to LibInventory.transferForNoLog; indexB is passed as index to LibItem.getByIndex)"
+      "registry keys lo, hi of amm.pool(lo, hi) resolve to ITEM (traced through callers: indexA is passed as index to LibItem.getByIndex; indexA is passed as itemIndex to LibInventory.transferForNoLog; indexB is passed as index to LibItem.getByIndex; indexB is passed as itemIndex to LibInventory.getBalanceOf)"
      ],
      "inferred": true
     }
@@ -2398,7 +2744,21 @@
    "owns": [
     "INVENTORY",
     "POOL_SHARE"
-   ]
+   ],
+   "components_later": [
+    "IsDisabled",
+    "Value"
+   ],
+   "components_later_in": {
+    "IsDisabled": [
+     "LibDisabled.set"
+    ],
+    "Value": [
+     "LibPool.burnLockedShares",
+     "LibPool.burnShares",
+     "LibPool.mintShares"
+    ]
+   }
   },
   "RECIPE": {
    "layer": "registry",
@@ -2542,7 +2902,15 @@
     "IndexRoom",
     "Location",
     "Name"
-   ]
+   ],
+   "components_later": [
+    "Exits"
+   ],
+   "components_later_in": {
+    "Exits": [
+     "LibRoom.setExits"
+    ]
+   }
   },
   "ROOM_GATE": {
    "layer": "registry",
@@ -2711,12 +3079,93 @@
    "id": {
     "registry": "registry.trait(_type, index)"
    },
-   "links": {},
+   "links": {
+    "IndexBackground": {
+     "to": "TRAIT",
+     "type": "registry",
+     "stored_on": "TRAIT",
+     "required": true,
+     "cardinality": "one TRAIT per TRAIT per _type",
+     "navigate": {
+      "up": "read IndexBackground on TRAIT",
+      "down": "compute registry.trait(_type, index), or not indexed: needs a scan or the indexer"
+     },
+     "derived": [
+      "IndexBackground = index in LibTraitRegistry.setIndex (traced through callers)"
+     ],
+     "inferred": true
+    },
+    "IndexBody": {
+     "to": "TRAIT",
+     "type": "registry",
+     "stored_on": "TRAIT",
+     "required": true,
+     "cardinality": "one TRAIT per TRAIT per _type",
+     "navigate": {
+      "up": "read IndexBody on TRAIT",
+      "down": "compute registry.trait(_type, index), or not indexed: needs a scan or the indexer"
+     },
+     "derived": [
+      "IndexBody = index in LibTraitRegistry.setIndex (traced through callers)"
+     ],
+     "inferred": true
+    },
+    "IndexColor": {
+     "to": "TRAIT",
+     "type": "registry",
+     "stored_on": "TRAIT",
+     "required": true,
+     "cardinality": "one TRAIT per TRAIT per _type",
+     "navigate": {
+      "up": "read IndexColor on TRAIT",
+      "down": "compute registry.trait(_type, index), or not indexed: needs a scan or the indexer"
+     },
+     "derived": [
+      "IndexColor = index in LibTraitRegistry.setIndex (traced through callers)"
+     ],
+     "inferred": true
+    },
+    "IndexFace": {
+     "to": "TRAIT",
+     "type": "registry",
+     "stored_on": "TRAIT",
+     "required": true,
+     "cardinality": "one TRAIT per TRAIT per _type",
+     "navigate": {
+      "up": "read IndexFace on TRAIT",
+      "down": "compute registry.trait(_type, index), or not indexed: needs a scan or the indexer"
+     },
+     "derived": [
+      "IndexFace = index in LibTraitRegistry.setIndex (traced through callers)"
+     ],
+     "inferred": true
+    },
+    "IndexHand": {
+     "to": "TRAIT",
+     "type": "registry",
+     "stored_on": "TRAIT",
+     "required": true,
+     "cardinality": "one TRAIT per TRAIT per _type",
+     "navigate": {
+      "up": "read IndexHand on TRAIT",
+      "down": "compute registry.trait(_type, index), or not indexed: needs a scan or the indexer"
+     },
+     "derived": [
+      "IndexHand = index in LibTraitRegistry.setIndex (traced through callers)"
+     ],
+     "inferred": true
+    }
+   },
    "components": [
     "Affinity",
     "Harmony",
     "Health",
     "IDAnchor",
+    "IndexBackground",
+    "IndexBody",
+    "IndexColor",
+    "IndexFace",
+    "IndexHand",
     "IsRegistry",
     "Name",
     "Power",
@@ -2834,33 +3283,6 @@
      "inferred": true
     }
    },
-   "held_by": [
-    "ACCOUNT",
-    "KAMI"
-   ]
-  },
-  "bonus.type": {
-   "id": "bonus.type(type_, holderID)",
-   "keys": {
-    "type_": null,
-    "holderID": [
-     "ACCOUNT",
-     "KAMI"
-    ]
-   },
-   "parent_from": "held by several types",
-   "relation": {
-    "type": "keyed",
-    "required": true,
-    "navigate": {
-     "down": "compute bonus.type(type_, holderID) from the parent",
-     "up": "from the key values"
-    }
-   },
-   "kind": "anchor key",
-   "pointed_at_by": [
-    "IDType"
-   ],
    "held_by": [
     "ACCOUNT",
     "KAMI"

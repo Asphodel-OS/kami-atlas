@@ -9,7 +9,7 @@ AccountRegister:
   deployed: true
   writes: [AddressOperator, AddressOwner, CacheOperator, EntityType, IndexAccount, IndexRoom, Name, Stamina, TimeLast, TimeLastAction, TimeStart, Value]
   reads: [HasFlag]
-  config: [ACCOUNT_STAMINA, WORLD_PRIVATE]
+  config: [WORLD_PRIVATE]
   flags: [WORLD_WHITELIST]
   data: [TOTAL_NUM_ACCOUNTS]
   steps:

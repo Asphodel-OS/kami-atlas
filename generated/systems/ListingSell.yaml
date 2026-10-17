@@ -13,9 +13,7 @@ ListingSell:
     - Decay
     - For
     - HasFlag
-    - IDAnchor
     - IDOwnsKami
-    - IdSource
     - Index
     - IndexCurrency
     - IndexRoom
@@ -36,11 +34,9 @@ ListingSell:
   access_not_written: [IdHolder, Index, Type]
   steps:
     - LibAccount.getByOperator
-    - LibNPC.get
     - "revert if merchantID == 0: merchant does not exist"
     - LibNPC.verifyRoom
     - "for each (i < itemIndices.length)":
-        - LibListingRegistry.get
         - "revert if listingID == 0: listing does not exist"
         - LibListing.meetsRequirements
         - LibListing.meetsRequirements

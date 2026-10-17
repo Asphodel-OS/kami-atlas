@@ -459,6 +459,63 @@ def write(path, header, data):
         f.write(y(data) + '\n')
 
 
+def write_spec(model, ents, comps, systems, id_ns, src_note):
+    """generated/recognition.json: the machine-readable contract an indexer needs to turn ECS events into domain
+    records. Everything here is already in the model; this is the same facts arranged by what a consumer does with
+    them: look up a component or system by its on-chain id, classify an entity, and know which column a write lands in."""
+    ent_ns = {}   # namespace -> entity type whose id it is (for recognising hashed ids by the keys that made them)
+    for et, e in model['entities'].items():
+        for which, f in (e.get('id') or {}).items():
+            ent_ns[f.split('(')[0]] = et
+    def pointer(comp, l):
+        to = l.get('to'); to = [to] if isinstance(to, str) else list(to or [])
+        out = {'to': to, 'relation': l['type'], 'required': bool(l.get('required'))}
+        if l.get('key'): out['key'] = l['key']
+        if l.get('via'): out['via'] = l['via']
+        if l.get('only_when'): out['only_when'] = l['only_when']
+        if l.get('cardinality'): out['cardinality'] = l['cardinality']
+        if l.get('settled_in_notes'): out['from_notes'] = True
+        elif l.get('inferred'): out['inferred'] = True
+        return out
+    def record(ns, s):
+        r = {'id': s.get('id'), 'keys': s.get('keys') or {}, 'kind': s.get('kind'), 'fields': s.get('fields') or []}
+        if s.get('shape'): r['shape'] = s['shape']
+        if s.get('links'): r['pointers'] = {c: pointer(c, l) for c, l in s['links'].items()}
+        if s.get('held_by'): r['held_by'] = s['held_by']
+        if s.get('pointed_at_by'): r['pointed_at_by'] = s['pointed_at_by']
+        return r
+    entities = {}
+    for et, e in model['entities'].items():
+        rec = ents.get(et, {})
+        typed = e.get('typed', True)
+        spec = {'entity_type': et if typed else None, 'layer': e['layer'],
+                'id': e.get('id') or {}, 'index': e.get('index'),
+                'components': rec.get('components_at_creation') or e.get('components') or [],
+                'created_by': e.get('created_by') or [], 'created_in': e.get('created_in') or [],
+                'pointers': {c: pointer(c, l) for c, l in (e.get('links') or {}).items() if not c.startswith('key:') and '.' not in c},
+                'keyed_by': {c: pointer(c, l) for c, l in (e.get('links') or {}).items() if c.startswith('key:')},
+                'records': {ns: record(ns, s) for ns, s in (e.get('sub_entities') or {}).items()}}
+        if e.get('extends'): spec['extends'] = e['extends']
+        if not typed:
+            # no EntityType value ever arrives for these: recognise them by who creates them and what they write together
+            spec['recognize'] = {'reason': 'no EntityType in the contracts', 'created_by': e.get('created_by') or [],
+                                 'signature': sorted(c for c in spec['components'] if c != 'EntityType'), 'named_by': e.get('name_from')}
+        entities[et] = spec
+    shared = {ns: record(ns, s) for ns, s in (model.get('shared_sub_entities') or {}).items()}
+    spec = {'source': model['source'], 'generated_from': src_note,
+            'about': 'Recognition spec for indexers: components and systems by on-chain id; entities by EntityType value or, for untyped shapes, by creating system and write signature; records by id namespace and keys. See README: Recognition spec.',
+            'components': {n: {'id': c.get('id'), 'type': c.get('type'), 'indexed': bool(c.get('indexed')),
+                               **({'client_name': c['client_name']} if c.get('client_name') else {})} for n, c in comps.items()},
+            'systems': {n: {'id': r.get('id'), 'deployed': bool(r.get('deployed')), 'writes': r.get('writes') or [],
+                            **({'disabled': r['disabled']} if r.get('disabled') else {})} for n, r in systems.items() if not n.startswith('__')},
+            'entities': entities, 'shared_records': shared,
+            'singletons': model.get('singletons') or {},
+            'id_namespaces': {ns: {'entity': ent_ns.get(ns)} for ns in id_ns},
+            'left_out': model['source'].get('left_out') or {}}
+    with open(os.path.join(GEN, 'recognition.json'), 'w') as f_: json.dump(spec, f_, indent=1, sort_keys=False)
+    return spec
+
+
 # ---------------- main ----------------
 
 def header_comment(raw):
@@ -1544,6 +1601,7 @@ def main():
         except subprocess.CalledProcessError as ex: print('diff: cannot read %s:generated/domain-model.json (%s)' % (ref, ex.stderr.strip()))
     write(os.path.join(GEN, 'domain-model.yaml'), src_note, model)
     with open(os.path.join(GEN, 'domain-model.json'), 'w') as f_: json.dump(model, f_, indent=1)
+    spec = write_spec(model, ents, comps, systems, id_ns, src_note)
 
     # data for the visualizer (viz/): the model, a compact per-system summary, and the notes as written
     vd = os.path.join(HERE, 'viz', 'data')

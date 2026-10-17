@@ -1,0 +1,4599 @@
+{
+ "source": {
+  "contracts": "kamigotchi/packages/contracts",
+  "ref": "origin/main",
+  "commit": "db4b3f834cb5",
+  "repo": "https://github.com/Asphodel-OS/kamigotchi-open",
+  "repo_path": "packages/contracts",
+  "left_out": {
+   "KILL_BOUNTY_LOG": "untyped shape made in LibKill._logBounty; no deployed system reaches it; deprecated, to be deleted from the contracts (Acheron, 2026-10-16)"
+  }
+ },
+ "generated_from": "the compiler AST of kamigotchi/packages/contracts (origin/main) at db4b3f834cb5",
+ "about": "Recognition spec for indexers: components and systems by on-chain id; entities by EntityType value or, for untyped shapes, by creating system and write signature; records by id namespace and keys. See README: Recognition spec.",
+ "components": {
+  "AddressOperator": {
+   "id": "component.address.operator",
+   "type": "address",
+   "indexed": true,
+   "client_name": "OperatorAddress"
+  },
+  "AddressOwner": {
+   "id": "component.address.owner",
+   "type": "address",
+   "indexed": true,
+   "client_name": "OwnerAddress"
+  },
+  "Affinity": {
+   "id": "component.affiinity",
+   "type": "string",
+   "indexed": false
+  },
+  "Balance": {
+   "id": "component.balance",
+   "type": "int32",
+   "indexed": false
+  },
+  "Blacklist": {
+   "id": "component.blacklist",
+   "type": "uint32[]",
+   "indexed": false
+  },
+  "BlockReveal": {
+   "id": "component.block.reveal",
+   "type": "uint256",
+   "indexed": false,
+   "client_name": "RevealBlock"
+  },
+  "CacheOperator": {
+   "id": "component.cache.operator",
+   "type": "address",
+   "indexed": false,
+   "client_name": "OperatorCache"
+  },
+  "Cost": {
+   "id": "component.cost",
+   "type": "uint256",
+   "indexed": false
+  },
+  "Decay": {
+   "id": "component.decay",
+   "type": "int32",
+   "indexed": false
+  },
+  "DescriptionAlt": {
+   "id": "component.description.alt",
+   "type": "string",
+   "indexed": false
+  },
+  "Description": {
+   "id": "component.description",
+   "type": "string",
+   "indexed": false
+  },
+  "EntityType": {
+   "id": "component.type.entity",
+   "type": "string",
+   "indexed": true
+  },
+  "Exits": {
+   "id": "component.exits",
+   "type": "uint32[]",
+   "indexed": false
+  },
+  "Experience": {
+   "id": "component.experience",
+   "type": "uint256",
+   "indexed": false
+  },
+  "For": {
+   "id": "component.for",
+   "type": "string",
+   "indexed": false
+  },
+  "Harmony": {
+   "id": "component.stat.harmony",
+   "type": "Stat",
+   "indexed": false
+  },
+  "HasFlag": {
+   "id": "component.has.flag",
+   "type": "bool",
+   "indexed": false
+  },
+  "Health": {
+   "id": "component.stat.health",
+   "type": "Stat",
+   "indexed": false
+  },
+  "IDAnchor": {
+   "id": "component.id.anchor",
+   "type": "uint256",
+   "indexed": true,
+   "client_name": "AnchorID"
+  },
+  "IDFrom": {
+   "id": "component.id.from",
+   "type": "uint256",
+   "indexed": true,
+   "client_name": "FromID"
+  },
+  "IDOwnsEquipment": {
+   "id": "component.id.equipment.owns",
+   "type": "uint256",
+   "indexed": true,
+   "client_name": "OwnsEquipID"
+  },
+  "IDOwnsFlag": {
+   "id": "component.id.flag.owns",
+   "type": "uint256",
+   "indexed": true,
+   "client_name": "OwnsFlagID"
+  },
+  "IDOwnsInventory": {
+   "id": "component.id.inventory.owns",
+   "type": "uint256",
+   "indexed": true,
+   "client_name": "OwnsInvID"
+  },
+  "IDOwnsKami": {
+   "id": "component.id.kami.owns",
+   "type": "uint256",
+   "indexed": true,
+   "client_name": "OwnsKamiID"
+  },
+  "IDOwnsKamiOrder": {
+   "id": "component.id.kamiorder.owns",
+   "type": "uint256",
+   "indexed": true,
+   "client_name": "OwnsKamiOrderID"
+  },
+  "IDOwnsQuest": {
+   "id": "component.id.quest.owns",
+   "type": "uint256",
+   "indexed": true,
+   "client_name": "OwnsQuestID"
+  },
+  "IDOwnsRelationship": {
+   "id": "component.id.relationship.owns",
+   "type": "uint256",
+   "indexed": true,
+   "client_name": "OwnsRsID"
+  },
+  "IDOwnsSkill": {
+   "id": "component.id.skill.owns",
+   "type": "uint256",
+   "indexed": true,
+   "client_name": "OwnsSkillID"
+  },
+  "IDOwnsTax": {
+   "id": "component.id.tax.owns",
+   "type": "uint256",
+   "indexed": true,
+   "client_name": "OwnsTaxID"
+  },
+  "IDOwnsTrade": {
+   "id": "component.id.trade.owns",
+   "type": "uint256",
+   "indexed": true,
+   "client_name": "OwnsTradeID"
+  },
+  "IDOwnsWithdrawal": {
+   "id": "component.id.token.withdraw.owns",
+   "type": "uint256",
+   "indexed": true,
+   "client_name": "OwnsWithdrawalID"
+  },
+  "IDTo": {
+   "id": "component.id.to",
+   "type": "uint256",
+   "indexed": true,
+   "client_name": "ToID"
+  },
+  "IDType": {
+   "id": "component.id.type",
+   "type": "uint256",
+   "indexed": true,
+   "client_name": "TypeID"
+  },
+  "IdHolder": {
+   "id": "component.id.holder",
+   "type": "uint256",
+   "indexed": true,
+   "client_name": "HolderID"
+  },
+  "IdSource": {
+   "id": "component.id.source",
+   "type": "uint256",
+   "indexed": true,
+   "client_name": "SourceID"
+  },
+  "IdTarget": {
+   "id": "component.id.target",
+   "type": "uint256",
+   "indexed": true,
+   "client_name": "TargetID"
+  },
+  "IndexAccount": {
+   "id": "component.index.account",
+   "type": "uint32",
+   "indexed": true,
+   "client_name": "AccountIndex"
+  },
+  "IndexBackground": {
+   "id": "component.index.background",
+   "type": "uint32",
+   "indexed": false,
+   "client_name": "BackgroundIndex"
+  },
+  "IndexBody": {
+   "id": "component.index.body",
+   "type": "uint32",
+   "indexed": false,
+   "client_name": "BodyIndex"
+  },
+  "IndexColor": {
+   "id": "component.index.color",
+   "type": "uint32",
+   "indexed": false,
+   "client_name": "ColorIndex"
+  },
+  "Index": {
+   "id": "component.index",
+   "type": "uint32",
+   "indexed": false
+  },
+  "IndexCurrency": {
+   "id": "component.index.currency",
+   "type": "uint32",
+   "indexed": false,
+   "client_name": "CurrencyIndex"
+  },
+  "IndexFace": {
+   "id": "component.index.face",
+   "type": "uint32",
+   "indexed": false,
+   "client_name": "FaceIndex"
+  },
+  "IndexFaction": {
+   "id": "component.index.faction",
+   "type": "uint32",
+   "indexed": false,
+   "client_name": "FactionIndex"
+  },
+  "IndexHand": {
+   "id": "component.index.hand",
+   "type": "uint32",
+   "indexed": false,
+   "client_name": "HandIndex"
+  },
+  "IndexItem": {
+   "id": "component.index.item",
+   "type": "uint32",
+   "indexed": false,
+   "client_name": "ItemIndex"
+  },
+  "IndexKami": {
+   "id": "component.index.kami",
+   "type": "uint32",
+   "indexed": true,
+   "client_name": "KamiIndex"
+  },
+  "IndexKamiListing": {
+   "id": "component.index.kami.listing",
+   "type": "uint32",
+   "indexed": true,
+   "client_name": "KamiListingIndex"
+  },
+  "IndexNPC": {
+   "id": "component.index.npc",
+   "type": "uint32",
+   "indexed": true,
+   "client_name": "NPCIndex"
+  },
+  "IndexNode": {
+   "id": "component.index.node",
+   "type": "uint32",
+   "indexed": false,
+   "client_name": "NodeIndex"
+  },
+  "IndexQuest": {
+   "id": "component.index.quest",
+   "type": "uint32",
+   "indexed": false,
+   "client_name": "QuestIndex"
+  },
+  "IndexRecipe": {
+   "id": "component.index.recipe",
+   "type": "uint32",
+   "indexed": true,
+   "client_name": "RecipeIndex"
+  },
+  "IndexRelationship": {
+   "id": "component.index.relationship",
+   "type": "uint32",
+   "indexed": false,
+   "client_name": "RelationshipIndex"
+  },
+  "IndexRoom": {
+   "id": "component.index.room",
+   "type": "uint32",
+   "indexed": true,
+   "client_name": "RoomIndex"
+  },
+  "IndexSkill": {
+   "id": "component.index.skill",
+   "type": "uint32",
+   "indexed": false,
+   "client_name": "SkillIndex"
+  },
+  "IsComplete": {
+   "id": "component.is.complete",
+   "type": "bool",
+   "indexed": false
+  },
+  "IsDisabled": {
+   "id": "component.is.disabled",
+   "type": "bool",
+   "indexed": false
+  },
+  "IsRegistry": {
+   "id": "component.is.registry",
+   "type": "bool",
+   "indexed": false
+  },
+  "Keys": {
+   "id": "component.keys",
+   "type": "uint32[]",
+   "indexed": false
+  },
+  "Level": {
+   "id": "component.level",
+   "type": "uint256",
+   "indexed": false
+  },
+  "Location": {
+   "id": "component.location",
+   "type": "Coord",
+   "indexed": false
+  },
+  "LogicType": {
+   "id": "component.logictype",
+   "type": "string",
+   "indexed": false
+  },
+  "Max": {
+   "id": "component.max",
+   "type": "uint256",
+   "indexed": false
+  },
+  "MediaURI": {
+   "id": "component.mediaURI",
+   "type": "string",
+   "indexed": false
+  },
+  "Name": {
+   "id": "component.name",
+   "type": "string",
+   "indexed": true
+  },
+  "Period": {
+   "id": "component.period",
+   "type": "int32",
+   "indexed": false
+  },
+  "Power": {
+   "id": "component.stat.power",
+   "type": "Stat",
+   "indexed": false
+  },
+  "ProxyPermissionsERC721": {
+   "id": "components.proxy.Permissions.ERC721",
+   "type": "bool",
+   "indexed": false
+  },
+  "ProxyVIPScore": {
+   "id": "component.proxy.vip.score",
+   "type": "bool",
+   "indexed": false
+  },
+  "Rarity": {
+   "id": "component.rarity",
+   "type": "uint256",
+   "indexed": false
+  },
+  "Rate": {
+   "id": "component.rate",
+   "type": "uint256",
+   "indexed": false
+  },
+  "Reroll": {
+   "id": "component.reroll",
+   "type": "uint256",
+   "indexed": false
+  },
+  "Scale": {
+   "id": "component.scale",
+   "type": "int32",
+   "indexed": false
+  },
+  "SkillPoint": {
+   "id": "component.skill.point",
+   "type": "uint256",
+   "indexed": false
+  },
+  "Slots": {
+   "id": "component.stat.slots",
+   "type": "Stat",
+   "indexed": false
+  },
+  "Stamina": {
+   "id": "component.stat.stamina",
+   "type": "Stat",
+   "indexed": false
+  },
+  "State": {
+   "id": "component.state",
+   "type": "string",
+   "indexed": true
+  },
+  "Subtype": {
+   "id": "component.subtype",
+   "type": "string",
+   "indexed": false
+  },
+  "Tax": {
+   "id": "component.tax",
+   "type": "uint256",
+   "indexed": false
+  },
+  "Time": {
+   "id": "component.Time",
+   "type": "uint256",
+   "indexed": false
+  },
+  "TimeEnd": {
+   "id": "component.Time.End",
+   "type": "uint256",
+   "indexed": false
+  },
+  "TimeLastAction": {
+   "id": "component.Time.LastAction",
+   "type": "uint256",
+   "indexed": false,
+   "client_name": "LastActionTime"
+  },
+  "TimeLast": {
+   "id": "component.Time.Last",
+   "type": "uint256",
+   "indexed": false,
+   "client_name": "LastTime"
+  },
+  "TimeNext": {
+   "id": "component.Time.Next",
+   "type": "uint256",
+   "indexed": false,
+   "client_name": "NextTime"
+  },
+  "TimeReset": {
+   "id": "component.Time.Reset",
+   "type": "uint256",
+   "indexed": false,
+   "client_name": "ResetTime"
+  },
+  "TimeStart": {
+   "id": "component.Time.Start",
+   "type": "uint256",
+   "indexed": false,
+   "client_name": "StartTime"
+  },
+  "TokenAddress": {
+   "id": "component.token.address",
+   "type": "address",
+   "indexed": false
+  },
+  "TokenAllowance": {
+   "id": "component.token.allowance",
+   "type": "bool",
+   "indexed": false
+  },
+  "TokenHolder": {
+   "id": "component.token.holder",
+   "type": "bool",
+   "indexed": false
+  },
+  "Type": {
+   "id": "component.type",
+   "type": "string",
+   "indexed": true
+  },
+  "Value": {
+   "id": "component.value",
+   "type": "uint256",
+   "indexed": false
+  },
+  "Values": {
+   "id": "component.values",
+   "type": "uint256[]",
+   "indexed": false
+  },
+  "Violence": {
+   "id": "component.stat.violence",
+   "type": "Stat",
+   "indexed": false
+  },
+  "Weights": {
+   "id": "component.weights",
+   "type": "uint256[]",
+   "indexed": false
+  },
+  "Whitelist": {
+   "id": "component.whitelist",
+   "type": "uint32[]",
+   "indexed": false
+  }
+ },
+ "systems": {
+  "AccountMove": {
+   "id": "system.account.move",
+   "deployed": true,
+   "writes": [
+    "Experience",
+    "IndexRoom",
+    "Stamina",
+    "TimeLast",
+    "TimeLastAction",
+    "Value"
+   ]
+  },
+  "AccountRegister": {
+   "id": "system.account.register",
+   "deployed": true,
+   "writes": [
+    "AddressOperator",
+    "AddressOwner",
+    "CacheOperator",
+    "EntityType",
+    "IndexAccount",
+    "IndexRoom",
+    "Name",
+    "Stamina",
+    "TimeLast",
+    "TimeLastAction",
+    "TimeStart",
+    "Value"
+   ]
+  },
+  "AccountSetBio": {
+   "id": "system.account.set.bio",
+   "deployed": true,
+   "writes": [
+    "Description",
+    "TimeLast"
+   ]
+  },
+  "AccountSetName": {
+   "id": "system.account.set.name",
+   "deployed": true,
+   "writes": [
+    "Name",
+    "TimeLast"
+   ]
+  },
+  "AccountSetOperator": {
+   "id": "system.account.set.operator",
+   "deployed": true,
+   "writes": [
+    "AddressOperator",
+    "CacheOperator",
+    "TimeLast"
+   ]
+  },
+  "AccountSetPFP": {
+   "id": "system.account.set.pfp",
+   "deployed": true,
+   "writes": [
+    "MediaURI",
+    "TimeLast"
+   ]
+  },
+  "AccountUseItem": {
+   "id": "system.account.use.item",
+   "deployed": true,
+   "writes": [
+    "BlockReveal",
+    "EntityType",
+    "Experience",
+    "HasFlag",
+    "IDAnchor",
+    "IDOwnsInventory",
+    "IDType",
+    "IdHolder",
+    "IdSource",
+    "IndexItem",
+    "IndexRoom",
+    "Level",
+    "ProxyVIPScore",
+    "Stamina",
+    "State",
+    "Time",
+    "TimeLast",
+    "TimeLastAction",
+    "TimeNext",
+    "Type",
+    "Value"
+   ]
+  },
+  "AuctionBuy": {
+   "id": "system.auction.buy",
+   "deployed": true,
+   "writes": [
+    "Balance",
+    "EntityType",
+    "IDOwnsInventory",
+    "IndexItem",
+    "TimeLast",
+    "Value"
+   ]
+  },
+  "Chat": {
+   "id": "system.chat",
+   "deployed": true,
+   "writes": [
+    "For",
+    "IDAnchor",
+    "Index",
+    "LogicType",
+    "TimeLast",
+    "Type",
+    "Value"
+   ]
+  },
+  "Craft": {
+   "id": "system.craft",
+   "deployed": true,
+   "writes": [
+    "EntityType",
+    "Experience",
+    "IDOwnsInventory",
+    "IndexItem",
+    "Stamina",
+    "TimeLast",
+    "TimeLastAction",
+    "Value"
+   ]
+  },
+  "DroptableReveal": {
+   "id": "system.droptable.item.reveal",
+   "deployed": true,
+   "writes": [
+    "BlockReveal",
+    "EntityType",
+    "IDOwnsInventory",
+    "IdHolder",
+    "IdSource",
+    "IndexItem",
+    "Type",
+    "Value"
+   ]
+  },
+  "EchoKamis": {
+   "id": "system.echo.kamis",
+   "deployed": true,
+   "writes": [
+    "Component[by id]"
+   ]
+  },
+  "EchoRoom": {
+   "id": "system.echo.room",
+   "deployed": true,
+   "writes": [
+    "IndexRoom"
+   ]
+  },
+  "FriendAccept": {
+   "id": "system.friend.accept",
+   "deployed": true,
+   "writes": [
+    "EntityType",
+    "IDAnchor",
+    "IdSource",
+    "IdTarget",
+    "State",
+    "TimeLast"
+   ]
+  },
+  "FriendBlock": {
+   "id": "system.friend.block",
+   "deployed": true,
+   "writes": [
+    "EntityType",
+    "IDAnchor",
+    "IdSource",
+    "IdTarget",
+    "State",
+    "TimeLast"
+   ]
+  },
+  "FriendCancel": {
+   "id": "system.friend.cancel",
+   "deployed": true,
+   "writes": [
+    "EntityType",
+    "IDAnchor",
+    "IdSource",
+    "IdTarget",
+    "State",
+    "TimeLast"
+   ]
+  },
+  "FriendRequest": {
+   "id": "system.friend.request",
+   "deployed": true,
+   "writes": [
+    "EntityType",
+    "IDAnchor",
+    "IdSource",
+    "IdTarget",
+    "State",
+    "TimeLast"
+   ]
+  },
+  "GachaBuyTicket": {
+   "id": "system.buy.gacha.ticket",
+   "deployed": true,
+   "writes": [
+    "EntityType",
+    "IDOwnsInventory",
+    "IndexItem",
+    "TimeLast",
+    "Value"
+   ]
+  },
+  "Getter": {
+   "id": "system.getter",
+   "deployed": true,
+   "writes": []
+  },
+  "GoalClaim": {
+   "id": "system.goal.claim",
+   "deployed": true,
+   "writes": [
+    "BlockReveal",
+    "EntityType",
+    "Experience",
+    "HasFlag",
+    "IDAnchor",
+    "IDOwnsInventory",
+    "IDType",
+    "IdHolder",
+    "IdSource",
+    "IndexItem",
+    "IndexRoom",
+    "IsComplete",
+    "Level",
+    "ProxyVIPScore",
+    "State",
+    "Time",
+    "TimeLast",
+    "TimeNext",
+    "Type",
+    "Value"
+   ]
+  },
+  "GoalContribute": {
+   "id": "system.goal.contribute",
+   "deployed": true,
+   "writes": [
+    "EntityType",
+    "IDOwnsInventory",
+    "IDType",
+    "IdHolder",
+    "IndexItem",
+    "IsComplete",
+    "TimeLast",
+    "Value"
+   ]
+  },
+  "HarvestCollect": {
+   "id": "system.harvest.collect",
+   "deployed": true,
+   "writes": [
+    "EntityType",
+    "Experience",
+    "Health",
+    "IDAnchor",
+    "IDOwnsInventory",
+    "IDType",
+    "IdHolder",
+    "IdSource",
+    "IndexItem",
+    "Level",
+    "Time",
+    "TimeLast",
+    "TimeNext",
+    "Value"
+   ]
+  },
+  "HarvestLiquidate": {
+   "id": "system.harvest.liquidate",
+   "deployed": true,
+   "writes": [
+    "EntityType",
+    "Experience",
+    "Health",
+    "IDAnchor",
+    "IDOwnsInventory",
+    "IDType",
+    "IdHolder",
+    "IdSource",
+    "IndexItem",
+    "Level",
+    "State",
+    "Time",
+    "TimeLast",
+    "TimeNext",
+    "Value"
+   ]
+  },
+  "HarvestStart": {
+   "id": "system.harvest.start",
+   "deployed": true,
+   "writes": [
+    "EntityType",
+    "Health",
+    "IDAnchor",
+    "IDOwnsTax",
+    "IDType",
+    "IdHolder",
+    "IdSource",
+    "IdTarget",
+    "Level",
+    "State",
+    "Time",
+    "TimeLast",
+    "TimeNext",
+    "TimeReset",
+    "TimeStart",
+    "Value"
+   ]
+  },
+  "HarvestStop": {
+   "id": "system.harvest.stop",
+   "deployed": true,
+   "writes": [
+    "EntityType",
+    "Experience",
+    "Health",
+    "IDAnchor",
+    "IDOwnsInventory",
+    "IDType",
+    "IdHolder",
+    "IdSource",
+    "IndexItem",
+    "Level",
+    "State",
+    "Time",
+    "TimeLast",
+    "TimeNext",
+    "Value"
+   ]
+  },
+  "ItemBurn": {
+   "id": "system.item.burn",
+   "deployed": true,
+   "writes": [
+    "EntityType",
+    "IDOwnsInventory",
+    "IndexItem",
+    "TimeLast",
+    "Value"
+   ]
+  },
+  "ItemTransfer": {
+   "id": "system.item.transfer",
+   "deployed": true,
+   "writes": [
+    "EntityType",
+    "IDOwnsInventory",
+    "IndexItem",
+    "TimeLast",
+    "Value"
+   ]
+  },
+  "Kami721IsInWorld": {
+   "id": "system.Kami721.IsInWorld",
+   "deployed": true,
+   "writes": []
+  },
+  "Kami721Metadata": {
+   "id": "system.Kami721.Metadata",
+   "deployed": true,
+   "writes": []
+  },
+  "Kami721Stake": {
+   "id": "system.kami721.stake",
+   "deployed": true,
+   "writes": [
+    "Balance",
+    "IDOwnsKami",
+    "IDOwnsKamiOrder",
+    "IndexKami",
+    "IndexKamiListing",
+    "Max",
+    "State",
+    "TimeEnd",
+    "TimeLast",
+    "TimeStart",
+    "Value",
+    "Values"
+   ]
+  },
+  "Kami721Transfer": {
+   "id": "system.kami721.transfer",
+   "deployed": true,
+   "writes": []
+  },
+  "Kami721Unstake": {
+   "id": "system.kami721.unstake",
+   "deployed": true,
+   "writes": [
+    "EntityType",
+    "For",
+    "IDAnchor",
+    "IDOwnsEquipment",
+    "IDOwnsInventory",
+    "IDOwnsKami",
+    "IDType",
+    "IdSource",
+    "IndexItem",
+    "Level",
+    "State",
+    "Time",
+    "TimeLast",
+    "Value"
+   ]
+  },
+  "KamiCastItem": {
+   "id": "system.kami.cast.item",
+   "deployed": true,
+   "writes": [
+    "BlockReveal",
+    "EntityType",
+    "Experience",
+    "HasFlag",
+    "Health",
+    "IDAnchor",
+    "IDOwnsInventory",
+    "IDType",
+    "IdHolder",
+    "IdSource",
+    "IndexItem",
+    "IndexRoom",
+    "Level",
+    "ProxyVIPScore",
+    "Stamina",
+    "State",
+    "Time",
+    "TimeLast",
+    "TimeLastAction",
+    "TimeNext",
+    "Type",
+    "Value"
+   ]
+  },
+  "KamiEquip": {
+   "id": "system.kami.equip",
+   "deployed": true,
+   "writes": [
+    "EntityType",
+    "For",
+    "IDAnchor",
+    "IDOwnsEquipment",
+    "IDOwnsInventory",
+    "IDType",
+    "IdSource",
+    "IndexItem",
+    "Level",
+    "Time",
+    "TimeLast",
+    "Value"
+   ]
+  },
+  "KamiGachaMint": {
+   "id": "system.kami.gacha.mint",
+   "deployed": true,
+   "writes": [
+    "BlockReveal",
+    "EntityType",
+    "Experience",
+    "Harmony",
+    "Health",
+    "IDOwnsInventory",
+    "IDOwnsKami",
+    "IdHolder",
+    "IndexItem",
+    "IndexKami",
+    "Level",
+    "MediaURI",
+    "Name",
+    "Power",
+    "SkillPoint",
+    "Slots",
+    "State",
+    "TimeLast",
+    "Type",
+    "Value",
+    "Violence"
+   ]
+  },
+  "KamiGachaReroll": {
+   "id": "system.kami.gacha.reroll",
+   "deployed": true,
+   "writes": [
+    "BlockReveal",
+    "EntityType",
+    "For",
+    "IDAnchor",
+    "IDOwnsEquipment",
+    "IDOwnsInventory",
+    "IDOwnsKami",
+    "IDType",
+    "IdHolder",
+    "IdSource",
+    "IndexItem",
+    "Level",
+    "Reroll",
+    "Time",
+    "TimeLast",
+    "Type",
+    "Value"
+   ]
+  },
+  "KamiGachaReveal": {
+   "id": "system.kami.gacha.reveal",
+   "deployed": true,
+   "writes": [
+    "BlockReveal",
+    "IDOwnsKami",
+    "IdHolder",
+    "Reroll",
+    "Type",
+    "Value"
+   ]
+  },
+  "KamiLevel": {
+   "id": "system.kami.level",
+   "deployed": true,
+   "writes": [
+    "Experience",
+    "Health",
+    "Level",
+    "SkillPoint",
+    "TimeLast",
+    "Value"
+   ]
+  },
+  "KamiMarketAcceptOffer": {
+   "id": "system.kamimarket.acceptoffer",
+   "deployed": true,
+   "writes": [
+    "Balance",
+    "EntityType",
+    "For",
+    "IDAnchor",
+    "IDOwnsEquipment",
+    "IDOwnsInventory",
+    "IDOwnsKami",
+    "IDOwnsKamiOrder",
+    "IDType",
+    "IdSource",
+    "IndexItem",
+    "IndexKami",
+    "IndexKamiListing",
+    "Level",
+    "Max",
+    "State",
+    "Time",
+    "TimeEnd",
+    "TimeLast",
+    "TimeNext",
+    "TimeStart",
+    "Value",
+    "Values"
+   ]
+  },
+  "KamiMarketBuy": {
+   "id": "system.kamimarket.buy",
+   "deployed": true,
+   "writes": [
+    "Balance",
+    "EntityType",
+    "For",
+    "IDAnchor",
+    "IDOwnsEquipment",
+    "IDOwnsInventory",
+    "IDOwnsKami",
+    "IDOwnsKamiOrder",
+    "IDType",
+    "IdSource",
+    "IndexItem",
+    "IndexKami",
+    "IndexKamiListing",
+    "Level",
+    "Max",
+    "State",
+    "Time",
+    "TimeEnd",
+    "TimeLast",
+    "TimeNext",
+    "TimeStart",
+    "Value",
+    "Values"
+   ]
+  },
+  "KamiMarketCancel": {
+   "id": "system.kamimarket.cancel",
+   "deployed": true,
+   "writes": [
+    "Balance",
+    "IDOwnsKamiOrder",
+    "IndexKami",
+    "IndexKamiListing",
+    "Max",
+    "State",
+    "TimeEnd",
+    "TimeLast",
+    "TimeStart",
+    "Value",
+    "Values"
+   ]
+  },
+  "KamiMarketList": {
+   "id": "system.kamimarket.list",
+   "deployed": true,
+   "writes": [
+    "EntityType",
+    "For",
+    "IDAnchor",
+    "IDOwnsEquipment",
+    "IDOwnsInventory",
+    "IDOwnsKamiOrder",
+    "IDType",
+    "IdSource",
+    "IndexItem",
+    "IndexKamiListing",
+    "Level",
+    "State",
+    "Time",
+    "TimeEnd",
+    "TimeLast",
+    "TimeStart",
+    "Value",
+    "Values"
+   ]
+  },
+  "KamiMarketOffer": {
+   "id": "system.kamimarket.offer",
+   "deployed": true,
+   "writes": [
+    "Balance",
+    "EntityType",
+    "IDOwnsKamiOrder",
+    "IndexKami",
+    "Max",
+    "State",
+    "TimeEnd",
+    "TimeLast",
+    "TimeStart",
+    "Value"
+   ]
+  },
+  "KamiName": {
+   "id": "system.kami.name",
+   "deployed": true,
+   "writes": [
+    "EntityType",
+    "IDOwnsInventory",
+    "IndexItem",
+    "Name",
+    "TimeLast",
+    "Value"
+   ]
+  },
+  "KamiOnyxRename": {
+   "id": "system.kami.onyx.rename",
+   "deployed": true,
+   "writes": [
+    "EntityType",
+    "IDOwnsInventory",
+    "IndexItem",
+    "Name",
+    "TimeLast",
+    "Value"
+   ],
+   "disabled": "Onyx Features are temporarily disabled."
+  },
+  "KamiOnyxRespec": {
+   "id": "system.kami.onyx.respec",
+   "deployed": true,
+   "writes": [
+    "EntityType",
+    "Health",
+    "IDAnchor",
+    "IDOwnsInventory",
+    "IDOwnsSkill",
+    "IDType",
+    "IdSource",
+    "IndexItem",
+    "IndexSkill",
+    "Level",
+    "SkillPoint",
+    "Time",
+    "TimeLast",
+    "Value"
+   ],
+   "disabled": "Onyx Features are temporarily disabled."
+  },
+  "KamiOnyxRevive": {
+   "id": "system.kami.onyx.revive",
+   "deployed": true,
+   "writes": [
+    "EntityType",
+    "Health",
+    "IDOwnsInventory",
+    "IndexItem",
+    "State",
+    "TimeLast",
+    "Value"
+   ]
+  },
+  "KamiSacrificeCommit": {
+   "id": "system.kami.sacrifice.commit",
+   "deployed": true,
+   "writes": [
+    "BlockReveal",
+    "EntityType",
+    "For",
+    "Health",
+    "IDAnchor",
+    "IDOwnsEquipment",
+    "IDOwnsInventory",
+    "IDOwnsKami",
+    "IDType",
+    "IdHolder",
+    "IdSource",
+    "IndexItem",
+    "Level",
+    "State",
+    "Time",
+    "TimeLast",
+    "Type",
+    "Value"
+   ]
+  },
+  "KamiSacrificeReveal": {
+   "id": "system.kami.sacrifice.reveal",
+   "deployed": true,
+   "writes": [
+    "EntityType",
+    "IDOwnsInventory",
+    "IdHolder",
+    "IdSource",
+    "IndexItem",
+    "TimeLast",
+    "Type",
+    "Value"
+   ]
+  },
+  "KamiSend": {
+   "id": "system.kami.send",
+   "deployed": true,
+   "writes": [
+    "Balance",
+    "EntityType",
+    "For",
+    "IDAnchor",
+    "IDOwnsEquipment",
+    "IDOwnsInventory",
+    "IDOwnsKami",
+    "IDOwnsKamiOrder",
+    "IDType",
+    "IdSource",
+    "IndexItem",
+    "IndexKami",
+    "IndexKamiListing",
+    "Level",
+    "Max",
+    "State",
+    "Time",
+    "TimeEnd",
+    "TimeLast",
+    "TimeNext",
+    "TimeStart",
+    "Value",
+    "Values"
+   ]
+  },
+  "KamiUnequip": {
+   "id": "system.kami.unequip",
+   "deployed": true,
+   "writes": [
+    "EntityType",
+    "For",
+    "IDAnchor",
+    "IDOwnsEquipment",
+    "IDOwnsInventory",
+    "IDType",
+    "IdSource",
+    "IndexItem",
+    "Level",
+    "Time",
+    "TimeLast",
+    "Value"
+   ]
+  },
+  "KamiUseItem": {
+   "id": "system.kami.use.item",
+   "deployed": true,
+   "writes": [
+    "BlockReveal",
+    "EntityType",
+    "Experience",
+    "HasFlag",
+    "Health",
+    "IDAnchor",
+    "IDOwnsInventory",
+    "IDType",
+    "IdHolder",
+    "IdSource",
+    "IndexItem",
+    "IndexRoom",
+    "Level",
+    "ProxyVIPScore",
+    "State",
+    "Time",
+    "TimeLast",
+    "TimeNext",
+    "TimeReset",
+    "Type",
+    "Value"
+   ]
+  },
+  "ListingBuy": {
+   "id": "system.listing.buy",
+   "deployed": true,
+   "writes": [
+    "Balance",
+    "EntityType",
+    "IDOwnsInventory",
+    "IDType",
+    "IdHolder",
+    "IndexItem",
+    "TimeLast",
+    "TimeStart",
+    "Value"
+   ]
+  },
+  "ListingSell": {
+   "id": "system.listing.sell",
+   "deployed": true,
+   "writes": [
+    "Balance",
+    "EntityType",
+    "IDOwnsInventory",
+    "IndexItem",
+    "TimeLast",
+    "Value"
+   ]
+  },
+  "NewbieVendorBuy": {
+   "id": "system.newbievendor.buy",
+   "deployed": true,
+   "writes": [
+    "HasFlag",
+    "IDOwnsKami",
+    "TimeLast",
+    "Value",
+    "Values"
+   ]
+  },
+  "Pool": {
+   "id": "system.pool",
+   "deployed": true,
+   "writes": [
+    "EntityType",
+    "IDOwnsInventory",
+    "IDType",
+    "IdHolder",
+    "IndexItem",
+    "TimeLast",
+    "Value"
+   ]
+  },
+  "QuestAccept": {
+   "id": "system.quest.accept",
+   "deployed": true,
+   "writes": [
+    "EntityType",
+    "IDAnchor",
+    "IDOwnsQuest",
+    "IndexQuest",
+    "IsComplete",
+    "TimeLast",
+    "TimeStart",
+    "Value"
+   ]
+  },
+  "QuestComplete": {
+   "id": "system.quest.complete",
+   "deployed": true,
+   "writes": [
+    "BlockReveal",
+    "EntityType",
+    "Experience",
+    "HasFlag",
+    "IDAnchor",
+    "IDOwnsInventory",
+    "IDType",
+    "IdHolder",
+    "IdSource",
+    "IndexItem",
+    "IndexRoom",
+    "IsComplete",
+    "Level",
+    "ProxyVIPScore",
+    "State",
+    "Time",
+    "TimeLast",
+    "TimeNext",
+    "Type",
+    "Value"
+   ]
+  },
+  "QuestDrop": {
+   "id": "system.quest.drop",
+   "deployed": true,
+   "writes": [
+    "EntityType",
+    "IDAnchor",
+    "IDOwnsQuest",
+    "IndexQuest",
+    "TimeLast",
+    "TimeStart",
+    "Value"
+   ]
+  },
+  "RelationshipAdvance": {
+   "id": "system.relationship.advance",
+   "deployed": true,
+   "writes": [
+    "EntityType",
+    "IDOwnsRelationship",
+    "IndexNPC",
+    "IndexRelationship",
+    "TimeLast"
+   ]
+  },
+  "ScavengeClaim": {
+   "id": "system.scavenge.claim",
+   "deployed": true,
+   "writes": [
+    "BlockReveal",
+    "EntityType",
+    "Experience",
+    "HasFlag",
+    "IDAnchor",
+    "IDOwnsInventory",
+    "IDType",
+    "IdHolder",
+    "IdSource",
+    "IndexItem",
+    "IndexRoom",
+    "Level",
+    "ProxyVIPScore",
+    "State",
+    "Time",
+    "TimeLast",
+    "TimeNext",
+    "Type",
+    "Value"
+   ]
+  },
+  "SkillRespec": {
+   "id": "system.skill.respec",
+   "deployed": true,
+   "writes": [
+    "BlockReveal",
+    "EntityType",
+    "Experience",
+    "HasFlag",
+    "Health",
+    "IDAnchor",
+    "IDOwnsInventory",
+    "IDOwnsSkill",
+    "IDType",
+    "IdHolder",
+    "IdSource",
+    "IndexItem",
+    "IndexRoom",
+    "IndexSkill",
+    "Level",
+    "ProxyVIPScore",
+    "SkillPoint",
+    "State",
+    "Time",
+    "TimeLast",
+    "TimeNext",
+    "Type",
+    "Value"
+   ]
+  },
+  "SkillUpgrade": {
+   "id": "system.skill.upgrade",
+   "deployed": true,
+   "writes": [
+    "EntityType",
+    "Health",
+    "IDAnchor",
+    "IDOwnsSkill",
+    "IDType",
+    "IdSource",
+    "IndexSkill",
+    "Level",
+    "SkillPoint",
+    "Time",
+    "TimeLast",
+    "Value"
+   ]
+  },
+  "TokenPortal": {
+   "id": "system.erc20.portal",
+   "deployed": true,
+   "writes": [
+    "EntityType",
+    "HasFlag",
+    "IDOwnsInventory",
+    "IDOwnsWithdrawal",
+    "IndexItem",
+    "IsDisabled",
+    "Scale",
+    "Tax",
+    "TimeEnd",
+    "TimeLast",
+    "TimeStart",
+    "TokenAddress",
+    "TokenAllowance",
+    "Value"
+   ]
+  },
+  "TradeCancel": {
+   "id": "system.trade.cancel",
+   "deployed": true,
+   "writes": [
+    "EntityType",
+    "IDOwnsInventory",
+    "IDOwnsTrade",
+    "IdTarget",
+    "IndexItem",
+    "Keys",
+    "State",
+    "TimeLast",
+    "Value",
+    "Values"
+   ]
+  },
+  "TradeComplete": {
+   "id": "system.trade.complete",
+   "deployed": true,
+   "writes": [
+    "EntityType",
+    "IDOwnsInventory",
+    "IDOwnsTrade",
+    "IdTarget",
+    "IndexItem",
+    "Keys",
+    "State",
+    "TimeLast",
+    "Value",
+    "Values"
+   ]
+  },
+  "TradeCreate": {
+   "id": "system.trade.create",
+   "deployed": true,
+   "writes": [
+    "EntityType",
+    "IDOwnsInventory",
+    "IDOwnsTrade",
+    "IdTarget",
+    "IndexItem",
+    "Keys",
+    "State",
+    "TimeLast",
+    "Value",
+    "Values"
+   ]
+  },
+  "TradeExecute": {
+   "id": "system.trade.execute",
+   "deployed": true,
+   "writes": [
+    "EntityType",
+    "IDOwnsInventory",
+    "IdTarget",
+    "IndexItem",
+    "State",
+    "TimeLast",
+    "Value"
+   ]
+  },
+  "_721BatchMinter": {
+   "id": "system.Kami721.BatchMint",
+   "deployed": true,
+   "writes": []
+  },
+  "_AdminSetFlag": {
+   "id": "system.admin.set.flag",
+   "deployed": true,
+   "writes": [
+    "HasFlag"
+   ]
+  },
+  "_AuctionRegistry": {
+   "id": "system.auction.registry",
+   "deployed": true,
+   "writes": [
+    "Balance",
+    "Decay",
+    "EntityType",
+    "For",
+    "IDAnchor",
+    "Index",
+    "IndexCurrency",
+    "IndexItem",
+    "LogicType",
+    "Max",
+    "Period",
+    "Rate",
+    "TimeStart",
+    "Type",
+    "Value"
+   ]
+  },
+  "_AuthManageRole": {
+   "id": "system.auth.registry",
+   "deployed": true,
+   "writes": [
+    "HasFlag",
+    "IDOwnsFlag",
+    "IDType",
+    "Type"
+   ]
+  },
+  "_ConfigSet": {
+   "id": "system.config.registry",
+   "deployed": true,
+   "writes": [
+    "Value"
+   ]
+  },
+  "_DistributeItem": {
+   "id": "system.distribute.item",
+   "deployed": true,
+   "writes": [
+    "EntityType",
+    "IDOwnsInventory",
+    "IndexItem",
+    "Value"
+   ]
+  },
+  "_FactionRegistry": {
+   "id": "system.faction.registry",
+   "deployed": true,
+   "writes": [
+    "Description",
+    "EntityType",
+    "IndexFaction",
+    "IsRegistry",
+    "MediaURI",
+    "Name"
+   ]
+  },
+  "_GoalRegistry": {
+   "id": "system.goal.registry",
+   "deployed": true,
+   "writes": [
+    "Description",
+    "EntityType",
+    "For",
+    "IDAnchor",
+    "IdSource",
+    "Index",
+    "IndexRoom",
+    "IsComplete",
+    "IsDisabled",
+    "IsRegistry",
+    "Keys",
+    "LogicType",
+    "Name",
+    "Subtype",
+    "Time",
+    "Type",
+    "Value",
+    "Weights"
+   ]
+  },
+  "_HarvestAdmin": {
+   "id": "system.harvest.admin",
+   "deployed": false,
+   "writes": [
+    "Health",
+    "IDAnchor",
+    "IDType",
+    "IdSource",
+    "Level",
+    "State",
+    "Time",
+    "TimeLast",
+    "TimeNext",
+    "Value"
+   ]
+  },
+  "_ItemRegistry": {
+   "id": "system.item.registry",
+   "deployed": true,
+   "writes": [
+    "Description",
+    "EntityType",
+    "Experience",
+    "For",
+    "Harmony",
+    "HasFlag",
+    "Health",
+    "IDAnchor",
+    "IDOwnsFlag",
+    "IDType",
+    "IdSource",
+    "Index",
+    "IndexItem",
+    "IndexRoom",
+    "IsDisabled",
+    "IsRegistry",
+    "Keys",
+    "LogicType",
+    "MediaURI",
+    "Name",
+    "Power",
+    "Rarity",
+    "Slots",
+    "Stamina",
+    "Subtype",
+    "Time",
+    "Type",
+    "Value",
+    "Violence",
+    "Weights"
+   ]
+  },
+  "_KamiMarketRegistry": {
+   "id": "system.kamimarket.registry",
+   "deployed": true,
+   "writes": [
+    "Value",
+    "Values"
+   ]
+  },
+  "_ListingRegistry": {
+   "id": "system.listing.registry",
+   "deployed": true,
+   "writes": [
+    "Balance",
+    "Decay",
+    "EntityType",
+    "For",
+    "IDAnchor",
+    "Index",
+    "IndexCurrency",
+    "IndexItem",
+    "IndexNPC",
+    "LogicType",
+    "Period",
+    "Rate",
+    "Scale",
+    "TimeStart",
+    "Type",
+    "Value"
+   ]
+  },
+  "_NPCRegistry": {
+   "id": "system.npc.registry",
+   "deployed": true,
+   "writes": [
+    "EntityType",
+    "IndexNPC",
+    "IndexRoom",
+    "Name"
+   ]
+  },
+  "_NewbieVendorRegistry": {
+   "id": "system.newbievendor.registry",
+   "deployed": true,
+   "writes": [
+    "TimeStart",
+    "Value",
+    "Values"
+   ]
+  },
+  "_NodeRegistry": {
+   "id": "system.node.registry",
+   "deployed": true,
+   "writes": [
+    "Affinity",
+    "Description",
+    "EntityType",
+    "For",
+    "IDAnchor",
+    "IdSource",
+    "Index",
+    "IndexItem",
+    "IndexNode",
+    "IndexRoom",
+    "IsRegistry",
+    "Keys",
+    "LogicType",
+    "Name",
+    "Subtype",
+    "Time",
+    "Type",
+    "Value",
+    "Weights"
+   ]
+  },
+  "_PoolRegistry": {
+   "id": "system.pool.registry",
+   "deployed": true,
+   "writes": [
+    "EntityType",
+    "IDOwnsInventory",
+    "IDType",
+    "IdHolder",
+    "IndexItem",
+    "IsDisabled",
+    "Keys",
+    "Rate",
+    "TimeStart",
+    "Value"
+   ]
+  },
+  "_QuestRegistry": {
+   "id": "system.quest.registry",
+   "deployed": true,
+   "writes": [
+    "Description",
+    "DescriptionAlt",
+    "EntityType",
+    "For",
+    "HasFlag",
+    "IDAnchor",
+    "IDOwnsFlag",
+    "IDType",
+    "IdSource",
+    "Index",
+    "IndexQuest",
+    "IsDisabled",
+    "IsRegistry",
+    "Keys",
+    "LogicType",
+    "Name",
+    "Subtype",
+    "Time",
+    "Type",
+    "Value",
+    "Weights"
+   ]
+  },
+  "_RecipeRegistry": {
+   "id": "system.recipe.registry",
+   "deployed": true,
+   "writes": [
+    "EntityType",
+    "Experience",
+    "For",
+    "IDAnchor",
+    "Index",
+    "IndexRecipe",
+    "IsRegistry",
+    "Keys",
+    "LogicType",
+    "Stamina",
+    "Type",
+    "Value",
+    "Values"
+   ]
+  },
+  "_RelationshipRegistry": {
+   "id": "system.relationship.registry",
+   "deployed": true,
+   "writes": [
+    "Blacklist",
+    "EntityType",
+    "IndexNPC",
+    "IndexRelationship",
+    "IsRegistry",
+    "Name",
+    "Whitelist"
+   ]
+  },
+  "_RoomRegistry": {
+   "id": "system.room.registry",
+   "deployed": true,
+   "writes": [
+    "Description",
+    "EntityType",
+    "Exits",
+    "For",
+    "HasFlag",
+    "IDAnchor",
+    "IDFrom",
+    "IDOwnsFlag",
+    "IDTo",
+    "IDType",
+    "IdSource",
+    "Index",
+    "IndexRoom",
+    "Location",
+    "LogicType",
+    "Name",
+    "Type",
+    "Value"
+   ]
+  },
+  "_SacrificeRegistry": {
+   "id": "system.sacrifice.registry",
+   "deployed": true,
+   "writes": [
+    "Keys",
+    "Weights"
+   ]
+  },
+  "_SkillRegistry": {
+   "id": "system.skill.registry",
+   "deployed": true,
+   "writes": [
+    "Cost",
+    "Description",
+    "EntityType",
+    "For",
+    "IDAnchor",
+    "IdSource",
+    "Index",
+    "IndexSkill",
+    "IsRegistry",
+    "Level",
+    "LogicType",
+    "Max",
+    "MediaURI",
+    "Name",
+    "Subtype",
+    "Time",
+    "Type",
+    "Value"
+   ]
+  },
+  "_SnapshotT2": {
+   "id": "system.setup.snapshot.t2",
+   "deployed": true,
+   "writes": [
+    "EntityType",
+    "IDOwnsInventory",
+    "IndexItem",
+    "Value"
+   ]
+  },
+  "_TraitRegistry": {
+   "id": "system.trait.registry",
+   "deployed": true,
+   "writes": [
+    "Affinity",
+    "EntityType",
+    "Harmony",
+    "Health",
+    "IDAnchor",
+    "IndexBackground",
+    "IndexBody",
+    "IndexColor",
+    "IndexFace",
+    "IndexHand",
+    "IsRegistry",
+    "Name",
+    "Power",
+    "Rarity",
+    "Slots",
+    "Violence"
+   ]
+  },
+  "_TriggerCompEvent": {
+   "id": "system.test.comp.event",
+   "deployed": true,
+   "writes": [
+    "TimeStart"
+   ]
+  },
+  "_WorldWhitelist": {
+   "id": "system.world.whitelist.set",
+   "deployed": true,
+   "writes": [
+    "HasFlag"
+   ]
+  }
+ },
+ "entities": {
+  "ACCOUNT": {
+   "entity_type": "ACCOUNT",
+   "layer": "runtime",
+   "id": {},
+   "index": "IndexAccount",
+   "components": [
+    "AddressOperator",
+    "AddressOwner",
+    "CacheOperator",
+    "EntityType",
+    "IndexAccount",
+    "IndexRoom",
+    "Stamina",
+    "TimeLast",
+    "TimeLastAction",
+    "TimeStart",
+    "Value"
+   ],
+   "created_by": [
+    "AccountRegister"
+   ],
+   "created_in": [
+    "LibAccount.create"
+   ],
+   "pointers": {
+    "IndexRoom": {
+     "to": [
+      "ROOM"
+     ],
+     "relation": "registry",
+     "required": true,
+     "cardinality": "many ACCOUNT per ROOM"
+    }
+   },
+   "keyed_by": {},
+   "records": {
+    "faction.reputation": {
+     "id": "faction.reputation(holderID, index)",
+     "keys": {
+      "holderID": "ACCOUNT",
+      "index": "FACTION"
+     },
+     "kind": "record",
+     "fields": [
+      "IDType",
+      "IdHolder",
+      "Value"
+     ],
+     "pointers": {
+      "IDType": {
+       "to": [
+        "FACTION"
+       ],
+       "relation": "classifier",
+       "required": true
+      },
+      "IdHolder": {
+       "to": [
+        "ACCOUNT",
+        "KAMI"
+       ],
+       "relation": "ownership",
+       "required": true,
+       "inferred": true
+      }
+     }
+    },
+    "friendship.ptr": {
+     "id": "friendship.ptr(accID, state)",
+     "keys": {
+      "accID": "ACCOUNT",
+      "state": null
+     },
+     "kind": "anchor key",
+     "fields": [],
+     "pointed_at_by": [
+      "IDAnchor"
+     ]
+    },
+    "goal.contribution": {
+     "id": "goal.contribution(goalID, accID)",
+     "keys": {
+      "goalID": "GOAL",
+      "accID": "ACCOUNT"
+     },
+     "kind": "record",
+     "fields": [
+      "IDType",
+      "IdHolder",
+      "IsComplete",
+      "Value"
+     ],
+     "pointers": {
+      "IDType": {
+       "to": [
+        "GOAL"
+       ],
+       "relation": "classifier",
+       "required": true
+      },
+      "IdHolder": {
+       "to": [
+        "ACCOUNT"
+       ],
+       "relation": "ownership",
+       "required": true,
+       "inferred": true
+      }
+     }
+    },
+    "is.data": {
+     "id": "is.data(holderID, index, type_)",
+     "keys": {
+      "holderID": "ACCOUNT",
+      "index": [
+       "ACCOUNT",
+       "FACTION",
+       "ITEM",
+       "RECIPE"
+      ],
+      "type_": "ITEM"
+     },
+     "kind": "record",
+     "fields": [
+      "Value"
+     ]
+    },
+    "is.score": {
+     "id": "is.score(holderID, epoch, index, type_)",
+     "keys": {
+      "holderID": "ACCOUNT",
+      "epoch": null,
+      "index": "ITEM",
+      "type_": null
+     },
+     "kind": "record",
+     "fields": [
+      "IDType",
+      "IdHolder",
+      "Value"
+     ],
+     "pointers": {
+      "IDType": {
+       "to": [
+        "score.type"
+       ],
+       "relation": "classifier",
+       "required": true
+      },
+      "IdHolder": {
+       "to": [
+        "ACCOUNT"
+       ],
+       "relation": "ownership",
+       "required": true,
+       "inferred": true
+      }
+     }
+    },
+    "sacrifice.pity": {
+     "id": "sacrifice.pity(accID)",
+     "keys": {
+      "accID": "ACCOUNT"
+     },
+     "kind": "record",
+     "fields": [
+      "Value"
+     ]
+    },
+    "scavenge.instance": {
+     "id": "scavenge.instance(field, index, holderID)",
+     "keys": {
+      "field": null,
+      "index": "NODE",
+      "holderID": "ACCOUNT"
+     },
+     "kind": "record",
+     "fields": [
+      "Value"
+     ]
+    },
+    "operator.cache": {
+     "id": "address(addr)",
+     "keys": {
+      "addr": "wallet address"
+     },
+     "kind": "record",
+     "fields": [
+      "CacheOperator"
+     ]
+    }
+   }
+  },
+  "COMMIT": {
+   "entity_type": null,
+   "layer": "runtime",
+   "id": {
+    "instance": "world.getUniqueEntityId() (a counter, no hashed id)"
+   },
+   "index": null,
+   "components": [
+    "BlockReveal",
+    "IdHolder",
+    "Type"
+   ],
+   "created_by": [
+    "AccountUseItem",
+    "GoalClaim",
+    "KamiCastItem",
+    "KamiGachaMint",
+    "KamiGachaReroll",
+    "KamiSacrificeCommit",
+    "KamiUseItem",
+    "QuestComplete",
+    "ScavengeClaim",
+    "SkillRespec"
+   ],
+   "created_in": [
+    "LibCommit.commit"
+   ],
+   "pointers": {
+    "IdHolder": {
+     "to": [
+      "ACCOUNT"
+     ],
+     "relation": "ownership",
+     "required": true,
+     "cardinality": "many COMMIT per ACCOUNT",
+     "inferred": true
+    }
+   },
+   "keyed_by": {},
+   "records": {},
+   "recognize": {
+    "reason": "no EntityType in the contracts",
+    "created_by": [
+     "AccountUseItem",
+     "GoalClaim",
+     "KamiCastItem",
+     "KamiGachaMint",
+     "KamiGachaReroll",
+     "KamiSacrificeCommit",
+     "KamiUseItem",
+     "QuestComplete",
+     "ScavengeClaim",
+     "SkillRespec"
+    ],
+    "signature": [
+     "BlockReveal",
+     "IdHolder",
+     "Type"
+    ],
+    "named_by": "kami-atlas: no EntityType in the contracts; named by generate.py after LibCommit.commit"
+   }
+  },
+  "EQUIPMENT": {
+   "entity_type": "EQUIPMENT",
+   "layer": "runtime",
+   "id": {
+    "instance": "equipment.instance(holderID, slot)"
+   },
+   "index": null,
+   "components": [
+    "EntityType",
+    "For",
+    "IDOwnsEquipment",
+    "IndexItem"
+   ],
+   "created_by": [
+    "KamiEquip"
+   ],
+   "created_in": [
+    "LibEquipment.createInstance"
+   ],
+   "pointers": {
+    "IDOwnsEquipment": {
+     "to": [
+      "KAMI"
+     ],
+     "relation": "ownership",
+     "required": true,
+     "cardinality": "one EQUIPMENT per KAMI per slot",
+     "inferred": true
+    },
+    "IndexItem": {
+     "to": [
+      "ITEM"
+     ],
+     "relation": "registry",
+     "required": true,
+     "cardinality": "many EQUIPMENT per ITEM"
+    }
+   },
+   "keyed_by": {},
+   "records": {}
+  },
+  "FRIENDSHIP": {
+   "entity_type": "FRIENDSHIP",
+   "layer": "runtime",
+   "id": {
+    "instance": "friendship(accID, targetID)"
+   },
+   "index": null,
+   "components": [
+    "EntityType",
+    "IDAnchor",
+    "IdSource",
+    "IdTarget",
+    "State"
+   ],
+   "created_by": [
+    "FriendAccept",
+    "FriendBlock",
+    "FriendRequest"
+   ],
+   "created_in": [
+    "LibFriend.accept",
+    "LibFriend.create"
+   ],
+   "pointers": {
+    "IdSource": {
+     "to": [
+      "ACCOUNT"
+     ],
+     "relation": "directed",
+     "required": true,
+     "cardinality": "one FRIENDSHIP per ACCOUNT per targetID"
+    },
+    "IdTarget": {
+     "to": [
+      "ACCOUNT"
+     ],
+     "relation": "directed",
+     "required": true,
+     "cardinality": "one FRIENDSHIP per ACCOUNT per accID",
+     "from_notes": true
+    }
+   },
+   "keyed_by": {},
+   "records": {}
+  },
+  "HARVEST": {
+   "entity_type": "HARVEST",
+   "layer": "runtime",
+   "id": {
+    "instance": "harvest(kamiID)"
+   },
+   "index": null,
+   "components": [
+    "EntityType",
+    "IdHolder",
+    "IdSource"
+   ],
+   "created_by": [
+    "HarvestStart"
+   ],
+   "created_in": [
+    "LibHarvest.create"
+   ],
+   "pointers": {
+    "IdHolder": {
+     "to": [
+      "KAMI"
+     ],
+     "relation": "ownership",
+     "required": true,
+     "cardinality": "one HARVEST per KAMI"
+    },
+    "IdSource": {
+     "to": [
+      "NODE"
+     ],
+     "relation": "directed",
+     "required": true,
+     "cardinality": "many HARVEST per NODE"
+    }
+   },
+   "keyed_by": {},
+   "records": {}
+  },
+  "INVENTORY": {
+   "entity_type": "INVENTORY",
+   "layer": "runtime",
+   "id": {
+    "instance": "inventory.instance(holderID, itemIndex)"
+   },
+   "index": null,
+   "components": [
+    "EntityType",
+    "IDOwnsInventory",
+    "IndexItem",
+    "Value"
+   ],
+   "created_by": [
+    "AccountUseItem",
+    "AuctionBuy",
+    "Craft",
+    "DroptableReveal",
+    "GachaBuyTicket",
+    "GoalClaim",
+    "HarvestCollect",
+    "HarvestLiquidate",
+    "HarvestStop",
+    "ItemTransfer",
+    "Kami721Unstake",
+    "KamiCastItem",
+    "KamiEquip",
+    "KamiGachaReroll",
+    "KamiMarketAcceptOffer",
+    "KamiMarketBuy",
+    "KamiMarketList",
+    "KamiSacrificeCommit",
+    "KamiSacrificeReveal",
+    "KamiSend",
+    "KamiUnequip",
+    "KamiUseItem",
+    "ListingBuy",
+    "ListingSell",
+    "Pool",
+    "QuestComplete",
+    "ScavengeClaim",
+    "SkillRespec",
+    "TokenPortal",
+    "TradeCancel",
+    "TradeComplete",
+    "TradeCreate",
+    "TradeExecute",
+    "_DistributeItem",
+    "_PoolRegistry",
+    "_SnapshotT2"
+   ],
+   "created_in": [
+    "LibInventory.create",
+    "LibInventory.createFor"
+   ],
+   "pointers": {
+    "IDOwnsInventory": {
+     "to": [
+      "ACCOUNT",
+      "POOL",
+      "TRADE"
+     ],
+     "relation": "ownership",
+     "required": true,
+     "cardinality": "one INVENTORY per ACCOUNT/POOL/TRADE per itemIndex",
+     "inferred": true
+    },
+    "IndexItem": {
+     "to": [
+      "ITEM"
+     ],
+     "relation": "registry",
+     "required": true,
+     "cardinality": "one INVENTORY per ITEM per holderID"
+    }
+   },
+   "keyed_by": {},
+   "records": {}
+  },
+  "KAMI": {
+   "entity_type": "KAMI",
+   "layer": "runtime",
+   "id": {
+    "instance": "kami.id(kamiIndex)"
+   },
+   "index": "IndexKami",
+   "components": [
+    "EntityType",
+    "Experience",
+    "Harmony",
+    "Health",
+    "IDOwnsKami",
+    "IndexKami",
+    "Level",
+    "MediaURI",
+    "Name",
+    "Power",
+    "SkillPoint",
+    "Slots",
+    "State",
+    "Violence"
+   ],
+   "created_by": [
+    "KamiGachaMint"
+   ],
+   "created_in": [
+    "LibKamiCreate.create"
+   ],
+   "pointers": {
+    "IDOwnsKami": {
+     "to": [
+      "ACCOUNT",
+      "GACHA_POOL"
+     ],
+     "relation": "ownership",
+     "required": true,
+     "cardinality": "many KAMI per ACCOUNT/GACHA_POOL",
+     "inferred": true
+    }
+   },
+   "keyed_by": {},
+   "records": {
+    "SOULBOUND": {
+     "id": "SOULBOUND(kamiID)",
+     "keys": {
+      "kamiID": "KAMI"
+     },
+     "kind": "record",
+     "fields": [
+      "Value"
+     ]
+    }
+   }
+  },
+  "KAMI_COLLECTION_OFFER": {
+   "entity_type": "KAMI_COLLECTION_OFFER",
+   "layer": "runtime",
+   "id": {},
+   "index": null,
+   "components": [
+    "Balance",
+    "EntityType",
+    "IDOwnsKamiOrder",
+    "Max",
+    "State",
+    "TimeEnd",
+    "TimeStart",
+    "Value"
+   ],
+   "created_by": [
+    "KamiMarketOffer"
+   ],
+   "created_in": [
+    "LibKamiMarket.createCollectionOffer"
+   ],
+   "pointers": {
+    "IDOwnsKamiOrder": {
+     "to": [
+      "ACCOUNT"
+     ],
+     "relation": "ownership",
+     "required": true,
+     "cardinality": "many KAMI_COLLECTION_OFFER per ACCOUNT"
+    }
+   },
+   "keyed_by": {},
+   "records": {}
+  },
+  "KAMI_LISTING": {
+   "entity_type": "KAMI_LISTING",
+   "layer": "runtime",
+   "id": {},
+   "index": null,
+   "components": [
+    "EntityType",
+    "IDOwnsKamiOrder",
+    "IndexKamiListing",
+    "State",
+    "TimeEnd",
+    "TimeStart",
+    "Value",
+    "Values"
+   ],
+   "created_by": [
+    "KamiMarketList"
+   ],
+   "created_in": [
+    "LibKamiMarket.createListing"
+   ],
+   "pointers": {
+    "IDOwnsKamiOrder": {
+     "to": [
+      "ACCOUNT"
+     ],
+     "relation": "ownership",
+     "required": true,
+     "cardinality": "many KAMI_LISTING per ACCOUNT"
+    },
+    "IndexKamiListing": {
+     "to": [
+      "KAMI"
+     ],
+     "relation": "registry",
+     "required": true,
+     "cardinality": "many KAMI_LISTING per KAMI"
+    }
+   },
+   "keyed_by": {},
+   "records": {}
+  },
+  "KAMI_OFFER": {
+   "entity_type": "KAMI_OFFER",
+   "layer": "runtime",
+   "id": {},
+   "index": null,
+   "components": [
+    "EntityType",
+    "IDOwnsKamiOrder",
+    "IndexKami",
+    "State",
+    "TimeEnd",
+    "TimeStart",
+    "Value"
+   ],
+   "created_by": [
+    "KamiMarketOffer"
+   ],
+   "created_in": [
+    "LibKamiMarket.createOffer"
+   ],
+   "pointers": {
+    "IDOwnsKamiOrder": {
+     "to": [
+      "ACCOUNT"
+     ],
+     "relation": "ownership",
+     "required": true,
+     "cardinality": "many KAMI_OFFER per ACCOUNT"
+    },
+    "IndexKami": {
+     "to": [
+      "KAMI"
+     ],
+     "relation": "registry",
+     "required": true,
+     "cardinality": "many KAMI_OFFER per KAMI"
+    }
+   },
+   "keyed_by": {},
+   "records": {}
+  },
+  "POOL_SHARE": {
+   "entity_type": "POOL_SHARE",
+   "layer": "runtime",
+   "id": {
+    "instance": "amm.pool.share(poolID, holderID)"
+   },
+   "index": null,
+   "components": [
+    "EntityType",
+    "IDType",
+    "IdHolder",
+    "Value"
+   ],
+   "created_by": [
+    "Pool",
+    "_PoolRegistry"
+   ],
+   "created_in": [
+    "LibPool.mintShares"
+   ],
+   "pointers": {
+    "IDType": {
+     "to": [
+      "POOL"
+     ],
+     "relation": "classifier",
+     "required": false,
+     "only_when": [
+      "!has"
+     ],
+     "cardinality": "one POOL_SHARE per POOL per holderID"
+    },
+    "IdHolder": {
+     "to": [
+      "ACCOUNT",
+      "POOL"
+     ],
+     "relation": "ownership",
+     "required": false,
+     "only_when": [
+      "!has"
+     ],
+     "cardinality": "one POOL_SHARE per ACCOUNT/POOL per poolID",
+     "inferred": true
+    }
+   },
+   "keyed_by": {},
+   "records": {}
+  },
+  "TAX": {
+   "entity_type": "TAX",
+   "layer": "runtime",
+   "id": {
+    "instance": "tax.instance(anchorID, taxerID)"
+   },
+   "index": null,
+   "components": [
+    "EntityType",
+    "IDOwnsTax",
+    "IdTarget",
+    "Value"
+   ],
+   "created_by": [
+    "HarvestStart"
+   ],
+   "created_in": [
+    "LibTax.create"
+   ],
+   "pointers": {
+    "IDOwnsTax": {
+     "to": [
+      "HARVEST"
+     ],
+     "relation": "ownership",
+     "required": true,
+     "cardinality": "many TAX per HARVEST",
+     "inferred": true
+    },
+    "IdTarget": {
+     "to": [
+      "any"
+     ],
+     "relation": "directed",
+     "required": true,
+     "cardinality": "many TAX per any",
+     "from_notes": true
+    }
+   },
+   "keyed_by": {},
+   "records": {}
+  },
+  "TOKEN_RECEIPT": {
+   "entity_type": "TOKEN_RECEIPT",
+   "layer": "runtime",
+   "id": {},
+   "index": null,
+   "components": [
+    "EntityType",
+    "IDOwnsWithdrawal",
+    "IndexItem",
+    "Tax",
+    "TimeEnd",
+    "TimeStart",
+    "TokenAddress",
+    "Value"
+   ],
+   "created_by": [
+    "TokenPortal"
+   ],
+   "created_in": [
+    "LibTokenPortal.createReceipt"
+   ],
+   "pointers": {
+    "IDOwnsWithdrawal": {
+     "to": [
+      "ACCOUNT"
+     ],
+     "relation": "ownership",
+     "required": true,
+     "cardinality": "many TOKEN_RECEIPT per ACCOUNT"
+    },
+    "IndexItem": {
+     "to": [
+      "ITEM"
+     ],
+     "relation": "registry",
+     "required": true,
+     "cardinality": "many TOKEN_RECEIPT per ITEM"
+    }
+   },
+   "keyed_by": {},
+   "records": {}
+  },
+  "TRADE": {
+   "entity_type": "TRADE",
+   "layer": "runtime",
+   "id": {},
+   "index": null,
+   "components": [
+    "EntityType",
+    "IDOwnsInventory",
+    "IDOwnsTrade",
+    "IdTarget",
+    "IndexItem",
+    "Keys",
+    "State",
+    "Value",
+    "Values"
+   ],
+   "created_by": [
+    "TradeCreate"
+   ],
+   "created_in": [
+    "LibTrade.create"
+   ],
+   "pointers": {
+    "IDOwnsTrade": {
+     "to": [
+      "ACCOUNT"
+     ],
+     "relation": "ownership",
+     "required": true,
+     "cardinality": "many TRADE per ACCOUNT"
+    },
+    "IdTarget": {
+     "to": [
+      "ACCOUNT"
+     ],
+     "relation": "directed",
+     "required": false,
+     "only_when": [
+      "targetID != 0"
+     ],
+     "cardinality": "many TRADE per ACCOUNT",
+     "from_notes": true
+    }
+   },
+   "keyed_by": {},
+   "records": {
+    "trade.buy": {
+     "id": "trade.buy(tradeID)",
+     "keys": {
+      "tradeID": "TRADE"
+     },
+     "kind": "record",
+     "fields": [
+      "Keys",
+      "Values"
+     ]
+    },
+    "trade.sell": {
+     "id": "trade.sell(tradeID)",
+     "keys": {
+      "tradeID": "TRADE"
+     },
+     "kind": "record",
+     "fields": [
+      "Keys",
+      "Values"
+     ]
+    }
+   }
+  },
+  "QUEST": {
+   "entity_type": "QUEST",
+   "layer": "hybrid",
+   "id": {
+    "registry": "registry.quest(index)",
+    "instance": "quest.instance(index, accID)"
+   },
+   "index": "IndexQuest",
+   "components": [
+    "Description",
+    "DescriptionAlt",
+    "EntityType",
+    "IDAnchor",
+    "IDOwnsQuest",
+    "IndexQuest",
+    "IsDisabled",
+    "IsRegistry",
+    "Name",
+    "Subtype",
+    "TimeStart",
+    "Type",
+    "Value"
+   ],
+   "created_by": [
+    "QuestAccept",
+    "_QuestRegistry"
+   ],
+   "created_in": [
+    "LibQuest.assign",
+    "LibQuestRegistry.createQuest"
+   ],
+   "pointers": {
+    "IDOwnsQuest": {
+     "to": [
+      "ACCOUNT"
+     ],
+     "relation": "ownership",
+     "required": true,
+     "cardinality": "one QUEST per ACCOUNT per index"
+    }
+   },
+   "keyed_by": {},
+   "records": {
+    "quest.objective.snapshot": {
+     "id": "quest.objective.snapshot(questID, logicType, _type, index)",
+     "keys": {
+      "questID": "QUEST",
+      "logicType": null,
+      "_type": null,
+      "index": null
+     },
+     "kind": "record",
+     "fields": [
+      "IDAnchor",
+      "Value"
+     ],
+     "pointers": {
+      "IDAnchor": {
+       "to": [
+        "snapshot.anchor"
+       ],
+       "relation": "attachment",
+       "required": true
+      }
+     }
+    },
+    "registry.quest.objective": {
+     "id": "registry.quest.objective(index)",
+     "keys": {
+      "index": "QUEST"
+     },
+     "kind": "anchor key",
+     "fields": [],
+     "pointed_at_by": [
+      "IDAnchor"
+     ]
+    },
+    "registry.quest.requirement": {
+     "id": "registry.quest.requirement(index)",
+     "keys": {
+      "index": "QUEST"
+     },
+     "kind": "anchor key",
+     "fields": [],
+     "pointed_at_by": [
+      "IDAnchor"
+     ]
+    },
+    "registry.quest.reward": {
+     "id": "registry.quest.reward(index)",
+     "keys": {
+      "index": "QUEST"
+     },
+     "kind": "anchor key",
+     "fields": [],
+     "pointed_at_by": [
+      "IDAnchor"
+     ]
+    },
+    "snapshot.anchor": {
+     "id": "snapshot.anchor(questID)",
+     "keys": {
+      "questID": "QUEST"
+     },
+     "kind": "anchor key",
+     "fields": [],
+     "pointed_at_by": [
+      "IDAnchor"
+     ]
+    }
+   }
+  },
+  "RELATIONSHIP": {
+   "entity_type": "RELATIONSHIP",
+   "layer": "hybrid",
+   "id": {
+    "registry": "registry.relationship(npcIndex, relIndex)",
+    "instance": "relationship(accID, npcIndex, relIndex)"
+   },
+   "index": "IndexRelationship",
+   "components": [
+    "EntityType",
+    "IDOwnsRelationship",
+    "IndexNPC",
+    "IndexRelationship",
+    "IsRegistry"
+   ],
+   "created_by": [
+    "RelationshipAdvance",
+    "_RelationshipRegistry"
+   ],
+   "created_in": [
+    "LibRelationship.create",
+    "LibRelationshipRegistry.create"
+   ],
+   "pointers": {
+    "IDOwnsRelationship": {
+     "to": [
+      "ACCOUNT"
+     ],
+     "relation": "ownership",
+     "required": true,
+     "cardinality": "one RELATIONSHIP per ACCOUNT per npcIndex, relIndex"
+    },
+    "IndexNPC": {
+     "to": [
+      "NPC"
+     ],
+     "relation": "registry",
+     "required": true,
+     "cardinality": "one RELATIONSHIP per NPC per accID, relIndex"
+    }
+   },
+   "keyed_by": {},
+   "records": {}
+  },
+  "SKILL": {
+   "entity_type": "SKILL",
+   "layer": "hybrid",
+   "id": {
+    "registry": "registry.skill(index)",
+    "instance": "skill.instance(holderID, index)"
+   },
+   "index": "IndexSkill",
+   "components": [
+    "Cost",
+    "Description",
+    "EntityType",
+    "For",
+    "IDAnchor",
+    "IDOwnsSkill",
+    "IDType",
+    "IdSource",
+    "IndexSkill",
+    "IsRegistry",
+    "Level",
+    "Max",
+    "MediaURI",
+    "Name",
+    "SkillPoint",
+    "Subtype",
+    "Time",
+    "Type",
+    "Value"
+   ],
+   "created_by": [
+    "SkillUpgrade",
+    "_SkillRegistry"
+   ],
+   "created_in": [
+    "LibSkill.assign",
+    "LibSkill.upgradeFor",
+    "LibSkillRegistry.create"
+   ],
+   "pointers": {
+    "IDOwnsSkill": {
+     "to": [
+      "KAMI",
+      "ACCOUNT"
+     ],
+     "relation": "ownership",
+     "required": true,
+     "cardinality": "many SKILL per KAMI/ACCOUNT",
+     "from_notes": true
+    }
+   },
+   "keyed_by": {},
+   "records": {
+    "registry.skill.bonus": {
+     "id": "registry.skill.bonus(index)",
+     "keys": {
+      "index": "SKILL"
+     },
+     "kind": "anchor key",
+     "fields": [],
+     "pointed_at_by": [
+      "IDAnchor"
+     ]
+    },
+    "registry.skill.requirement": {
+     "id": "registry.skill.requirement(index)",
+     "keys": {
+      "index": "SKILL"
+     },
+     "kind": "anchor key",
+     "fields": [],
+     "pointed_at_by": [
+      "IDAnchor"
+     ]
+    }
+   }
+  },
+  "ALLOCATION": {
+   "entity_type": "ALLOCATION",
+   "layer": "registry",
+   "id": {
+    "registry": "reward.instance(anchorID, type_, index)"
+   },
+   "index": null,
+   "components": [
+    "EntityType",
+    "IDAnchor",
+    "IdSource",
+    "Index",
+    "Type"
+   ],
+   "created_by": [
+    "_GoalRegistry",
+    "_ItemRegistry",
+    "_NodeRegistry",
+    "_QuestRegistry"
+   ],
+   "created_in": [
+    "LibAllo.createBase"
+   ],
+   "pointers": {
+    "IDAnchor": {
+     "to": [
+      "GOAL",
+      "ITEM",
+      "QUEST",
+      "SCAVENGE"
+     ],
+     "relation": "attachment",
+     "required": true,
+     "via": {
+      "anchor_keys": [
+       "goal.reward",
+       "item.allo",
+       "registry.quest.reward",
+       "scavenge.reward"
+      ]
+     },
+     "cardinality": "one ALLOCATION per GOAL/ITEM/QUEST/SCAVENGE per type_, index",
+     "inferred": true
+    },
+    "IdSource": {
+     "to": [
+      "GOAL",
+      "ITEM",
+      "QUEST",
+      "SCAVENGE"
+     ],
+     "relation": "directed",
+     "required": true,
+     "cardinality": "many ALLOCATION per GOAL/ITEM/QUEST/SCAVENGE",
+     "inferred": true
+    }
+   },
+   "keyed_by": {},
+   "records": {}
+  },
+  "AUCTION": {
+   "entity_type": "AUCTION",
+   "layer": "registry",
+   "id": {
+    "registry": "auction(index)"
+   },
+   "index": null,
+   "components": [
+    "Balance",
+    "Decay",
+    "EntityType",
+    "IndexCurrency",
+    "IndexItem",
+    "Max",
+    "Period",
+    "Rate",
+    "TimeStart",
+    "Value"
+   ],
+   "created_by": [
+    "_AuctionRegistry"
+   ],
+   "created_in": [
+    "LibAuctionRegistry.create"
+   ],
+   "pointers": {
+    "IndexCurrency": {
+     "to": [
+      "ITEM"
+     ],
+     "relation": "registry",
+     "required": true,
+     "cardinality": "many AUCTION per ITEM"
+    },
+    "IndexItem": {
+     "to": [
+      "ITEM"
+     ],
+     "relation": "registry",
+     "required": true,
+     "cardinality": "many AUCTION per ITEM"
+    }
+   },
+   "keyed_by": {},
+   "records": {
+    "auction.requirement": {
+     "id": "auction.requirement(auctionID)",
+     "keys": {
+      "auctionID": "AUCTION"
+     },
+     "kind": "anchor key",
+     "fields": [],
+     "pointed_at_by": [
+      "IDAnchor"
+     ]
+    }
+   }
+  },
+  "BONUS": {
+   "entity_type": "BONUS",
+   "layer": "registry",
+   "id": {
+    "registry": "bonus.registry(anchorID, type_)"
+   },
+   "index": null,
+   "components": [
+    "EntityType",
+    "IDAnchor",
+    "IdSource",
+    "IsRegistry",
+    "Subtype",
+    "Time",
+    "Type",
+    "Value"
+   ],
+   "created_by": [
+    "_ItemRegistry",
+    "_NodeRegistry",
+    "_SkillRegistry"
+   ],
+   "created_in": [
+    "LibBonus.regCreate"
+   ],
+   "pointers": {
+    "IDAnchor": {
+     "to": [
+      "ALLOCATION",
+      "NODE",
+      "SKILL"
+     ],
+     "relation": "attachment",
+     "required": true,
+     "via": {
+      "anchor_keys": [
+       "node.bonus",
+       "registry.skill.bonus"
+      ]
+     },
+     "cardinality": "one BONUS per ALLOCATION/NODE/SKILL per type_",
+     "inferred": true
+    },
+    "IdSource": {
+     "to": [
+      "ITEM",
+      "NODE",
+      "SKILL"
+     ],
+     "relation": "directed",
+     "required": true,
+     "cardinality": "many BONUS per ITEM/NODE/SKILL",
+     "inferred": true
+    }
+   },
+   "keyed_by": {},
+   "records": {}
+  },
+  "CONDITION": {
+   "entity_type": null,
+   "layer": "registry",
+   "id": {
+    "instance": "world.getUniqueEntityId() (a counter, no hashed id)"
+   },
+   "index": null,
+   "components": [
+    "For",
+    "IDAnchor",
+    "Index",
+    "LogicType",
+    "Type",
+    "Value"
+   ],
+   "created_by": [
+    "Chat",
+    "_AuctionRegistry",
+    "_GoalRegistry",
+    "_ItemRegistry",
+    "_ListingRegistry",
+    "_NodeRegistry",
+    "_QuestRegistry",
+    "_RecipeRegistry",
+    "_SkillRegistry"
+   ],
+   "created_in": [
+    "LibConditional.createFor"
+   ],
+   "pointers": {
+    "IDAnchor": {
+     "to": [
+      "AUCTION",
+      "GOAL",
+      "ITEM",
+      "LISTING",
+      "NODE",
+      "QUEST",
+      "RECIPE",
+      "SKILL"
+     ],
+     "relation": "attachment",
+     "required": true,
+     "via": {
+      "anchor_keys": [
+       "auction.requirement",
+       "goal.requirement",
+       "item.requirement",
+       "listing.requirement",
+       "node.requirement",
+       "recipe.requirement",
+       "registry.quest.objective",
+       "registry.quest.requirement",
+       "registry.skill.requirement"
+      ]
+     },
+     "cardinality": "many CONDITION per AUCTION/GOAL/ITEM/LISTING/NODE/QUEST/RECIPE/SKILL",
+     "inferred": true
+    }
+   },
+   "keyed_by": {},
+   "records": {},
+   "recognize": {
+    "reason": "no EntityType in the contracts",
+    "created_by": [
+     "Chat",
+     "_AuctionRegistry",
+     "_GoalRegistry",
+     "_ItemRegistry",
+     "_ListingRegistry",
+     "_NodeRegistry",
+     "_QuestRegistry",
+     "_RecipeRegistry",
+     "_SkillRegistry"
+    ],
+    "signature": [
+     "For",
+     "IDAnchor",
+     "Index",
+     "LogicType",
+     "Type",
+     "Value"
+    ],
+    "named_by": "kami-atlas: no EntityType in the contracts; named by generate.py after LibConditional.createFor"
+   }
+  },
+  "FACTION": {
+   "entity_type": "FACTION",
+   "layer": "registry",
+   "id": {
+    "registry": "faction(index)"
+   },
+   "index": "IndexFaction",
+   "components": [
+    "Description",
+    "EntityType",
+    "IndexFaction",
+    "IsRegistry",
+    "MediaURI",
+    "Name"
+   ],
+   "created_by": [
+    "_FactionRegistry"
+   ],
+   "created_in": [
+    "LibFaction.create"
+   ],
+   "pointers": {},
+   "keyed_by": {},
+   "records": {}
+  },
+  "GOAL": {
+   "entity_type": "GOAL",
+   "layer": "registry",
+   "id": {
+    "registry": "goal(index)"
+   },
+   "index": null,
+   "components": [
+    "Description",
+    "EntityType",
+    "For",
+    "Index",
+    "IndexRoom",
+    "IsDisabled",
+    "LogicType",
+    "Name",
+    "Type",
+    "Value"
+   ],
+   "created_by": [
+    "_GoalRegistry"
+   ],
+   "created_in": [
+    "LibGoal.create"
+   ],
+   "pointers": {
+    "IndexRoom": {
+     "to": [
+      "ROOM"
+     ],
+     "relation": "registry",
+     "required": false,
+     "only_when": [
+      "roomIndex != 0"
+     ],
+     "cardinality": "many GOAL per ROOM"
+    }
+   },
+   "keyed_by": {},
+   "records": {
+    "goal.objective": {
+     "id": "goal.objective(goalID)",
+     "keys": {
+      "goalID": "GOAL"
+     },
+     "kind": "record",
+     "fields": [
+      "For",
+      "IDAnchor",
+      "Index",
+      "LogicType",
+      "Type",
+      "Value"
+     ],
+     "shape": "CONDITION"
+    },
+    "goal.requirement": {
+     "id": "goal.requirement(index)",
+     "keys": {
+      "index": "GOAL"
+     },
+     "kind": "anchor key",
+     "fields": [],
+     "pointed_at_by": [
+      "IDAnchor"
+     ]
+    },
+    "goal.reward": {
+     "id": "goal.reward(tierID)",
+     "keys": {
+      "tierID": "GOAL"
+     },
+     "kind": "anchor key",
+     "fields": [],
+     "pointed_at_by": [
+      "IDAnchor"
+     ]
+    },
+    "goal.tier": {
+     "id": "goal.tier(goalIndex)",
+     "keys": {
+      "goalIndex": "GOAL"
+     },
+     "kind": "anchor key",
+     "fields": [],
+     "pointed_at_by": [
+      "IDAnchor"
+     ]
+    }
+   }
+  },
+  "ITEM": {
+   "entity_type": "ITEM",
+   "layer": "registry",
+   "id": {
+    "registry": "registry.item(index)"
+   },
+   "index": "IndexItem",
+   "components": [
+    "Description",
+    "EntityType",
+    "HasFlag",
+    "IDOwnsFlag",
+    "IDType",
+    "IndexItem",
+    "IsRegistry",
+    "MediaURI",
+    "Name",
+    "Rarity",
+    "Type"
+   ],
+   "created_by": [
+    "_ItemRegistry"
+   ],
+   "created_in": [
+    "LibItem.createItem"
+   ],
+   "pointers": {},
+   "keyed_by": {},
+   "records": {
+    "item.allo": {
+     "id": "item.allo(refID)",
+     "keys": {
+      "refID": "REFERENCE"
+     },
+     "kind": "anchor key",
+     "fields": [],
+     "pointed_at_by": [
+      "IDAnchor"
+     ]
+    },
+    "item.requirement": {
+     "id": "item.requirement(refID)",
+     "keys": {
+      "refID": "REFERENCE"
+     },
+     "kind": "anchor key",
+     "fields": [],
+     "pointed_at_by": [
+      "IDAnchor"
+     ]
+    },
+    "item.usecase": {
+     "id": "item.usecase(index)",
+     "keys": {
+      "index": "ITEM"
+     },
+     "kind": "anchor key",
+     "fields": [],
+     "pointed_at_by": [
+      "IDAnchor"
+     ]
+    }
+   }
+  },
+  "LISTING": {
+   "entity_type": "LISTING",
+   "layer": "registry",
+   "id": {
+    "registry": "listing(merchantIndex, itemIndex)"
+   },
+   "index": null,
+   "components": [
+    "Balance",
+    "EntityType",
+    "IndexCurrency",
+    "IndexItem",
+    "IndexNPC",
+    "TimeStart",
+    "Value"
+   ],
+   "created_by": [
+    "_ListingRegistry"
+   ],
+   "created_in": [
+    "LibListingRegistry.create"
+   ],
+   "pointers": {
+    "IndexCurrency": {
+     "to": [
+      "ITEM"
+     ],
+     "relation": "registry",
+     "required": true,
+     "cardinality": "many LISTING per ITEM"
+    },
+    "IndexItem": {
+     "to": [
+      "ITEM"
+     ],
+     "relation": "registry",
+     "required": true,
+     "cardinality": "one LISTING per ITEM per merchantIndex"
+    },
+    "IndexNPC": {
+     "to": [
+      "NPC"
+     ],
+     "relation": "registry",
+     "required": true,
+     "cardinality": "many LISTING per NPC"
+    }
+   },
+   "keyed_by": {},
+   "records": {
+    "listing.buy": {
+     "id": "listing.buy(regID)",
+     "keys": {
+      "regID": "LISTING"
+     },
+     "kind": "record",
+     "fields": [
+      "Decay",
+      "Period",
+      "Rate",
+      "Scale",
+      "Type",
+      "Value"
+     ]
+    },
+    "listing.requirement": {
+     "id": "listing.requirement(regID)",
+     "keys": {
+      "regID": "LISTING"
+     },
+     "kind": "anchor key",
+     "fields": [],
+     "pointed_at_by": [
+      "IDAnchor"
+     ]
+    },
+    "listing.sell": {
+     "id": "listing.sell(regID)",
+     "keys": {
+      "regID": "LISTING"
+     },
+     "kind": "record",
+     "fields": [
+      "Decay",
+      "Period",
+      "Rate",
+      "Scale",
+      "Type",
+      "Value"
+     ]
+    }
+   }
+  },
+  "NODE": {
+   "entity_type": "NODE",
+   "layer": "registry",
+   "id": {
+    "registry": "node(index)"
+   },
+   "index": "IndexNode",
+   "components": [
+    "Affinity",
+    "Description",
+    "EntityType",
+    "IndexItem",
+    "IndexNode",
+    "IndexRoom",
+    "Name",
+    "Type"
+   ],
+   "created_by": [
+    "_NodeRegistry"
+   ],
+   "created_in": [
+    "LibNode.create"
+   ],
+   "pointers": {
+    "IndexItem": {
+     "to": [
+      "ITEM"
+     ],
+     "relation": "registry",
+     "required": true,
+     "cardinality": "many NODE per ITEM"
+    },
+    "IndexRoom": {
+     "to": [
+      "ROOM"
+     ],
+     "relation": "registry",
+     "required": true,
+     "cardinality": "many NODE per ROOM"
+    }
+   },
+   "keyed_by": {},
+   "records": {
+    "node.bonus": {
+     "id": "node.bonus(index)",
+     "keys": {
+      "index": "NODE"
+     },
+     "kind": "anchor key",
+     "fields": [],
+     "pointed_at_by": [
+      "IDAnchor"
+     ]
+    },
+    "node.requirement": {
+     "id": "node.requirement(index)",
+     "keys": {
+      "index": "NODE"
+     },
+     "kind": "anchor key",
+     "fields": [],
+     "pointed_at_by": [
+      "IDAnchor"
+     ]
+    }
+   }
+  },
+  "NPC": {
+   "entity_type": "NPC",
+   "layer": "registry",
+   "id": {
+    "registry": "NPC(index)"
+   },
+   "index": "IndexNPC",
+   "components": [
+    "EntityType",
+    "IndexNPC",
+    "IndexRoom",
+    "Name"
+   ],
+   "created_by": [
+    "_NPCRegistry"
+   ],
+   "created_in": [
+    "LibNPC.create"
+   ],
+   "pointers": {
+    "IndexRoom": {
+     "to": [
+      "ROOM"
+     ],
+     "relation": "registry",
+     "required": true,
+     "cardinality": "many NPC per ROOM"
+    }
+   },
+   "keyed_by": {},
+   "records": {}
+  },
+  "POOL": {
+   "entity_type": "POOL",
+   "layer": "registry",
+   "id": {
+    "registry": "amm.pool(lo, hi)"
+   },
+   "index": null,
+   "components": [
+    "EntityType",
+    "Keys",
+    "Rate",
+    "TimeStart"
+   ],
+   "created_by": [
+    "_PoolRegistry"
+   ],
+   "created_in": [
+    "LibPoolRegistry.create"
+   ],
+   "pointers": {},
+   "keyed_by": {
+    "key:lo,hi": {
+     "to": [
+      "ITEM"
+     ],
+     "relation": "keyed",
+     "required": true,
+     "key": [
+      "lo",
+      "hi"
+     ],
+     "cardinality": "one POOL per pair of ITEMs (lo, hi)",
+     "inferred": true
+    }
+   },
+   "records": {}
+  },
+  "RECIPE": {
+   "entity_type": "RECIPE",
+   "layer": "registry",
+   "id": {
+    "registry": "registry.recipe(recipeIndex)"
+   },
+   "index": "IndexRecipe",
+   "components": [
+    "EntityType",
+    "Experience",
+    "IndexRecipe",
+    "IsRegistry",
+    "Keys",
+    "Stamina",
+    "Type",
+    "Values"
+   ],
+   "created_by": [
+    "_RecipeRegistry"
+   ],
+   "created_in": [
+    "LibRecipe.create"
+   ],
+   "pointers": {},
+   "keyed_by": {},
+   "records": {
+    "recipe.input": {
+     "id": "recipe.input(recipeIndex)",
+     "keys": {
+      "recipeIndex": "RECIPE"
+     },
+     "kind": "record",
+     "fields": [
+      "Keys",
+      "Values"
+     ]
+    },
+    "recipe.output": {
+     "id": "recipe.output(recipeIndex)",
+     "keys": {
+      "recipeIndex": "RECIPE"
+     },
+     "kind": "record",
+     "fields": [
+      "Keys",
+      "Values"
+     ]
+    },
+    "recipe.requirement": {
+     "id": "recipe.requirement(recipeIndex)",
+     "keys": {
+      "recipeIndex": "RECIPE"
+     },
+     "kind": "anchor key",
+     "fields": [],
+     "pointed_at_by": [
+      "IDAnchor"
+     ]
+    }
+   }
+  },
+  "REFERENCE": {
+   "entity_type": "REFERENCE",
+   "layer": "registry",
+   "id": {
+    "registry": "reference.instance(field, anchorID)"
+   },
+   "index": null,
+   "components": [
+    "EntityType",
+    "IDAnchor"
+   ],
+   "created_by": [
+    "_GoalRegistry",
+    "_ItemRegistry"
+   ],
+   "created_in": [
+    "LibReference._create"
+   ],
+   "pointers": {
+    "IDAnchor": {
+     "to": [
+      "GOAL",
+      "ITEM"
+     ],
+     "relation": "attachment",
+     "required": true,
+     "via": {
+      "anchor_keys": [
+       "goal.tier",
+       "item.usecase"
+      ]
+     },
+     "cardinality": "one REFERENCE per GOAL/ITEM per field",
+     "inferred": true
+    }
+   },
+   "keyed_by": {},
+   "records": {}
+  },
+  "ROOM": {
+   "entity_type": "ROOM",
+   "layer": "registry",
+   "id": {
+    "registry": "room(roomIndex)"
+   },
+   "index": "IndexRoom",
+   "components": [
+    "Description",
+    "EntityType",
+    "IndexRoom",
+    "Location",
+    "Name"
+   ],
+   "created_by": [
+    "_RoomRegistry"
+   ],
+   "created_in": [
+    "LibRoom.create"
+   ],
+   "pointers": {},
+   "keyed_by": {},
+   "records": {}
+  },
+  "ROOM_GATE": {
+   "entity_type": null,
+   "layer": "registry",
+   "id": {
+    "instance": "world.getUniqueEntityId() (a counter, no hashed id)"
+   },
+   "index": null,
+   "components": [
+    "For",
+    "IDFrom",
+    "IDTo",
+    "IdSource",
+    "Index",
+    "LogicType",
+    "Type",
+    "Value"
+   ],
+   "created_by": [
+    "_RoomRegistry"
+   ],
+   "created_in": [
+    "LibRoom.createGate"
+   ],
+   "pointers": {
+    "IDFrom": {
+     "to": [
+      "ROOM"
+     ],
+     "relation": "directed",
+     "required": false,
+     "via": {
+      "anchor_keys": [
+       "room.gate.from"
+      ]
+     },
+     "only_when": [
+      "not (sourceIndex != 0)",
+      "sourceIndex != 0"
+     ],
+     "cardinality": "many ROOM_GATE per ROOM",
+     "inferred": true
+    },
+    "IDTo": {
+     "to": [
+      "ROOM"
+     ],
+     "relation": "directed",
+     "required": true,
+     "via": {
+      "anchor_keys": [
+       "room.gate.to"
+      ]
+     },
+     "cardinality": "many ROOM_GATE per ROOM"
+    },
+    "IdSource": {
+     "to": [
+      "ROOM"
+     ],
+     "relation": "directed",
+     "required": false,
+     "only_when": [
+      "sourceIndex != 0"
+     ],
+     "cardinality": "many ROOM_GATE per ROOM",
+     "from_notes": true
+    }
+   },
+   "keyed_by": {},
+   "records": {},
+   "extends": "CONDITION",
+   "recognize": {
+    "reason": "no EntityType in the contracts",
+    "created_by": [
+     "_RoomRegistry"
+    ],
+    "signature": [
+     "For",
+     "IDFrom",
+     "IDTo",
+     "IdSource",
+     "Index",
+     "LogicType",
+     "Type",
+     "Value"
+    ],
+    "named_by": "kami-atlas: no EntityType in the contracts; named by generate.py after LibRoom.createGate"
+   }
+  },
+  "SCAVENGE": {
+   "entity_type": "SCAVENGE",
+   "layer": "registry",
+   "id": {
+    "registry": "registry.scavenge(field, index)"
+   },
+   "index": null,
+   "components": [
+    "Affinity",
+    "EntityType",
+    "Index",
+    "IsRegistry",
+    "Type",
+    "Value"
+   ],
+   "created_by": [
+    "_NodeRegistry"
+   ],
+   "created_in": [
+    "LibScavenge.create"
+   ],
+   "pointers": {},
+   "keyed_by": {
+    "key:index": {
+     "to": [
+      "NODE"
+     ],
+     "relation": "keyed",
+     "required": true,
+     "key": "index",
+     "cardinality": "one SCAVENGE per NODE per field",
+     "inferred": true
+    }
+   },
+   "records": {
+    "scavenge.reward": {
+     "id": "scavenge.reward(regID)",
+     "keys": {
+      "regID": "SCAVENGE"
+     },
+     "kind": "anchor key",
+     "fields": [],
+     "pointed_at_by": [
+      "IDAnchor"
+     ]
+    }
+   }
+  },
+  "TRAIT": {
+   "entity_type": "TRAIT",
+   "layer": "registry",
+   "id": {
+    "registry": "registry.trait(_type, index)"
+   },
+   "index": null,
+   "components": [
+    "Affinity",
+    "EntityType",
+    "Harmony",
+    "Health",
+    "IDAnchor",
+    "IsRegistry",
+    "Name",
+    "Power",
+    "Rarity",
+    "Slots",
+    "Violence"
+   ],
+   "created_by": [
+    "_TraitRegistry"
+   ],
+   "created_in": [
+    "LibTraitRegistry.create"
+   ],
+   "pointers": {},
+   "keyed_by": {},
+   "records": {
+    "registry.trait.type": {
+     "id": "registry.trait.type(_type)",
+     "keys": {
+      "_type": "TRAIT"
+     },
+     "kind": "anchor key",
+     "fields": [],
+     "pointed_at_by": [
+      "IDAnchor"
+     ]
+    }
+   }
+  }
+ },
+ "shared_records": {
+  "bonus.ending.type": {
+   "id": "bonus.ending.type(type_, holderID)",
+   "keys": {
+    "type_": null,
+    "holderID": [
+     "ACCOUNT",
+     "KAMI"
+    ]
+   },
+   "kind": "anchor key",
+   "fields": [],
+   "held_by": [
+    "ACCOUNT",
+    "KAMI"
+   ],
+   "pointed_at_by": [
+    "IDAnchor"
+   ]
+  },
+  "bonus.instance": {
+   "id": "bonus.instance(regID, holderID, duration)",
+   "keys": {
+    "regID": "BONUS",
+    "holderID": [
+     "ACCOUNT",
+     "KAMI"
+    ],
+    "duration": null
+   },
+   "kind": "record",
+   "fields": [
+    "IDAnchor",
+    "IDType",
+    "IdSource",
+    "Time"
+   ],
+   "pointers": {
+    "IDAnchor": {
+     "to": [
+      "bonus.ending.type"
+     ],
+     "relation": "attachment",
+     "required": true
+    },
+    "IDType": {
+     "to": [
+      "bonus.type"
+     ],
+     "relation": "classifier",
+     "required": true
+    },
+    "IdSource": {
+     "to": [
+      "BONUS"
+     ],
+     "relation": "directed",
+     "required": true,
+     "inferred": true
+    }
+   },
+   "held_by": [
+    "ACCOUNT",
+    "KAMI"
+   ]
+  },
+  "bonus.type": {
+   "id": "bonus.type(type_, holderID)",
+   "keys": {
+    "type_": null,
+    "holderID": [
+     "ACCOUNT",
+     "KAMI"
+    ]
+   },
+   "kind": "anchor key",
+   "fields": [],
+   "held_by": [
+    "ACCOUNT",
+    "KAMI"
+   ],
+   "pointed_at_by": [
+    "IDType"
+   ]
+  },
+  "droptable.item.log": {
+   "id": "droptable.item.log(holderID, dtID)",
+   "keys": {
+    "holderID": null,
+    "dtID": null
+   },
+   "kind": "record",
+   "fields": [
+    "Time",
+    "Values"
+   ],
+   "held_by": [
+    "ACCOUNT"
+   ]
+  },
+  "flag.type": {
+   "id": "flag.type(parentType, flagType)",
+   "keys": {
+    "parentType": null,
+    "flagType": null
+   },
+   "kind": "anchor key",
+   "fields": [],
+   "pointed_at_by": [
+    "IDType"
+   ]
+  },
+  "has.flag": {
+   "id": "has.flag(id, flagType)",
+   "keys": {
+    "id": [
+     "ACCOUNT",
+     "ITEM",
+     "QUEST",
+     "ROOM"
+    ],
+    "flagType": null
+   },
+   "kind": "record",
+   "fields": [
+    "HasFlag",
+    "IDOwnsFlag",
+    "IDType",
+    "Type"
+   ],
+   "pointers": {
+    "IDOwnsFlag": {
+     "to": [
+      "ITEM",
+      "ROOM"
+     ],
+     "relation": "ownership",
+     "required": true,
+     "inferred": true
+    },
+    "IDType": {
+     "to": [
+      "flag.type"
+     ],
+     "relation": "classifier",
+     "required": true
+    }
+   },
+   "held_by": [
+    "ACCOUNT",
+    "KAMI",
+    "ITEM",
+    "QUEST",
+    "ROOM"
+   ]
+  },
+  "is.config": {
+   "id": "is.config(name)",
+   "keys": {
+    "name": null
+   },
+   "kind": "record",
+   "fields": [
+    "Value"
+   ]
+  },
+  "room.gate.from": {
+   "id": "room.gate.from(index)",
+   "keys": {
+    "index": null
+   },
+   "kind": "anchor key",
+   "fields": [],
+   "pointed_at_by": [
+    "IDFrom"
+   ]
+  },
+  "room.gate.to": {
+   "id": "room.gate.to(index)",
+   "keys": {
+    "index": "ROOM"
+   },
+   "kind": "anchor key",
+   "fields": [],
+   "pointed_at_by": [
+    "IDTo"
+   ]
+  },
+  "sacrifice.log": {
+   "id": "sacrifice.log(holderID, dtID)",
+   "keys": {
+    "holderID": null,
+    "dtID": null
+   },
+   "kind": "record",
+   "fields": [
+    "Time",
+    "Values"
+   ],
+   "held_by": [
+    "ACCOUNT"
+   ]
+  },
+  "score.total": {
+   "id": "score.total(typeID)",
+   "keys": {
+    "typeID": [
+     "FACTION",
+     "GOAL"
+    ]
+   },
+   "kind": "record",
+   "fields": [
+    "Value"
+   ]
+  },
+  "score.type": {
+   "id": "score.type(epoch, index, scoreType)",
+   "keys": {
+    "epoch": null,
+    "index": "ITEM",
+    "scoreType": null
+   },
+   "kind": "anchor key",
+   "fields": [],
+   "pointed_at_by": [
+    "IDType"
+   ]
+  }
+ },
+ "singletons": {
+  "GACHA_POOL": {
+   "id": "keccak256(\"gacha.id\")",
+   "constant": "GACHA_ID",
+   "defined_in": "src/libraries/LibGacha.sol",
+   "used_in": [
+    "LibGacha",
+    "LibKamiCreate",
+    "_721BatchMinterSystem"
+   ]
+  },
+  "KAMI_MARKET_LISTING_INDEX": {
+   "id": "keccak256(\"kami.market.listing.index\")",
+   "constant": "ACTIVE_LISTING_INDEX_ENTITY",
+   "defined_in": "src/libraries/LibKamiMarketIndex.sol",
+   "used_in": [
+    "LibKamiMarket",
+    "LibKamiMarketIndex"
+   ]
+  },
+  "DROPTABLE_SACRIFICE_NORMAL": {
+   "id": "keccak256(\"droptable.sacrifice.normal\")",
+   "constant": "SACRIFICE_DT_NORMAL",
+   "defined_in": "src/libraries/LibSacrifice.sol",
+   "used_in": [
+    "LibSacrifice",
+    "_SacrificeRegistrySystem"
+   ]
+  },
+  "DROPTABLE_SACRIFICE_UNCOMMON": {
+   "id": "keccak256(\"droptable.sacrifice.uncommon\")",
+   "constant": "SACRIFICE_DT_UNCOMMON_PITY",
+   "defined_in": "src/libraries/LibSacrifice.sol",
+   "used_in": [
+    "LibSacrifice",
+    "_SacrificeRegistrySystem"
+   ]
+  },
+  "DROPTABLE_SACRIFICE_RARE": {
+   "id": "keccak256(\"droptable.sacrifice.rare\")",
+   "constant": "SACRIFICE_DT_RARE_PITY",
+   "defined_in": "src/libraries/LibSacrifice.sol",
+   "used_in": [
+    "LibSacrifice",
+    "_SacrificeRegistrySystem"
+   ]
+  },
+  "NEWBIE_VENDOR_TWAP": {
+   "id": "keccak256(\"newbie.vendor.twap\")",
+   "constant": "TWAP_ENTITY",
+   "defined_in": "src/systems/_NewbieVendorRegistrySystem.sol",
+   "used_in": [
+    "LibTWAP",
+    "_NewbieVendorRegistrySystem"
+   ]
+  },
+  "NEWBIE_VENDOR": {
+   "id": "keccak256(\"newbie.vendor\")",
+   "constant": "VENDOR_ENTITY",
+   "defined_in": "src/systems/_NewbieVendorRegistrySystem.sol",
+   "used_in": [
+    "NewbieVendorBuySystem",
+    "_NewbieVendorRegistrySystem"
+   ]
+  }
+ },
+ "id_namespaces": {
+  "NPC": {
+   "entity": "NPC"
+  },
+  "SOULBOUND": {
+   "entity": null
+  },
+  "amm.pool": {
+   "entity": "POOL"
+  },
+  "amm.pool.share": {
+   "entity": "POOL_SHARE"
+  },
+  "auction": {
+   "entity": "AUCTION"
+  },
+  "auction.requirement": {
+   "entity": null
+  },
+  "bonus.ending.type": {
+   "entity": null
+  },
+  "bonus.instance": {
+   "entity": null
+  },
+  "bonus.registry": {
+   "entity": "BONUS"
+  },
+  "bonus.type": {
+   "entity": null
+  },
+  "droptable.item.log": {
+   "entity": null
+  },
+  "equipment.instance": {
+   "entity": "EQUIPMENT"
+  },
+  "faction": {
+   "entity": "FACTION"
+  },
+  "faction.reputation": {
+   "entity": null
+  },
+  "flag.type": {
+   "entity": null
+  },
+  "friendship": {
+   "entity": "FRIENDSHIP"
+  },
+  "friendship.ptr": {
+   "entity": null
+  },
+  "goal": {
+   "entity": "GOAL"
+  },
+  "goal.contribution": {
+   "entity": null
+  },
+  "goal.objective": {
+   "entity": null
+  },
+  "goal.requirement": {
+   "entity": null
+  },
+  "goal.reward": {
+   "entity": null
+  },
+  "goal.tier": {
+   "entity": null
+  },
+  "harvest": {
+   "entity": "HARVEST"
+  },
+  "has.flag": {
+   "entity": null
+  },
+  "inventory.instance": {
+   "entity": "INVENTORY"
+  },
+  "is.config": {
+   "entity": null
+  },
+  "is.data": {
+   "entity": null
+  },
+  "is.score": {
+   "entity": null
+  },
+  "item.allo": {
+   "entity": null
+  },
+  "item.requirement": {
+   "entity": null
+  },
+  "item.usecase": {
+   "entity": null
+  },
+  "kami.id": {
+   "entity": "KAMI"
+  },
+  "listing": {
+   "entity": "LISTING"
+  },
+  "listing.buy": {
+   "entity": null
+  },
+  "listing.requirement": {
+   "entity": null
+  },
+  "listing.sell": {
+   "entity": null
+  },
+  "node": {
+   "entity": "NODE"
+  },
+  "node.bonus": {
+   "entity": null
+  },
+  "node.requirement": {
+   "entity": null
+  },
+  "quest.instance": {
+   "entity": "QUEST"
+  },
+  "quest.objective.snapshot": {
+   "entity": null
+  },
+  "recipe.input": {
+   "entity": null
+  },
+  "recipe.output": {
+   "entity": null
+  },
+  "recipe.requirement": {
+   "entity": null
+  },
+  "reference.instance": {
+   "entity": "REFERENCE"
+  },
+  "registry.item": {
+   "entity": "ITEM"
+  },
+  "registry.quest": {
+   "entity": "QUEST"
+  },
+  "registry.quest.objective": {
+   "entity": null
+  },
+  "registry.quest.requirement": {
+   "entity": null
+  },
+  "registry.quest.reward": {
+   "entity": null
+  },
+  "registry.recipe": {
+   "entity": "RECIPE"
+  },
+  "registry.relationship": {
+   "entity": "RELATIONSHIP"
+  },
+  "registry.scavenge": {
+   "entity": "SCAVENGE"
+  },
+  "registry.skill": {
+   "entity": "SKILL"
+  },
+  "registry.skill.bonus": {
+   "entity": null
+  },
+  "registry.skill.requirement": {
+   "entity": null
+  },
+  "registry.trait": {
+   "entity": "TRAIT"
+  },
+  "registry.trait.type": {
+   "entity": null
+  },
+  "relationship": {
+   "entity": "RELATIONSHIP"
+  },
+  "reward.instance": {
+   "entity": "ALLOCATION"
+  },
+  "room": {
+   "entity": "ROOM"
+  },
+  "room.gate.from": {
+   "entity": null
+  },
+  "room.gate.to": {
+   "entity": null
+  },
+  "sacrifice.log": {
+   "entity": null
+  },
+  "sacrifice.pity": {
+   "entity": null
+  },
+  "scavenge.instance": {
+   "entity": null
+  },
+  "scavenge.reward": {
+   "entity": null
+  },
+  "score.total": {
+   "entity": null
+  },
+  "score.type": {
+   "entity": null
+  },
+  "skill.instance": {
+   "entity": "SKILL"
+  },
+  "snapshot.anchor": {
+   "entity": null
+  },
+  "tax.instance": {
+   "entity": "TAX"
+  },
+  "trade.buy": {
+   "entity": null
+  },
+  "trade.sell": {
+   "entity": null
+  }
+ },
+ "left_out": {
+  "KILL_BOUNTY_LOG": "untyped shape made in LibKill._logBounty; no deployed system reaches it; deprecated, to be deleted from the contracts (Acheron, 2026-10-16)"
+ }
+}

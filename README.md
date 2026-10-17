@@ -12,6 +12,7 @@ generated/                   rebuilt from the code on every run; never edit
   components.yaml            id, type, which systems write and read it
   entities.yaml              entity types: where created, components set at creation; hashed id namespaces
   domain-model.yaml / .json  31 typed entities: layer, ids, formal relationships, owners, sub-entities
+  recognition.json           the same facts arranged for an indexer: ids, classification rules, columns (see Recognition spec)
 notes/                       written by people; the generator never touches it
   systems/<Name>.yaml        summary, caller, preconditions, effects, invariants, open questions
   components.yaml            meaning, units, invariants, keyed by component name
@@ -121,6 +122,17 @@ The contracts are compiled with `--ast`, and calls are resolved by the compiler,
 - `Stat[by name]` / `Component[by id]` mark the two places where the component is only known at run time (EchoKamis, Kami721Metadata).
 - `writes_without_access` comes from `LibSetter.update`, which picks what to write from registry data at run time. Whether those paths can fire depends on how items and skills are configured, not on the code.
 - ECS framework internals (`src/solecs/`) and interfaces are not in the function table; calls to them are shown by name only.
+
+## Recognition spec
+
+`generated/recognition.json` is the model rearranged for a consumer that sees ECS events and has to decide what they mean, written for Kamigaze's domain-aware tables. It is a pure function of the contracts like everything else in `generated/`. Sections:
+
+- `components` and `systems`, keyed by name, each with its on-chain id string (`component.index.kami`, `system.harvest.start`), so an indexer can map the ids in its own tables to names, and each component's value type.
+- `entities`: for each entity type, the EntityType value that arrives at creation (`null` for the three untyped shapes), the components written at creation (the column list), the id formula and index component, the creating systems and library functions, `pointers` (component → target types, relation, required, how it was resolved), `keyed_by` (targets named by the id's own keys, like a pool's two items), and `records` (the sub-entities keyed under it, with their fields and pointers). Untyped shapes carry a `recognize` block: no EntityType ever arrives, so they are classified by the creating system and the set of components written together.
+- `shared_records`: records held by more than one entity type (flags, logs), with `held_by`.
+- `singletons`, `id_namespaces` (which entity type each hashed namespace belongs to), and `left_out`.
+
+How a consumer would use it, per transaction: the system id names the system; an EntityType write classifies the entity; a write of a known entity's component lands in that type's column; a write set matching an untyped shape's `signature` from one of its `created_by` systems creates that shape; a record is recognised by its namespace and keys. The spec says what the code does; it does not say what the chain has done, so an indexer still has to handle entities created before it started reading (bootstrap from current state).
 
 ## Reproducibility
 

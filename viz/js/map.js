@@ -62,14 +62,15 @@ export function install(A) {
       return r;
     };
     const role = st.system ? rolesOf(st.system) : {};
-    const applySystem = () => {
+    // fade what a system doesn't touch and label what it does: creates / changes / reads above each node
+    const showRoles = r => {
       node.selectAll('.badge').remove();
-      if (!st.system) return;
-      node.classed('faded', d => !role[d.id]);
-      edge.classed('faded', d => !(role[d.source.id] && role[d.target.id]));
-      node.filter(d => role[d.id]).append('text').attr('class', 'badge').attr('text-anchor', 'middle')
-        .attr('dy', d => -radius(d.id) - 6).style('fill', d => role[d.id] === 'reads' ? 'var(--muted)' : 'var(--ink)').text(d => role[d.id]);
+      node.classed('faded', d => !r[d.id]);
+      edge.classed('faded', d => !(r[d.source.id] && r[d.target.id]));
+      node.filter(d => r[d.id]).append('text').attr('class', 'badge').attr('text-anchor', 'middle')
+        .attr('dy', d => -radius(d.id) - 6).style('fill', d => r[d.id] === 'reads' ? 'var(--muted)' : 'var(--ink)').text(d => r[d.id]);
     };
+    const applySystem = () => { if (st.system) showRoles(role); else node.selectAll('.badge').remove(); };
     const near = id => { const s = new Set([id]); links.forEach(l => { if (l.source.id === id) s.add(l.target.id); if (l.target.id === id) s.add(l.source.id); }); return s; };
     const highlight = id => {
       if (!id) { node.classed('faded', false); edge.classed('faded', false); applySystem(); return; }
@@ -238,8 +239,7 @@ export function install(A) {
       // hovering a system in the list: light up what it creates, changes or reads
       system(name) {
         if (!name) { highlight(focusId); return; }
-        const r = rolesOf(name);
-        node.classed('faded', d => !r[d.id]); edge.classed('faded', d => !(r[d.source.id] && r[d.target.id]));
+        showRoles(rolesOf(name));
       },
     };
     const frame = () => {

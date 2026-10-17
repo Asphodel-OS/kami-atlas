@@ -77,7 +77,7 @@ The generator finds five kinds of thing that hold components, and only the first
 | **record** (22) | a hashed-id namespace (`keccak256("ns", keys...)`) that components are stored at | the namespace string |
 | **anchor key** (26) | a hashed-id namespace nothing is stored at; records point at it (IDAnchor, IDTo, IDFrom) | the namespace string |
 
-An untyped shape reachable from no deployed system is dead code and is left out; `source.left_out` in `domain-model.{json,yaml}` lists what was dropped and why (currently `KILL_BOUNTY_LOG`, from `LibKill._logBounty`). The split between record and anchor key comes from the AST pass in `classify_namespaces`, not from anything the contracts declare, so treat it as the generator's reading. The open question of whether the three untyped shapes should get an EntityType is in `notes/domain-model.yaml`.
+An untyped shape reachable from no deployed system is dead code and is left out; `source.left_out` in `domain-model.{json,yaml}` lists what was dropped and why (currently `KILL_BOUNTY_LOG`, from `LibKill._logBounty`). The split between record and anchor key comes from the AST pass in `classify_namespaces`, not from anything the contracts declare, so treat it as the generator's reading. Whether the three untyped shapes should get an EntityType was settled with Acheron on 2026-10-16 (left as is; see `answered` in `notes/domain-model.yaml`).
 
 ### How the atlas draws a reference
 
@@ -89,7 +89,7 @@ The generator finds record references by following pointer fields (`IDType`, `Id
 
 ### What the contracts do two ways
 
-`notes/domain-model.yaml` keeps three lists beside the descriptions: `inconsistencies`, places where the contracts model the same kind of thing differently (typed and untyped shapes, two id-namespace conventions, `ID` against `Id` pointer names, requirements keyed by index for most registries but by use-case reference for items); `answered`, questions settled with the team, dated, so the reasoning survives; and `open_questions`. Nothing in the first list needs changing, but the atlas and the indexer have to know about each one.
+`notes/domain-model.yaml` keeps three lists beside the descriptions: `inconsistencies`, places where the contracts model the same kind of thing differently (typed and untyped shapes, two id-namespace conventions, `ID` against `Id` pointer names, requirements keyed by index for most registries but by use-case reference for items); `answered`, questions settled with the team, dated, so the reasoning survives; and `open_questions`, empty as of 2026-10-17. Nothing in the first list needs changing, but the atlas and the indexer have to know about each one.
 
 Two things the generator notices about systems: a system whose every entry point reverts before doing anything is marked `disabled` with the message (KamiOnyxRespec, KamiOnyxRename), and shown as such in the atlas; and a system that can reach a component write it is not granted in `deploy.json` gets `writes_without_access` with, for each component, the shortest call path from the entry point (`writes_without_access_paths`). The atlas lists these under the system. Reachability is over-approximate: a write behind a branch the data never takes is listed too, so the path is there to judge it.
 

@@ -2885,7 +2885,11 @@
    "fields": [
     "Time",
     "Values"
-   ]
+   ],
+   "held_by": [
+    "ACCOUNT"
+   ],
+   "held_by_from_notes": true
   },
   "flag.type": {
    "id": "flag.type(parentType, flagType)",
@@ -3044,7 +3048,11 @@
    "fields": [
     "Time",
     "Values"
-   ]
+   ],
+   "held_by": [
+    "ACCOUNT"
+   ],
+   "held_by_from_notes": true
   },
   "score.total": {
    "id": "score.total(typeID)",

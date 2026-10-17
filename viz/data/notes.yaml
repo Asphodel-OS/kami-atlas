@@ -16,7 +16,7 @@ entities:
     confirmed: ["Owner is GACHA_POOL (GACHA_ID) while the kami sits in the gacha pool, then an ACCOUNT. (Acheron)", "Kamis hold no inventory but can have equipment. (Acheron)"]
   HARVEST: {what: "A kami working a node: accrued bounty (Value) and timing. Exactly one per kami, reused across nodes."}
   TAX: {what: "A cut of a harvest paid to a third party, at most 20%.", confirmed: ["For third-party front-ends and guilds or groups. (Acheron)"]}
-  EQUIPMENT: {what: "An item equipped on a kami in a slot; one per kami per slot.", confirmed: ["Kamis can have equipment assigned. (Acheron)"]}
+  EQUIPMENT: {what: "An item equipped on a kami in a slot; one per kami per slot.", confirmed: ["Kamis can have equipment assigned. (Acheron)", "Equipment is for kamis only right now; the account branch in the code comment is unused. (Acheron, 2026-10-17)"]}
   INVENTORY: {what: "How many of one item a holder has: an account, a pool's reserves, or a trade's escrow."}
   TRADE: {what: "A player-to-player item trade; offered items sit in an inventory held by the trade."}
   KAMI_LISTING: {what: "A kami listed for sale."}
@@ -67,8 +67,8 @@ sub_entities:   # descriptions; the parent comes from the generated model unless
   goal.contribution: {what: "what an account has put into a goal"}
   friendship.ptr: {what: "per-account counters by friendship state"}
   sacrifice.pity: {what: "pity counter for kami sacrifice rolls"}
-  sacrifice.log: {what: "latest sacrifice result per droptable"}
-  droptable.item.log: {what: "latest droptable result per holder"}
+  sacrifice.log: {what: "latest sacrifice result per account per droptable; overwritten on each reveal so the client can show the last roll", held_by: "ACCOUNT"}
+  droptable.item.log: {what: "latest droptable result per account per droptable; overwritten on each reveal so the client can show the last roll", held_by: "ACCOUNT"}
   scavenge.instance: {what: "a holder's scavenge points on a node"}
   bonus.instance: {what: "an active bonus on a holder (account or kami)"}
   bonus.type: {what: "a holder's running total for one bonus type"}
@@ -115,10 +115,7 @@ sub_entities:   # descriptions; the parent comes from the generated model unless
   goal.tier: {what: "a goal's reward tiers"}
   goal.reward: {what: "the rewards of one tier"}
 
-open_questions:
-  - "EQUIPMENT: the code comment says the holder can be a kami or an account, but every caller the generator traced passes a kami. Is account equipment planned?"
-  - "sacrifice.log and droptable.item.log: the generator could not trace the holder. Account, kami, or both?"
-  - "AccountUseItem is not granted Experience, HasFlag, State, TimeNext or the bonus-instance fields, but LibSetter and LibAllo.giveBonus can write them for XP, FLAG_*, STATE, COOLDOWN and BONUS use-case allocations. Does any item have one of those, or are the grants the intended limit?"
+open_questions: []
 
 answered:   # questions settled with Acheron, with the date, so the reasoning survives
   - "2026-10-16 CONDITION, ROOM_GATE, COMMIT untyped: left as is for now. They are sub-structures or temporary records that don't want a label; the cost is that translating ECS events into the domain model is harder without one."
@@ -128,6 +125,9 @@ answered:   # questions settled with Acheron, with the date, so the reasoning su
   - "2026-10-16 Account skills: the code allows them (SkillUpgradeSystem), none exist in the registry for the time being."
   - "2026-10-16 Bonus allocations: only item use cases create them; nodes, goals and quests don't grant bonuses as rewards. By design."
   - "2026-10-16 TAX recipients: kamibots only today; guilds possibly later."
+  - "2026-10-17 EQUIPMENT holder: kamis only for now (Acheron). The code comment's account branch is unused."
+  - "2026-10-17 sacrifice.log and droptable.item.log holder: ACCOUNT, from the code. Both take holderID from the COMMIT's IdHolder, and LibSacrifice.commit / LibDroptable.commit store accID there via LibCommit.commit."
+  - "2026-10-17 AccountUseItem grants vs item data: nothing reverts today (Acheron). Checked against the Notion Item Registry and Item Effects tables: every XP, COOLDOWN, STATE and CLEAR_BONUS effect is on an item marked For: Kami or Enemy_Kami, so they run through KamiUseItem. Account items carry only VIP, STAT, ITEM_DROPTABLE and one shelved ROOM effect, all granted. The gap in the atlas is real in the code but unreachable with current item data; it bites only if an account item gets an XP, cooldown, flag or state effect."
 
 inconsistencies:   # places where the contracts model the same kind of thing two ways; nothing needs to change, but the atlas and the indexer have to know
   - "Typing: CONDITION, ROOM_GATE and COMMIT carry no EntityType while every other shape does; SCAVENGE's registry entry is typed but its per-account record (scavenge.instance) is not, whereas QUEST, SKILL and RELATIONSHIP type both halves."

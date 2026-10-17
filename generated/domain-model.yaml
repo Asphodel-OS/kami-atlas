@@ -1660,6 +1660,8 @@ shared_sub_entities:
         up: "from the key values"
     kind: record
     fields: [Time, Values]
+    held_by: [ACCOUNT]
+    held_by_from_notes: true
   flag.type:
     id: "flag.type(parentType, flagType)"
     keys:
@@ -1758,6 +1760,8 @@ shared_sub_entities:
         up: "from the key values"
     kind: record
     fields: [Time, Values]
+    held_by: [ACCOUNT]
+    held_by_from_notes: true
   score.total:
     id: "score.total(typeID)"
     keys:

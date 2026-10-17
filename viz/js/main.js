@@ -19,3 +19,4 @@ try {
   throw e;
 }
 for (const step of [state, data, tips, canvas, nav, panels, focus, map, ui]) step(A);
+window.atlas = A;   // for the console and headless checks

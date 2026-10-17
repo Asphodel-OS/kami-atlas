@@ -196,8 +196,16 @@ export function install(A) {
   document.getElementById('set-reheat').addEventListener('click', () => { if (A.sim && st.view === 'overview') A.sim.alpha(0.8).restart(); });
   document.getElementById('set-unpin').addEventListener('click', () => {
     if (st.view !== 'overview') return;
-    d3.selectAll('#svg .node').each(d => { if (d) { d.userPinned = false; d.fx = null; d.fy = null; } }).classed('pinned', false);
+    d3.selectAll('#svg .node').each(d => { if (d) { d.userPinned = false; d.held = false; d.fx = null; d.fy = null; } }).classed('pinned', false);
     if (A.sim) A.sim.alpha(0.3).restart();
+  });
+  // the current overview positions as notes/layout.json: drag entities where they read best, export, commit
+  document.getElementById('set-export').addEventListener('click', () => {
+    if (st.view !== 'overview' || !A.curNodes) return;
+    const out = Object.fromEntries(A.curNodes.filter(d => !d.singleton).map(d => [d.id, [Math.round(d.x), Math.round(d.y)]]));
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([JSON.stringify(out, null, 1) + '\n'], { type: 'application/json' })); a.download = 'layout.json';
+    document.body.appendChild(a); a.click(); a.remove();
   });
   function applyOverlays() {
     document.getElementById('legend').hidden = !cfg.legend; document.getElementById('hint').hidden = !cfg.hint;

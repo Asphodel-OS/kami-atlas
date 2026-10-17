@@ -16,6 +16,7 @@ notes/                       written by people; the generator never touches it
   systems/<Name>.yaml        summary, caller, preconditions, effects, invariants, open questions
   components.yaml            meaning, units, invariants, keyed by component name
   domain-model.yaml          entity descriptions, links the code can't resolve, confirmed facts, open questions
+  layout.json                where each entity sits on the overview map; exported from the atlas's Settings
 viz/                         the Kami Domain Atlas (interactive map); viz/data/ is written by generate.py
   index.html                 the page: markup only
   atlas.css                  its styles
@@ -65,6 +66,8 @@ By default it reads **`origin/main`** of `kami/kamigotchi`, through a private wo
     python3 dev.py     # http://127.0.0.1:8765/index.html  (#KAMI opens one entity, #sys.HarvestStart one system)
 
 It reloads the page whenever `viz/` changes, keeping the current view, and reruns `generate.py --no-build` first when `notes/` or `generate.py` change (about a second). Contract changes still need a full `python3 generate.py`.
+
+The overview opens the same way for everyone: `notes/layout.json` holds each entity's position (the generator copies it to `viz/data/`), and entities it doesn't name settle around the held ones with seeded physics. To change the picture, drag entities where they read best, press **Export layout** in Settings, and commit the download as `notes/layout.json`. First-load defaults show the stored pointers only (keyed ids and passthrough edges are off), with cursor snap on and the lens and repulsion off; everything is in Settings, which are saved per browser.
 
 For the team it is deployed on Vercel at **https://kami-atlas.vercel.app** (project `asphodel/kami-atlas`, root directory `viz/`). Vercel Authentication is on for every URL, so only people logged into the Asphodel Vercel team can open it. Every push to `main` redeploys, so regenerate, commit `viz/data/` and push to update it.
 

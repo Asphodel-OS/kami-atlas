@@ -1553,6 +1553,9 @@ def main():
         json.dump({n: {k: c.get(k) for k in ('type', 'comment') if c.get(k)} for n, c in comps.items()}, f_)
     if os.path.exists(os.path.join(NOTES, 'domain-model.yaml')):
         with open(os.path.join(NOTES, 'domain-model.yaml')) as a_, open(os.path.join(vd, 'notes.yaml'), 'w') as b_: b_.write(a_.read())
+    lay = os.path.join(NOTES, 'layout.json')   # hand-tuned overview positions, exported from the atlas's Settings
+    if os.path.exists(lay):
+        with open(lay) as a_, open(os.path.join(vd, 'layout.json'), 'w') as b_: b_.write(a_.read())
 
     # coverage report (notes are only checked for presence, never edited)
     noted_sys = {f[:-5] for f in os.listdir(os.path.join(NOTES, 'systems'))} if os.path.isdir(os.path.join(NOTES, 'systems')) else set()

@@ -5,7 +5,7 @@ export function install(A) {
   // exploration history for the panel's Back button: view, selection and camera
   const navStack = [];
   // the overview's layout as it was left (including pins), so Back returns to the same picture
-  const navSave = () => st.view === 'overview' && A.curNodes && navStack.length && (navStack[navStack.length - 1].pos = new Map(A.curNodes.map(d => [d.id, { x: d.x, y: d.y, pin: !!d.userPinned }])));
+  const navSave = () => st.view === 'overview' && A.curNodes && navStack.length && (navStack[navStack.length - 1].pos = new Map(A.curNodes.map(d => [d.id, { x: d.x, y: d.y, pin: !!d.userPinned, held: !!d.held }])));
   const navKey = () => st.view === 'focus' ? 'focus:' + st.sel : st.view ? 'overview:' + (st.system || '') : null;
   function navPush(next) {
     const cur = navKey();

@@ -2,7 +2,7 @@
 import { arr } from './util.js';
 
 export function install(A) {
-  const { E, rels, SG, systems, cfg, st, panel, tip, wrap, svg, root, zoom, ms, reduceMotion, W, H, fit, ensureVisible, DIRS, pickToward, legend, relKeys, viaTip, viaGlyph, edgePath, cardOf, uniqueFields, subsOf, show, hide, placeTip, entityTip, singletonTip, systemTip, relTip, navPush, focusView, focusPanel, systemPanel, overviewPanel } = A;
+  const { E, rels, SG, systems, layout, cfg, st, panel, tip, wrap, svg, root, zoom, ms, reduceMotion, W, H, fit, ensureVisible, DIRS, pickToward, legend, relKeys, viaTip, viaGlyph, edgePath, cardOf, uniqueFields, subsOf, show, hide, placeTip, entityTip, singletonTip, systemTip, relTip, navPush, focusView, focusPanel, systemPanel, overviewPanel } = A;
   const BAND = 320, bandY = { runtime: 0, hybrid: 1, registry: 2 };
   const radius = n => E[n] ? 12 + Math.sqrt(subsOf(n).length) * 3.2 : 12;
 
@@ -89,7 +89,10 @@ export function install(A) {
     node.on('keydown', (ev, d) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); focusView(d.id); } });
 
     if (A.sim) A.sim.stop();
-    A.sim = d3.forceSimulation(nodes)
+    // the committed layout (notes/layout.json) holds its entities in place; the rest settle around them with seeded
+    // physics, so the same model draws the same map on every load
+    for (const d of nodes) { const p = layout[d.id]; if (p) { d.x = d.fx = p[0]; d.y = d.fy = p[1]; d.held = true; } }
+    A.sim = d3.forceSimulation(nodes).randomSource(d3.randomLcg(0.42))
       .force('link', d3.forceLink(links).id(d => d.id).distance(cfg.linkLen).strength(0.18))
       .force('charge', d3.forceManyBody().strength(-620 * cfg.spacing).distanceMax(700 * Math.max(1, cfg.spacing)))
       .force('y', d3.forceY(d => bandY[d.layer] * BAND).strength(0.45))
@@ -97,7 +100,7 @@ export function install(A) {
       .force('collide', d3.forceCollide(d => radius(d.id) + 34))
       .stop();
     for (let i = 0; i < 400; i++) A.sim.tick();  // settle before the first frame
-    if (pos) for (const d of nodes) { const p = pos.get(d.id); if (p) { d.x = p.x; d.y = p.y; d.vx = d.vy = 0; if (p.pin) { d.userPinned = true; d.fx = p.x; d.fy = p.y; } } }
+    if (pos) for (const d of nodes) { const p = pos.get(d.id); if (p) { d.x = p.x; d.y = p.y; d.vx = d.vy = 0; d.userPinned = p.pin; d.held = p.held; if (p.pin || p.held) { d.fx = p.x; d.fy = p.y; } else { d.fx = d.fy = null; } } }
     A.curNodes = nodes; node.classed('pinned', d => !!d.userPinned);
 
     // ---- cursor lens, repulsion, snap ----
@@ -137,9 +140,9 @@ export function install(A) {
     const nearest = () => { let best = null, bd = Infinity; for (const d of nodes) { const g = screenGap(d); if (g < bd) { best = d; bd = g; } } return [best, bd]; };
     const setSnap = d => {
       if (d === snapped) return;
-      if (snapped && snapped !== drag && snapped !== kbd && !snapped.userPinned) { snapped.fx = null; snapped.fy = null; }
+      if (snapped && snapped !== drag && snapped !== kbd && !snapped.userPinned && !snapped.held) { snapped.fx = null; snapped.fy = null; }
       snapped = d;
-      if (snapped && !snapped.userPinned) { snapped.fx = snapped.x; snapped.fy = snapped.y; }  // so physics can't slide it away
+      if (snapped && !snapped.userPinned && !snapped.held) { snapped.fx = snapped.x; snapped.fy = snapped.y; }  // so physics can't slide it away
     };
     const updateSnap = () => {
       if (drag) return;
@@ -182,9 +185,9 @@ export function install(A) {
     let kbd = null, kbdAt = null;   // entity chosen with the arrow keys; cleared once the mouse really moves
     // the keyboard choice holds still (fixed in place, lens jumps straight to it) so stepping doesn't make it wobble
     const setKbd = d => {
-      if (kbd && kbd !== d && !kbd.userPinned && kbd !== snapped) { kbd.fx = null; kbd.fy = null; }
+      if (kbd && kbd !== d && !kbd.userPinned && !kbd.held && kbd !== snapped) { kbd.fx = null; kbd.fy = null; }
       kbd = d || null; kbdAt = null;
-      if (kbd) { if (!kbd.userPinned) { kbd.fx = kbd.x; kbd.fy = kbd.y; } kbd.vx = kbd.vy = 0; lens.x = kbd.x; lens.y = kbd.y; ensureVisible(kbd.x, kbd.y); }
+      if (kbd) { if (!kbd.userPinned && !kbd.held) { kbd.fx = kbd.x; kbd.fy = kbd.y; } kbd.vx = kbd.vy = 0; lens.x = kbd.x; lens.y = kbd.y; ensureVisible(kbd.x, kbd.y); }
     };
     svg.on('pointermove.atlas', ev => {
       const p = pointer(ev);

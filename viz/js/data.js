@@ -5,9 +5,10 @@ import { arr } from './util.js';
 export async function loadData() {
   const [model, systems, comps] = await Promise.all(['domain-model.json', 'systems.json', 'components.json']
     .map(f => fetch('data/' + f).then(r => { if (!r.ok) throw new Error(f + ' ' + r.status); return r.json(); })));
-  let notes = {};
+  let notes = {}, layout = {};
   try { notes = jsyaml.load(await (await fetch('data/notes.yaml')).text()) || {}; } catch (e) { notes = {}; }
-  return { model, systems, comps, notes };
+  try { const r = await fetch('data/layout.json'); if (r.ok) layout = await r.json(); } catch (e) { layout = {}; }   // notes/layout.json: hand-tuned overview positions
+  return { model, systems, comps, notes, layout };
 }
 
 export function install(A) {

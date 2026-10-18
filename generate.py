@@ -62,6 +62,7 @@ STAT_NAMES = {'HEALTH': 'Health', 'POWER': 'Power', 'HARMONY': 'Harmony', 'VIOLE
 STAT, ANY = '@stat', '@component'
 AMBIENT = {'IUint256Component', 'IUintComp', 'IWorld'}  # passed to nearly every function; left out of signatures
 KEYED_LIBS = {'LibConfig': 'config', 'LibBonus': 'bonuses', 'LibFlag': 'flags', 'LibData': 'data', 'LibStat': 'stats'}
+NS_META = defaultdict(list)   # namespace -> [{'fid', 'keys', 'packed'}] for every keccak256(abi.encode[Packed]("ns", keys…)) seen
 
 
 # ---------------- build + load ----------------
@@ -501,8 +502,56 @@ def write_spec(ix, model, ents, comps, systems, id_ns, src_note):
         if l.get('settled_in_notes'): out['from_notes'] = True
         elif l.get('inferred'): out['inferred'] = True
         return out
+    def key_type(fid, k):
+        """Solidity type of a key expression: the parameter it names in fid, a cast it starts with, or a literal."""
+        if re.fullmatch(r'"[^"]*"', k): return 'string'
+        m = re.match(r'(uint\d+|int\d+|address|bytes32|bytes\d*)\(', k)
+        if m: return m.group(1)
+        if fid in ix.fn:
+            for p_ in ix.fn[fid][1]['parameters']['parameters']:
+                if p_['name'] == re.split(r'[\[.]', k)[0]: return short_type(p_)
+            for n in walk(ix.fn[fid][1].get('body') or {}):   # a local: `uint256 id = …`
+                if n.get('nodeType') == 'VariableDeclaration' and n.get('name') == k: return short_type(n)
+        return None
+    callers_of = defaultdict(list)   # fid -> [(caller fid, args text)] over every function
+    for z in ix.fn:
+        for st in flat_events(ix.events(z)):
+            if st[0] == 'call' and st[1] in ix.fn: callers_of[st[1]].append((z, st[4] if len(st) > 4 else []))
+    def key_literals(fid, pi, depth=0, seen=()):
+        """String literals that reach parameter pi of fid from its callers, up to three calls away: the flag types,
+        data counter names and bonus types the code actually uses, so an indexer can enumerate string keys."""
+        out = set()
+        if fid not in ix.fn or depth > 3 or (fid, pi) in seen: return out
+        for caller, args in callers_of.get(fid, []):
+            if pi >= len(args) or args[pi] is None: continue
+            a_ = args[pi]   # ('lit', value) | ('ref', declaration id, name) | ('expr', None, text)
+            if a_[0] == 'lit': out.add(a_[1]); continue
+            if a_[0] == 'ref':
+                ps = [x['name'] for x in ix.fn[caller][1]['parameters']['parameters']]
+                if a_[2] in ps: out |= key_literals(caller, ps.index(a_[2]), depth + 1, seen + ((fid, pi),))
+        return out
+    def id_meta(ns):
+        """How the id for namespace ns is hashed: encoding and the type of each key, from the first occurrence that
+        has an owner function (they all hash the same way, or the model would have split them)."""
+        for occ in NS_META.get(ns, []):
+            if occ['fid'] is None and len(NS_META[ns]) > 1: continue
+            meta = {'encoding': 'keccak256(abi.encodePacked(ns, keys…))' if occ['packed'] else 'keccak256(abi.encode(ns, keys…))',
+                    'key_order': occ['keys'], 'key_types': {k: key_type(occ['fid'], k) for k in occ['keys']}}
+            vals = {}
+            if occ['fid'] in ix.fn:
+                ps = [x['name'] for x in ix.fn[occ['fid']]['parameters']['parameters']] if False else [x['name'] for x in ix.fn[occ['fid']][1]['parameters']['parameters']]
+                for k in occ['keys']:
+                    if meta['key_types'].get(k) == 'string':
+                        m2 = re.fullmatch(r'"([^"]*)"', k)
+                        if m2: vals[k] = [m2.group(1)]
+                        elif k in ps: vals[k] = sorted(key_literals(occ['fid'], ps.index(k)))
+            if vals: meta['key_values'] = vals
+            return meta
+        return None
     def record(ns, s):
         r = {'id': s.get('id'), 'keys': s.get('keys') or {}, 'kind': s.get('kind'), 'fields': s.get('fields') or []}
+        meta = id_meta(ns)
+        if meta: r.update(meta)
         if s.get('shape'): r['shape'] = s['shape']
         if s.get('links'): r['pointers'] = {c: pointer(c, l) for c, l in s['links'].items()}
         if s.get('held_by'): r['held_by'] = s['held_by']
@@ -513,7 +562,8 @@ def write_spec(ix, model, ents, comps, systems, id_ns, src_note):
         rec = ents.get(et, {})
         typed = e.get('typed', True)
         spec = {'entity_type': et if typed else None, 'layer': e['layer'],
-                'id': e.get('id') or {}, 'index': e.get('index'),
+                'id': e.get('id') or {}, 'id_hash': {which: id_meta(f.split('(')[0]) for which, f in (e.get('id') or {}).items() if '(' in f and id_meta(f.split('(')[0])},
+                'index': e.get('index'),
                 'components': rec.get('components_at_creation') or e.get('components') or [],
                 'components_later': e.get('components_later') or [], 'components_later_in': e.get('components_later_in') or {},
                 'created_by': e.get('created_by') or [], 'created_in': e.get('created_in') or [],
@@ -1597,6 +1647,7 @@ def main():
             namespaces[ns].add('%s(%s)  in %s' % (ns, ', '.join(keys), owner or os.path.basename(path)[:-4]))
             ofid = next((fid for fid, (c_, f_, p_) in ix.fn.items() if p_ == path and int(f_['src'].split(':')[0]) <= m.start() < sum(map(int, f_['src'].split(':')[:2]))), None)
             ns_struct[ns].append((ofid, keys))
+            NS_META[ns].append({'fid': ofid, 'keys': keys, 'packed': b'Packed' in m.group(0)})
     id_ns = {k: sorted(v) for k, v in sorted(namespaces.items())}
     ns_kind, gen_ns = classify_namespaces(ix, ns_struct)
 

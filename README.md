@@ -26,6 +26,7 @@ generate.py                  builds generated/ and viz/data/ from the contracts
 dev.py                       local dev server for the atlas, with live reload
 config.py                    reads live config values from Yominet
 grants.py                    asks the chain whether the flagged deploy grants are really missing
+recognize.py                 applies the recognition spec to a dump of indexed state and reports what every entity is
 .cache/                      compiler output with syntax trees (about 90 MB; safe to delete)
 ```
 
@@ -132,6 +133,8 @@ The contracts are compiled with `--ast`, and calls are resolved by the compiler,
 - `shared_records`: records held by more than one entity type (flags, logs), with `held_by`.
 - `framework_components`: the ECS framework's own component and system registries, which the World writes like any component; an indexer should skip them.
 - `singletons`, `id_namespaces` (which entity type each hashed namespace belongs to), and `left_out`.
+
+`recognize.py` is the reference consumer: given a dump of ECS state (and optionally the transactions that wrote each entity, and each entity's creating system) it applies the rules below and reports what it could and could not place. It was built against the first 28k blocks after the World's deployment, indexed locally with Kamigaze. Records are found by recomputing their ids, never by their components: the spec carries each namespace's `encoding`, `key_order`, `key_types` and, for string keys, `key_values` (the literals the code passes), so `has.flag(id, "NOT_NAMEABLE")` or `listing.buy(regID)` can be hashed from a candidate parent and compared. Candidate parents come from the same transaction (what it wrote, what those point at, the singletons), which is how a live indexer sees them; a removed value still counts as context, since a droptable commit is deleted in the reveal that writes the log keyed by it. With a fast keccak available it also brute-forces records with no context, the ones a snapshot system imported from an earlier world.
 
 How a consumer would use it, per transaction: the system id names the system; an EntityType write classifies the entity; a write of a known entity's component lands in that type's column; a write set matching an untyped shape's `signature` from one of its `created_by` systems creates that shape; a record is recognised by its namespace and keys. The spec says what the code does; it does not say what the chain has done, so an indexer still has to handle entities created before it started reading (bootstrap from current state).
 

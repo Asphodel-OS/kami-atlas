@@ -2044,6 +2044,7 @@
    "entity_type": "ACCOUNT",
    "layer": "runtime",
    "id": {},
+   "id_hash": {},
    "index": "IndexAccount",
    "components": [
     "AddressOperator",
@@ -2113,6 +2114,15 @@
       "IdHolder",
       "Value"
      ],
+     "encoding": "keccak256(abi.encodePacked(ns, keys\u2026))",
+     "key_order": [
+      "holderID",
+      "index"
+     ],
+     "key_types": {
+      "holderID": "uint256",
+      "index": "uint32"
+     },
      "pointers": {
       "IDType": {
        "to": [
@@ -2140,6 +2150,21 @@
      },
      "kind": "anchor key",
      "fields": [],
+     "encoding": "keccak256(abi.encodePacked(ns, keys\u2026))",
+     "key_order": [
+      "accID",
+      "state"
+     ],
+     "key_types": {
+      "accID": "uint256",
+      "state": "string"
+     },
+     "key_values": {
+      "state": [
+       "FRIEND",
+       "REQUEST"
+      ]
+     },
      "pointed_at_by": [
       "IDAnchor"
      ]
@@ -2157,6 +2182,15 @@
       "IsComplete",
       "Value"
      ],
+     "encoding": "keccak256(abi.encodePacked(ns, keys\u2026))",
+     "key_order": [
+      "goalID",
+      "accID"
+     ],
+     "key_types": {
+      "goalID": "uint256",
+      "accID": "uint256"
+     },
      "pointers": {
       "IDType": {
        "to": [
@@ -2190,7 +2224,87 @@
      "kind": "record",
      "fields": [
       "Value"
-     ]
+     ],
+     "encoding": "keccak256(abi.encodePacked(ns, keys\u2026))",
+     "key_order": [
+      "holderID",
+      "index",
+      "type_"
+     ],
+     "key_types": {
+      "holderID": "uint256",
+      "index": "uint32",
+      "type_": "string"
+     },
+     "key_values": {
+      "type_": [
+       "CRAFT_ITEM",
+       "CRAFT_TOTAL",
+       "DROPTABLE_ITEM_TOTAL",
+       "GACHA_COMMITS_PENDING",
+       "GOAL_CONTRIBUTION",
+       "ITEM_AUCTION_BUY",
+       "ITEM_AUCTION_SPEND",
+       "ITEM_BURN",
+       "ITEM_COUNT",
+       "ITEM_REVENUE",
+       "ITEM_SPEND",
+       "ITEM_USE",
+       "KAMI721_UNSTAKE",
+       "KAMI_GACHA_MINT",
+       "KAMI_GACHA_REROLL",
+       "KAMI_LEVELS_TOTAL",
+       "KAMI_MARKET_ACCEPT",
+       "KAMI_MARKET_BUY",
+       "KAMI_MARKET_CANCEL",
+       "KAMI_MARKET_LIST",
+       "KAMI_MARKET_OFFER",
+       "KAMI_NAME",
+       "KAMI_SACRIFICE",
+       "KAMI_SACRIFICE_TOTAL",
+       "KAMI_SEND",
+       "KAMI_STAKE",
+       "KILL_BOUNTIES",
+       "LIQUIDATED_VICTIM",
+       "LIQ_TARGET_ACC",
+       "MESSAGES",
+       "MINT_NUM_PUBLIC",
+       "MINT_NUM_TOTAL",
+       "MINT_NUM_WL",
+       "MOVE",
+       "POOL_SWAP_TOTAL",
+       "POOL_VOLUME",
+       "PORTAL_ITEM_CANCEL_TOTAL",
+       "PORTAL_ITEM_CLAIM_TOTAL",
+       "PORTAL_ITEM_DEPOSIT_TOTAL",
+       "PORTAL_ITEM_TAX_TOTAL",
+       "PORTAL_ITEM_WITHDRAW_TOTAL",
+       "PORTAL_TOKEN_CANCEL_TOTAL",
+       "PORTAL_TOKEN_CLAIM_TOTAL",
+       "PORTAL_TOKEN_DEPOSIT_TOTAL",
+       "PORTAL_TOKEN_WITHDRAW_TOTAL",
+       "QUEST_COMPLETE",
+       "QUEST_REPEATABLE_COMPLETE",
+       "SACRIFICE_ITEM_TOTAL",
+       "SACRIFICE_RARE_PITY",
+       "SACRIFICE_RARE_PITY_TOTAL",
+       "SACRIFICE_UNCOMMON_PITY",
+       "SACRIFICE_UNCOMMON_PITY_TOTAL",
+       "SKILL_POINTS_USE",
+       "TOKEN_SPEND",
+       "TOKEN_SPEND_RENAME",
+       "TOKEN_SPEND_RESPEC",
+       "TOKEN_SPEND_REVIVE",
+       "TOTAL_NUM_ACCOUNTS",
+       "TRADE_CANCEL",
+       "TRADE_COMPLETE",
+       "TRADE_CREATE",
+       "TRADE_EXECUTE",
+       "TRADE_RECEIVE",
+       "TRADE_SPEND",
+       "TRADE_TAX"
+      ]
+     }
     },
     "is.score": {
      "id": "is.score(holderID, epoch, index, type_)",
@@ -2206,6 +2320,27 @@
       "IdHolder",
       "Value"
      ],
+     "encoding": "keccak256(abi.encodePacked(ns, keys\u2026))",
+     "key_order": [
+      "holderID",
+      "epoch",
+      "index",
+      "type_"
+     ],
+     "key_types": {
+      "holderID": "uint256",
+      "epoch": "uint256",
+      "index": "uint32",
+      "type_": "string"
+     },
+     "key_values": {
+      "type_": [
+       "COLLECT",
+       "LIQUIDATE",
+       "TOTAL_SPENT",
+       "VIP_SCORE"
+      ]
+     },
      "pointers": {
       "IDType": {
        "to": [
@@ -2232,7 +2367,14 @@
      "kind": "record",
      "fields": [
       "Value"
-     ]
+     ],
+     "encoding": "keccak256(abi.encodePacked(ns, keys\u2026))",
+     "key_order": [
+      "accID"
+     ],
+     "key_types": {
+      "accID": "uint256"
+     }
     },
     "scavenge.instance": {
      "id": "scavenge.instance(field, index, holderID)",
@@ -2244,7 +2386,23 @@
      "kind": "record",
      "fields": [
       "Value"
-     ]
+     ],
+     "encoding": "keccak256(abi.encodePacked(ns, keys\u2026))",
+     "key_order": [
+      "field",
+      "index",
+      "holderID"
+     ],
+     "key_types": {
+      "field": "string",
+      "index": "uint32",
+      "holderID": "uint256"
+     },
+     "key_values": {
+      "field": [
+       "NODE"
+      ]
+     }
     },
     "operator.cache": {
      "id": "address(addr)",
@@ -2264,6 +2422,7 @@
    "id": {
     "instance": "world.getUniqueEntityId() (a counter, no hashed id)"
    },
+   "id_hash": {},
    "index": null,
    "components": [
     "BlockReveal",
@@ -2328,6 +2487,22 @@
    "id": {
     "instance": "equipment.instance(holderID, slot)"
    },
+   "id_hash": {
+    "instance": {
+     "encoding": "keccak256(abi.encodePacked(ns, keys\u2026))",
+     "key_order": [
+      "holderID",
+      "slot"
+     ],
+     "key_types": {
+      "holderID": "uint256",
+      "slot": "string"
+     },
+     "key_values": {
+      "slot": []
+     }
+    }
+   },
    "index": null,
    "components": [
     "EntityType",
@@ -2370,6 +2545,19 @@
    "layer": "runtime",
    "id": {
     "instance": "friendship(accID, targetID)"
+   },
+   "id_hash": {
+    "instance": {
+     "encoding": "keccak256(abi.encodePacked(ns, keys\u2026))",
+     "key_order": [
+      "accID",
+      "targetID"
+     ],
+     "key_types": {
+      "accID": "uint256",
+      "targetID": "uint256"
+     }
+    }
    },
    "index": null,
    "components": [
@@ -2417,6 +2605,17 @@
    "layer": "runtime",
    "id": {
     "instance": "harvest(kamiID)"
+   },
+   "id_hash": {
+    "instance": {
+     "encoding": "keccak256(abi.encodePacked(ns, keys\u2026))",
+     "key_order": [
+      "kamiID"
+     ],
+     "key_types": {
+      "kamiID": "uint256"
+     }
+    }
    },
    "index": null,
    "components": [
@@ -2485,6 +2684,19 @@
    "layer": "runtime",
    "id": {
     "instance": "inventory.instance(holderID, itemIndex)"
+   },
+   "id_hash": {
+    "instance": {
+     "encoding": "keccak256(abi.encodePacked(ns, keys\u2026))",
+     "key_order": [
+      "holderID",
+      "itemIndex"
+     ],
+     "key_types": {
+      "holderID": "uint256",
+      "itemIndex": "uint32"
+     }
+    }
    },
    "index": null,
    "components": [
@@ -2566,6 +2778,17 @@
    "layer": "runtime",
    "id": {
     "instance": "kami.id(kamiIndex)"
+   },
+   "id_hash": {
+    "instance": {
+     "encoding": "keccak256(abi.encodePacked(ns, keys\u2026))",
+     "key_order": [
+      "kamiIndex"
+     ],
+     "key_types": {
+      "kamiIndex": "uint32"
+     }
+    }
    },
    "index": "IndexKami",
    "components": [
@@ -2693,7 +2916,14 @@
      "kind": "record",
      "fields": [
       "Value"
-     ]
+     ],
+     "encoding": "keccak256(abi.encode(ns, keys\u2026))",
+     "key_order": [
+      "kamiID"
+     ],
+     "key_types": {
+      "kamiID": "uint256"
+     }
     },
     "bonus.type": {
      "id": "bonus.type(type_, holderID)",
@@ -2703,6 +2933,18 @@
      },
      "kind": "anchor key",
      "fields": [],
+     "encoding": "keccak256(abi.encodePacked(ns, keys\u2026))",
+     "key_order": [
+      "type_",
+      "holderID"
+     ],
+     "key_types": {
+      "type_": "string",
+      "holderID": "uint256"
+     },
+     "key_values": {
+      "type_": []
+     },
      "pointed_at_by": [
       "IDType"
      ]
@@ -2713,6 +2955,7 @@
    "entity_type": "KAMI_COLLECTION_OFFER",
    "layer": "runtime",
    "id": {},
+   "id_hash": {},
    "index": null,
    "components": [
     "Balance",
@@ -2749,6 +2992,7 @@
    "entity_type": "KAMI_LISTING",
    "layer": "runtime",
    "id": {},
+   "id_hash": {},
    "index": null,
    "components": [
     "EntityType",
@@ -2793,6 +3037,7 @@
    "entity_type": "KAMI_OFFER",
    "layer": "runtime",
    "id": {},
+   "id_hash": {},
    "index": null,
    "components": [
     "EntityType",
@@ -2837,6 +3082,19 @@
    "layer": "runtime",
    "id": {
     "instance": "amm.pool.share(poolID, holderID)"
+   },
+   "id_hash": {
+    "instance": {
+     "encoding": "keccak256(abi.encodePacked(ns, keys\u2026))",
+     "key_order": [
+      "poolID",
+      "holderID"
+     ],
+     "key_types": {
+      "poolID": "uint256",
+      "holderID": "uint256"
+     }
+    }
    },
    "index": null,
    "components": [
@@ -2889,6 +3147,19 @@
    "id": {
     "instance": "tax.instance(anchorID, taxerID)"
    },
+   "id_hash": {
+    "instance": {
+     "encoding": "keccak256(abi.encodePacked(ns, keys\u2026))",
+     "key_order": [
+      "anchorID",
+      "taxerID"
+     ],
+     "key_types": {
+      "anchorID": "uint256",
+      "taxerID": "uint256"
+     }
+    }
+   },
    "index": null,
    "components": [
     "EntityType",
@@ -2931,6 +3202,7 @@
    "entity_type": "TOKEN_RECEIPT",
    "layer": "runtime",
    "id": {},
+   "id_hash": {},
    "index": null,
    "components": [
     "EntityType",
@@ -2975,6 +3247,7 @@
    "entity_type": "TRADE",
    "layer": "runtime",
    "id": {},
+   "id_hash": {},
    "index": null,
    "components": [
     "EntityType",
@@ -3028,7 +3301,14 @@
      "fields": [
       "Keys",
       "Values"
-     ]
+     ],
+     "encoding": "keccak256(abi.encodePacked(ns, keys\u2026))",
+     "key_order": [
+      "tradeID"
+     ],
+     "key_types": {
+      "tradeID": "uint256"
+     }
     },
     "trade.sell": {
      "id": "trade.sell(tradeID)",
@@ -3039,7 +3319,14 @@
      "fields": [
       "Keys",
       "Values"
-     ]
+     ],
+     "encoding": "keccak256(abi.encodePacked(ns, keys\u2026))",
+     "key_order": [
+      "tradeID"
+     ],
+     "key_types": {
+      "tradeID": "uint256"
+     }
     }
    }
   },
@@ -3049,6 +3336,28 @@
    "id": {
     "registry": "registry.quest(index)",
     "instance": "quest.instance(index, accID)"
+   },
+   "id_hash": {
+    "registry": {
+     "encoding": "keccak256(abi.encodePacked(ns, keys\u2026))",
+     "key_order": [
+      "index"
+     ],
+     "key_types": {
+      "index": "uint32"
+     }
+    },
+    "instance": {
+     "encoding": "keccak256(abi.encodePacked(ns, keys\u2026))",
+     "key_order": [
+      "index",
+      "accID"
+     ],
+     "key_types": {
+      "index": "uint32",
+      "accID": "uint256"
+     }
+    }
    },
    "index": "IndexQuest",
    "components": [
@@ -3115,6 +3424,23 @@
       "IDAnchor",
       "Value"
      ],
+     "encoding": "keccak256(abi.encodePacked(ns, keys\u2026))",
+     "key_order": [
+      "questID",
+      "logicType",
+      "_type",
+      "index"
+     ],
+     "key_types": {
+      "questID": "uint256",
+      "logicType": "string",
+      "_type": "string",
+      "index": "uint32"
+     },
+     "key_values": {
+      "logicType": [],
+      "_type": []
+     },
      "pointers": {
       "IDAnchor": {
        "to": [
@@ -3132,6 +3458,13 @@
      },
      "kind": "anchor key",
      "fields": [],
+     "encoding": "keccak256(abi.encodePacked(ns, keys\u2026))",
+     "key_order": [
+      "index"
+     ],
+     "key_types": {
+      "index": "uint32"
+     },
      "pointed_at_by": [
       "IDAnchor"
      ]
@@ -3143,6 +3476,13 @@
      },
      "kind": "anchor key",
      "fields": [],
+     "encoding": "keccak256(abi.encodePacked(ns, keys\u2026))",
+     "key_order": [
+      "index"
+     ],
+     "key_types": {
+      "index": "uint32"
+     },
      "pointed_at_by": [
       "IDAnchor"
      ]
@@ -3154,6 +3494,13 @@
      },
      "kind": "anchor key",
      "fields": [],
+     "encoding": "keccak256(abi.encodePacked(ns, keys\u2026))",
+     "key_order": [
+      "index"
+     ],
+     "key_types": {
+      "index": "uint32"
+     },
      "pointed_at_by": [
       "IDAnchor"
      ]
@@ -3165,6 +3512,13 @@
      },
      "kind": "anchor key",
      "fields": [],
+     "encoding": "keccak256(abi.encodePacked(ns, keys\u2026))",
+     "key_order": [
+      "questID"
+     ],
+     "key_types": {
+      "questID": "uint256"
+     },
      "pointed_at_by": [
       "IDAnchor"
      ]
@@ -3177,6 +3531,32 @@
    "id": {
     "registry": "registry.relationship(npcIndex, relIndex)",
     "instance": "relationship(accID, npcIndex, relIndex)"
+   },
+   "id_hash": {
+    "registry": {
+     "encoding": "keccak256(abi.encodePacked(ns, keys\u2026))",
+     "key_order": [
+      "npcIndex",
+      "relIndex"
+     ],
+     "key_types": {
+      "npcIndex": "uint32",
+      "relIndex": "uint32"
+     }
+    },
+    "instance": {
+     "encoding": "keccak256(abi.encodePacked(ns, keys\u2026))",
+     "key_order": [
+      "accID",
+      "npcIndex",
+      "relIndex"
+     ],
+     "key_types": {
+      "accID": "uint256",
+      "npcIndex": "uint32",
+      "relIndex": "uint32"
+     }
+    }
    },
    "index": "IndexRelationship",
    "components": [
@@ -3238,6 +3618,28 @@
     "registry": "registry.skill(index)",
     "instance": "skill.instance(holderID, index)"
    },
+   "id_hash": {
+    "registry": {
+     "encoding": "keccak256(abi.encodePacked(ns, keys\u2026))",
+     "key_order": [
+      "index"
+     ],
+     "key_types": {
+      "index": "uint32"
+     }
+    },
+    "instance": {
+     "encoding": "keccak256(abi.encodePacked(ns, keys\u2026))",
+     "key_order": [
+      "holderID",
+      "index"
+     ],
+     "key_types": {
+      "holderID": "uint256",
+      "index": "uint32"
+     }
+    }
+   },
    "index": "IndexSkill",
    "components": [
     "Cost",
@@ -3292,6 +3694,13 @@
      },
      "kind": "anchor key",
      "fields": [],
+     "encoding": "keccak256(abi.encodePacked(ns, keys\u2026))",
+     "key_order": [
+      "index"
+     ],
+     "key_types": {
+      "index": "uint32"
+     },
      "pointed_at_by": [
       "IDAnchor"
      ]
@@ -3303,6 +3712,13 @@
      },
      "kind": "anchor key",
      "fields": [],
+     "encoding": "keccak256(abi.encodePacked(ns, keys\u2026))",
+     "key_order": [
+      "index"
+     ],
+     "key_types": {
+      "index": "uint32"
+     },
      "pointed_at_by": [
       "IDAnchor"
      ]
@@ -3314,6 +3730,28 @@
    "layer": "registry",
    "id": {
     "registry": "reward.instance(anchorID, type_, index)"
+   },
+   "id_hash": {
+    "registry": {
+     "encoding": "keccak256(abi.encodePacked(ns, keys\u2026))",
+     "key_order": [
+      "anchorID",
+      "type_",
+      "index"
+     ],
+     "key_types": {
+      "anchorID": "uint256",
+      "type_": "string",
+      "index": "uint32"
+     },
+     "key_values": {
+      "type_": [
+       "BONUS",
+       "ITEM_DROPTABLE",
+       "STAT"
+      ]
+     }
+    }
    },
    "index": null,
    "components": [
@@ -3393,6 +3831,17 @@
    "id": {
     "registry": "auction(index)"
    },
+   "id_hash": {
+    "registry": {
+     "encoding": "keccak256(abi.encodePacked(ns, keys\u2026))",
+     "key_order": [
+      "index"
+     ],
+     "key_types": {
+      "index": "uint32"
+     }
+    }
+   },
    "index": null,
    "components": [
     "Balance",
@@ -3441,6 +3890,13 @@
      },
      "kind": "anchor key",
      "fields": [],
+     "encoding": "keccak256(abi.encodePacked(ns, keys\u2026))",
+     "key_order": [
+      "auctionID"
+     ],
+     "key_types": {
+      "auctionID": "uint256"
+     },
      "pointed_at_by": [
       "IDAnchor"
      ]
@@ -3452,6 +3908,22 @@
    "layer": "registry",
    "id": {
     "registry": "bonus.registry(anchorID, type_)"
+   },
+   "id_hash": {
+    "registry": {
+     "encoding": "keccak256(abi.encodePacked(ns, keys\u2026))",
+     "key_order": [
+      "anchorID",
+      "type_"
+     ],
+     "key_types": {
+      "anchorID": "uint256",
+      "type_": "string"
+     },
+     "key_values": {
+      "type_": []
+     }
+    }
    },
    "index": null,
    "components": [
@@ -3519,6 +3991,7 @@
    "id": {
     "instance": "world.getUniqueEntityId() (a counter, no hashed id)"
    },
+   "id_hash": {},
    "index": null,
    "components": [
     "For",
@@ -3607,6 +4080,17 @@
    "id": {
     "registry": "faction(index)"
    },
+   "id_hash": {
+    "registry": {
+     "encoding": "keccak256(abi.encodePacked(ns, keys\u2026))",
+     "key_order": [
+      "index"
+     ],
+     "key_types": {
+      "index": "uint32"
+     }
+    }
+   },
    "index": "IndexFaction",
    "components": [
     "Description",
@@ -3647,6 +4131,17 @@
    "layer": "registry",
    "id": {
     "registry": "goal(index)"
+   },
+   "id_hash": {
+    "registry": {
+     "encoding": "keccak256(abi.encodePacked(ns, keys\u2026))",
+     "key_order": [
+      "index"
+     ],
+     "key_types": {
+      "index": "uint32"
+     }
+    }
    },
    "index": null,
    "components": [
@@ -3713,6 +4208,13 @@
       "Type",
       "Value"
      ],
+     "encoding": "keccak256(abi.encodePacked(ns, keys\u2026))",
+     "key_order": [
+      "goalID"
+     ],
+     "key_types": {
+      "goalID": "uint256"
+     },
      "shape": "CONDITION"
     },
     "goal.requirement": {
@@ -3722,6 +4224,13 @@
      },
      "kind": "anchor key",
      "fields": [],
+     "encoding": "keccak256(abi.encodePacked(ns, keys\u2026))",
+     "key_order": [
+      "index"
+     ],
+     "key_types": {
+      "index": "uint32"
+     },
      "pointed_at_by": [
       "IDAnchor"
      ]
@@ -3733,6 +4242,13 @@
      },
      "kind": "anchor key",
      "fields": [],
+     "encoding": "keccak256(abi.encodePacked(ns, keys\u2026))",
+     "key_order": [
+      "tierID"
+     ],
+     "key_types": {
+      "tierID": "uint256"
+     },
      "pointed_at_by": [
       "IDAnchor"
      ]
@@ -3744,6 +4260,13 @@
      },
      "kind": "anchor key",
      "fields": [],
+     "encoding": "keccak256(abi.encodePacked(ns, keys\u2026))",
+     "key_order": [
+      "goalIndex"
+     ],
+     "key_types": {
+      "goalIndex": "uint32"
+     },
      "pointed_at_by": [
       "IDAnchor"
      ]
@@ -3755,6 +4278,17 @@
    "layer": "registry",
    "id": {
     "registry": "registry.item(index)"
+   },
+   "id_hash": {
+    "registry": {
+     "encoding": "keccak256(abi.encodePacked(ns, keys\u2026))",
+     "key_order": [
+      "index"
+     ],
+     "key_types": {
+      "index": "uint32"
+     }
+    }
    },
    "index": "IndexItem",
    "components": [
@@ -3807,6 +4341,13 @@
      },
      "kind": "anchor key",
      "fields": [],
+     "encoding": "keccak256(abi.encodePacked(ns, keys\u2026))",
+     "key_order": [
+      "refID"
+     ],
+     "key_types": {
+      "refID": "uint256"
+     },
      "pointed_at_by": [
       "IDAnchor"
      ]
@@ -3818,6 +4359,13 @@
      },
      "kind": "anchor key",
      "fields": [],
+     "encoding": "keccak256(abi.encodePacked(ns, keys\u2026))",
+     "key_order": [
+      "refID"
+     ],
+     "key_types": {
+      "refID": "uint256"
+     },
      "pointed_at_by": [
       "IDAnchor"
      ]
@@ -3829,6 +4377,13 @@
      },
      "kind": "anchor key",
      "fields": [],
+     "encoding": "keccak256(abi.encodePacked(ns, keys\u2026))",
+     "key_order": [
+      "index"
+     ],
+     "key_types": {
+      "index": "uint32"
+     },
      "pointed_at_by": [
       "IDAnchor"
      ]
@@ -3840,6 +4395,19 @@
    "layer": "registry",
    "id": {
     "registry": "listing(merchantIndex, itemIndex)"
+   },
+   "id_hash": {
+    "registry": {
+     "encoding": "keccak256(abi.encodePacked(ns, keys\u2026))",
+     "key_order": [
+      "merchantIndex",
+      "itemIndex"
+     ],
+     "key_types": {
+      "merchantIndex": "uint32",
+      "itemIndex": "uint32"
+     }
+    }
    },
    "index": null,
    "components": [
@@ -3922,7 +4490,14 @@
       "Scale",
       "Type",
       "Value"
-     ]
+     ],
+     "encoding": "keccak256(abi.encodePacked(ns, keys\u2026))",
+     "key_order": [
+      "regID"
+     ],
+     "key_types": {
+      "regID": "uint256"
+     }
     },
     "listing.requirement": {
      "id": "listing.requirement(regID)",
@@ -3931,6 +4506,13 @@
      },
      "kind": "anchor key",
      "fields": [],
+     "encoding": "keccak256(abi.encodePacked(ns, keys\u2026))",
+     "key_order": [
+      "regID"
+     ],
+     "key_types": {
+      "regID": "uint256"
+     },
      "pointed_at_by": [
       "IDAnchor"
      ]
@@ -3948,7 +4530,14 @@
       "Scale",
       "Type",
       "Value"
-     ]
+     ],
+     "encoding": "keccak256(abi.encodePacked(ns, keys\u2026))",
+     "key_order": [
+      "regID"
+     ],
+     "key_types": {
+      "regID": "uint256"
+     }
     }
    }
   },
@@ -3957,6 +4546,17 @@
    "layer": "registry",
    "id": {
     "registry": "node(index)"
+   },
+   "id_hash": {
+    "registry": {
+     "encoding": "keccak256(abi.encodePacked(ns, keys\u2026))",
+     "key_order": [
+      "index"
+     ],
+     "key_types": {
+      "index": "uint32"
+     }
+    }
    },
    "index": "IndexNode",
    "components": [
@@ -4004,6 +4604,13 @@
      },
      "kind": "anchor key",
      "fields": [],
+     "encoding": "keccak256(abi.encodePacked(ns, keys\u2026))",
+     "key_order": [
+      "index"
+     ],
+     "key_types": {
+      "index": "uint32"
+     },
      "pointed_at_by": [
       "IDAnchor"
      ]
@@ -4015,6 +4622,13 @@
      },
      "kind": "anchor key",
      "fields": [],
+     "encoding": "keccak256(abi.encodePacked(ns, keys\u2026))",
+     "key_order": [
+      "index"
+     ],
+     "key_types": {
+      "index": "uint32"
+     },
      "pointed_at_by": [
       "IDAnchor"
      ]
@@ -4026,6 +4640,17 @@
    "layer": "registry",
    "id": {
     "registry": "NPC(index)"
+   },
+   "id_hash": {
+    "registry": {
+     "encoding": "keccak256(abi.encodePacked(ns, keys\u2026))",
+     "key_order": [
+      "index"
+     ],
+     "key_types": {
+      "index": "uint32"
+     }
+    }
    },
    "index": "IndexNPC",
    "components": [
@@ -4060,6 +4685,19 @@
    "layer": "registry",
    "id": {
     "registry": "amm.pool(lo, hi)"
+   },
+   "id_hash": {
+    "registry": {
+     "encoding": "keccak256(abi.encodePacked(ns, keys\u2026))",
+     "key_order": [
+      "lo",
+      "hi"
+     ],
+     "key_types": {
+      "lo": "uint32",
+      "hi": "uint32"
+     }
+    }
    },
    "index": null,
    "components": [
@@ -4112,6 +4750,17 @@
    "id": {
     "registry": "registry.recipe(recipeIndex)"
    },
+   "id_hash": {
+    "registry": {
+     "encoding": "keccak256(abi.encodePacked(ns, keys\u2026))",
+     "key_order": [
+      "recipeIndex"
+     ],
+     "key_types": {
+      "recipeIndex": "uint32"
+     }
+    }
+   },
    "index": "IndexRecipe",
    "components": [
     "EntityType",
@@ -4143,7 +4792,14 @@
      "fields": [
       "Keys",
       "Values"
-     ]
+     ],
+     "encoding": "keccak256(abi.encodePacked(ns, keys\u2026))",
+     "key_order": [
+      "recipeIndex"
+     ],
+     "key_types": {
+      "recipeIndex": "uint32"
+     }
     },
     "recipe.output": {
      "id": "recipe.output(recipeIndex)",
@@ -4154,7 +4810,14 @@
      "fields": [
       "Keys",
       "Values"
-     ]
+     ],
+     "encoding": "keccak256(abi.encodePacked(ns, keys\u2026))",
+     "key_order": [
+      "recipeIndex"
+     ],
+     "key_types": {
+      "recipeIndex": "uint32"
+     }
     },
     "recipe.requirement": {
      "id": "recipe.requirement(recipeIndex)",
@@ -4163,6 +4826,13 @@
      },
      "kind": "anchor key",
      "fields": [],
+     "encoding": "keccak256(abi.encodePacked(ns, keys\u2026))",
+     "key_order": [
+      "recipeIndex"
+     ],
+     "key_types": {
+      "recipeIndex": "uint32"
+     },
      "pointed_at_by": [
       "IDAnchor"
      ]
@@ -4174,6 +4844,25 @@
    "layer": "registry",
    "id": {
     "registry": "reference.instance(field, anchorID)"
+   },
+   "id_hash": {
+    "registry": {
+     "encoding": "keccak256(abi.encodePacked(ns, keys\u2026))",
+     "key_order": [
+      "field",
+      "anchorID"
+     ],
+     "key_types": {
+      "field": "string",
+      "anchorID": "uint256"
+     },
+     "key_values": {
+      "field": [
+       "EQUIP",
+       "USE"
+      ]
+     }
+    }
    },
    "index": null,
    "components": [
@@ -4216,6 +4905,17 @@
    "id": {
     "registry": "room(roomIndex)"
    },
+   "id_hash": {
+    "registry": {
+     "encoding": "keccak256(abi.encodePacked(ns, keys\u2026))",
+     "key_order": [
+      "roomIndex"
+     ],
+     "key_types": {
+      "roomIndex": "uint32"
+     }
+    }
+   },
    "index": "IndexRoom",
    "components": [
     "Description",
@@ -4248,6 +4948,7 @@
    "id": {
     "instance": "world.getUniqueEntityId() (a counter, no hashed id)"
    },
+   "id_hash": {},
    "index": null,
    "components": [
     "For",
@@ -4339,6 +5040,24 @@
    "id": {
     "registry": "registry.scavenge(field, index)"
    },
+   "id_hash": {
+    "registry": {
+     "encoding": "keccak256(abi.encodePacked(ns, keys\u2026))",
+     "key_order": [
+      "field",
+      "index"
+     ],
+     "key_types": {
+      "field": "string",
+      "index": "uint32"
+     },
+     "key_values": {
+      "field": [
+       "NODE"
+      ]
+     }
+    }
+   },
    "index": null,
    "components": [
     "Affinity",
@@ -4377,6 +5096,13 @@
      },
      "kind": "anchor key",
      "fields": [],
+     "encoding": "keccak256(abi.encodePacked(ns, keys\u2026))",
+     "key_order": [
+      "regID"
+     ],
+     "key_types": {
+      "regID": "uint256"
+     },
      "pointed_at_by": [
       "IDAnchor"
      ]
@@ -4388,6 +5114,28 @@
    "layer": "registry",
    "id": {
     "registry": "registry.trait(_type, index)"
+   },
+   "id_hash": {
+    "registry": {
+     "encoding": "keccak256(abi.encodePacked(ns, keys\u2026))",
+     "key_order": [
+      "_type",
+      "index"
+     ],
+     "key_types": {
+      "_type": "string",
+      "index": "uint32"
+     },
+     "key_values": {
+      "_type": [
+       "BACKGROUND",
+       "BODY",
+       "COLOR",
+       "FACE",
+       "HAND"
+      ]
+     }
+    }
    },
    "index": null,
    "components": [
@@ -4472,6 +5220,16 @@
      },
      "kind": "anchor key",
      "fields": [],
+     "encoding": "keccak256(abi.encodePacked(ns, keys\u2026))",
+     "key_order": [
+      "_type"
+     ],
+     "key_types": {
+      "_type": "string"
+     },
+     "key_values": {
+      "_type": []
+     },
      "pointed_at_by": [
       "IDAnchor"
      ]
@@ -4491,6 +5249,18 @@
    },
    "kind": "anchor key",
    "fields": [],
+   "encoding": "keccak256(abi.encodePacked(ns, keys\u2026))",
+   "key_order": [
+    "type_",
+    "holderID"
+   ],
+   "key_types": {
+    "type_": "string",
+    "holderID": "uint256"
+   },
+   "key_values": {
+    "type_": []
+   },
    "held_by": [
     "ACCOUNT",
     "KAMI"
@@ -4516,6 +5286,17 @@
     "IdSource",
     "Time"
    ],
+   "encoding": "keccak256(abi.encodePacked(ns, keys\u2026))",
+   "key_order": [
+    "regID",
+    "holderID",
+    "duration"
+   ],
+   "key_types": {
+    "regID": "uint256",
+    "holderID": "uint256",
+    "duration": "uint256"
+   },
    "pointers": {
     "IDAnchor": {
      "to": [
@@ -4556,6 +5337,15 @@
     "Time",
     "Values"
    ],
+   "encoding": "keccak256(abi.encodePacked(ns, keys\u2026))",
+   "key_order": [
+    "holderID",
+    "dtID"
+   ],
+   "key_types": {
+    "holderID": "uint256",
+    "dtID": "uint256"
+   },
    "held_by": [
     "ACCOUNT"
    ]
@@ -4568,6 +5358,26 @@
    },
    "kind": "anchor key",
    "fields": [],
+   "encoding": "keccak256(abi.encodePacked(ns, keys\u2026))",
+   "key_order": [
+    "parentType",
+    "flagType"
+   ],
+   "key_types": {
+    "parentType": "string",
+    "flagType": "string"
+   },
+   "key_values": {
+    "parentType": [
+     "AUTH",
+     "ITEM",
+     "QUEST",
+     "ROOM"
+    ],
+    "flagType": [
+     "REPEATABLE"
+    ]
+   },
    "pointed_at_by": [
     "IDType"
    ]
@@ -4590,6 +5400,29 @@
     "IDType",
     "Type"
    ],
+   "encoding": "keccak256(abi.encodePacked(ns, keys\u2026))",
+   "key_order": [
+    "id",
+    "flagType"
+   ],
+   "key_types": {
+    "id": "uint256",
+    "flagType": "string"
+   },
+   "key_values": {
+    "flagType": [
+     "BYPASS_BONUS_RESET",
+     "CAN_RESET_SKILLS",
+     "ITEM_UNBURNABLE",
+     "MINT_WHITELISTED",
+     "NEWBIE_VENDOR_PURCHASED",
+     "NOT_NAMEABLE",
+     "NOT_TRADABLE",
+     "PORTAL_TO_OPERATOR",
+     "REPEATABLE",
+     "WORLD_WHITELIST"
+    ]
+   },
    "pointers": {
     "IDOwnsFlag": {
      "to": [
@@ -4624,7 +5457,39 @@
    "kind": "record",
    "fields": [
     "Value"
-   ]
+   ],
+   "encoding": "keccak256(abi.encodePacked(ns, keys\u2026))",
+   "key_order": [
+    "name"
+   ],
+   "key_types": {
+    "name": "string"
+   },
+   "key_values": {
+    "name": [
+     "BASE_KAMI_NAME",
+     "FRIENDS_REQUEST_LIMIT",
+     "GACHA_REROLL_PRICE",
+     "KAMI_MARKET_ENABLED",
+     "KAMI_MARKET_FEE_RATE",
+     "KAMI_MARKET_FEE_RECIPIENT",
+     "KAMI_MARKET_PURCHASE_COOLDOWN",
+     "KAMI_MARKET_VAULT",
+     "MINT_PRICE_PUBLIC",
+     "MINT_START_PUBLIC",
+     "MINT_START_WL",
+     "NEWBIE_VENDOR_ADDRESS",
+     "NEWBIE_VENDOR_CYCLE",
+     "NEWBIE_VENDOR_ENABLED",
+     "NEWBIE_VENDOR_MIN_PRICE",
+     "NEWBIE_VENDOR_TWAP_WINDOW",
+     "ONYX_ADDRESS",
+     "PORTAL_TOKEN_EXPORT_DELAY",
+     "SCORE_EPOCH",
+     "VIP_SCORE_ADDRESS",
+     "WORLD_PRIVATE"
+    ]
+   }
   },
   "room.gate.from": {
    "id": "room.gate.from(index)",
@@ -4633,6 +5498,13 @@
    },
    "kind": "anchor key",
    "fields": [],
+   "encoding": "keccak256(abi.encodePacked(ns, keys\u2026))",
+   "key_order": [
+    "index"
+   ],
+   "key_types": {
+    "index": "uint32"
+   },
    "pointed_at_by": [
     "IDFrom"
    ]
@@ -4644,6 +5516,13 @@
    },
    "kind": "anchor key",
    "fields": [],
+   "encoding": "keccak256(abi.encodePacked(ns, keys\u2026))",
+   "key_order": [
+    "index"
+   ],
+   "key_types": {
+    "index": "uint32"
+   },
    "pointed_at_by": [
     "IDTo"
    ]
@@ -4659,6 +5538,15 @@
     "Time",
     "Values"
    ],
+   "encoding": "keccak256(abi.encodePacked(ns, keys\u2026))",
+   "key_order": [
+    "holderID",
+    "dtID"
+   ],
+   "key_types": {
+    "holderID": "uint256",
+    "dtID": "uint256"
+   },
    "held_by": [
     "ACCOUNT"
    ]
@@ -4674,7 +5562,14 @@
    "kind": "record",
    "fields": [
     "Value"
-   ]
+   ],
+   "encoding": "keccak256(abi.encodePacked(ns, keys\u2026))",
+   "key_order": [
+    "typeID"
+   ],
+   "key_types": {
+    "typeID": "uint256"
+   }
   },
   "score.type": {
    "id": "score.type(epoch, index, scoreType)",
@@ -4685,6 +5580,25 @@
    },
    "kind": "anchor key",
    "fields": [],
+   "encoding": "keccak256(abi.encodePacked(ns, keys\u2026))",
+   "key_order": [
+    "epoch",
+    "index",
+    "scoreType"
+   ],
+   "key_types": {
+    "epoch": "uint256",
+    "index": "uint32",
+    "scoreType": "string"
+   },
+   "key_values": {
+    "scoreType": [
+     "COLLECT",
+     "LIQUIDATE",
+     "TOTAL_SPENT",
+     "VIP_SCORE"
+    ]
+   },
    "pointed_at_by": [
     "IDType"
    ]

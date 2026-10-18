@@ -38,22 +38,27 @@ def sync_worktree(ref, wt):
     """Create or fast-forward the worktree at wt to origin/<ref>. Dependencies are symlinked from the checkout
     (pnpm's node_modules are not tracked), so forge resolves imports exactly as it would there."""
     git = lambda *a, **k: subprocess.run(['git', *a], capture_output=True, text=True, **k)
-    f = git('-C', REPO, 'fetch', '-q', 'origin', ref)
-    if f.returncode != 0: sys.exit('git fetch origin %s failed:\n%s' % (ref, f.stderr[-1500:]))
+    is_sha = re.fullmatch(r'[0-9a-f]{7,40}', ref) is not None   # a commit: read it as is (history is in the checkout)
+    target = ref if is_sha else 'origin/' + ref
+    if not is_sha:
+        f = git('-C', REPO, 'fetch', '-q', 'origin', ref)
+        if f.returncode != 0: sys.exit('git fetch origin %s failed:\n%s' % (ref, f.stderr[-1500:]))
     if not os.path.isdir(os.path.join(wt, '.git')) and not os.path.isfile(os.path.join(wt, '.git')):
         os.makedirs(os.path.dirname(wt), exist_ok=True)
-        r = git('-C', REPO, 'worktree', 'add', '--detach', wt, 'origin/' + ref)
+        r = git('-C', REPO, 'worktree', 'add', '--detach', wt, target)
         if r.returncode != 0: sys.exit('git worktree add failed:\n' + r.stderr[-1500:])
     else:
-        r = git('-C', wt, 'checkout', '-q', '--detach', 'origin/' + ref)
-        if r.returncode != 0: sys.exit('git checkout origin/%s failed:\n%s' % (ref, r.stderr[-1500:]))
+        r = git('-C', wt, 'checkout', '-q', '--detach', target)
+        if r.returncode != 0: sys.exit('git checkout %s failed:\n%s' % (target, r.stderr[-1500:]))
     for rel in ('node_modules', os.path.join('packages', 'contracts', 'node_modules')):
         link, target = os.path.join(wt, rel), os.path.join(REPO, rel)
         if not os.path.lexists(link) and os.path.isdir(target): os.symlink(target, link)
 
 
 REF, ROOT, CACHE = pick_source(sys.argv)
-GEN = os.path.join(HERE, 'generated')
+# --out <dir>: write generated/ there instead (and leave viz/data alone), for a spec of an older contract version
+OUT_DIR = sys.argv[sys.argv.index('--out') + 1] if '--out' in sys.argv else None
+GEN = OUT_DIR or os.path.join(HERE, 'generated')
 NOTES = os.path.join(HERE, 'notes')
 
 WRITE_PREFIXES = ('set', 'remove', 'inc', 'dec', 'extract', 'push', 'transfer', 'extend')
@@ -1729,6 +1734,7 @@ def main():
     spec = write_spec(ix, model, ents, comps, systems, id_ns, src_note)
 
     # data for the visualizer (viz/): the model, a compact per-system summary, and the notes as written
+    if OUT_DIR: return   # an older version's output: generated/ elsewhere, the atlas keeps showing main
     vd = os.path.join(HERE, 'viz', 'data')
     os.makedirs(vd, exist_ok=True)
     with open(os.path.join(vd, 'domain-model.json'), 'w') as f_: json.dump(model, f_)

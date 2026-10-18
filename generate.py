@@ -522,9 +522,43 @@ def write_spec(ix, model, ents, comps, systems, id_ns, src_note):
     for z in ix.fn:
         for st in flat_events(ix.events(z)):
             if st[0] == 'call' and st[1] in ix.fn: callers_of[st[1]].append((z, st[4] if len(st) > 4 else []))
+    def concat_pattern(text):
+        """A key built by concatenation, as a pattern with * for the part that is not a literal:
+        targetShape.concat("_ITEM_USE") -> *_ITEM_USE; LibString.concat("HARVEST_", affinity) -> HARVEST_*."""
+        m = re.match(r'(?:LibString|string)\.concat\((.*)\)$', text) or re.match(r'(.+?)\.concat\((.*)\)$', text)
+        if not m: return None
+        parts = list(m.groups()) if len(m.groups()) == 2 else split_args_text(m.group(1))
+        out = ''
+        for part in parts:
+            part = part.strip()
+            lit = re.fullmatch(r'"([^"]*)"', part)
+            out += lit.group(1) if lit else (ix.str_consts.get(part) if False else '*')
+        return out if '*' in out else out
+    def split_args_text(t):
+        depth, cur, out = 0, [], []
+        for ch in t:
+            if ch == '(' : depth += 1
+            elif ch == ')': depth -= 1
+            if ch == ',' and depth == 0: out.append(''.join(cur)); cur = []
+            else: cur.append(ch)
+        out.append(''.join(cur)); return out
+    def local_strings(caller, name):
+        """Strings assigned to a local array or variable in caller: types[0] = "ITEM_USE"; types[2] = concat(…)."""
+        out = set()
+        src_ = ix.src[ix.fn[caller][2]]; f = ix.fn[caller][1]
+        s_, l_, _ = map(int, f['src'].split(':')); body = src_[s_:s_ + l_].decode(errors='replace')
+        for m in re.finditer(r'\b%s(?:\[[^\]]*\])?\s*=\s*([^;]+);' % re.escape(name), body):
+            rhs = m.group(1).strip()
+            lit = re.fullmatch(r'"([^"]*)"', rhs)
+            if lit: out.add(lit.group(1)); continue
+            if rhs in ix.str_consts.values(): out.add(rhs); continue
+            pat = concat_pattern(rhs)
+            if pat: out.add(pat)
+        return out
     def key_literals(fid, pi, depth=0, seen=()):
-        """String literals that reach parameter pi of fid from its callers, up to three calls away: the flag types,
-        data counter names and bonus types the code actually uses, so an indexer can enumerate string keys."""
+        """Strings that reach parameter pi of fid from its callers, up to three calls away: literals, string constants,
+        strings assigned to a local the caller passes, and concatenation patterns (* for the dynamic part). These are
+        the flag types, data counter names and bonus types the code can use, so an indexer can enumerate string keys."""
         out = set()
         if fid not in ix.fn or depth > 3 or (fid, pi) in seen: return out
         for caller, args in callers_of.get(fid, []):
@@ -534,6 +568,16 @@ def write_spec(ix, model, ents, comps, systems, id_ns, src_note):
             if a_[0] == 'ref':
                 ps = [x['name'] for x in ix.fn[caller][1]['parameters']['parameters']]
                 if a_[2] in ps: out |= key_literals(caller, ps.index(a_[2]), depth + 1, seen + ((fid, pi),))
+                else: out |= local_strings(caller, a_[2])
+            if a_[0] == 'expr':
+                m_ = re.fullmatch(r'(\w+)\[[^\]]*\]', a_[2])   # types[i]: the array's element strings
+                if m_:
+                    ps = [x['name'] for x in ix.fn[caller][1]['parameters']['parameters']]
+                    if m_.group(1) in ps: out |= key_literals(caller, ps.index(m_.group(1)), depth + 1, seen + ((fid, pi),))
+                    else: out |= local_strings(caller, m_.group(1))
+                    continue
+                pat = concat_pattern(a_[2])
+                if pat: out.add(pat)
         return out
     def id_meta(ns):
         """How the id for namespace ns is hashed: encoding and the type of each key, from the first occurrence that
@@ -549,7 +593,11 @@ def write_spec(ix, model, ents, comps, systems, id_ns, src_note):
                     if meta['key_types'].get(k) == 'string':
                         m2 = re.fullmatch(r'"([^"]*)"', k)
                         if m2: vals[k] = [m2.group(1)]
-                        elif k in ps: vals[k] = sorted(key_literals(occ['fid'], ps.index(k)))
+                        elif k in ps:
+                            found = key_literals(occ['fid'], ps.index(k))
+                            vals[k] = sorted(v for v in found if '*' not in v)
+                            pats = sorted(v for v in found if '*' in v)
+                            if pats: meta.setdefault('key_patterns', {})[k] = pats
             if vals: meta['key_values'] = vals
             return meta
         return None

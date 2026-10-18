@@ -85,6 +85,9 @@ def main():
     ap.add_argument('state'); ap.add_argument('--events'); ap.add_argument('--systems')
     ap.add_argument('--spec', default=os.path.join(os.path.dirname(os.path.abspath(__file__)), 'generated', 'recognition.json'))
     ap.add_argument('--show', help='list the entities recognised as this namespace or type')
+    ap.add_argument('--no-brute', action='store_true', help='skip the brute-force pass for imported records')
+    ap.add_argument('--debug', help='entity id prefix: print how the transaction pass treats it')
+    ap.add_argument('--dump', help='write the unrecognised entities (id, components, creating system) to this CSV')
     a = ap.parse_args()
     spec = json.load(open(a.spec))
     by_id = {keccak(c['id'].encode()).hex(): n for n, c in spec['components'].items() if c.get('id')}
@@ -141,6 +144,7 @@ def main():
     unrecognised = [eid for eid in live if eid not in kind]
 
     pointer_comps = [c for c, m in spec['components'].items() if m.get('type') == 'uint256' and re.match(r'^(ID|Id)[A-Z]', c)]
+    address_comps = [c for c, m in spec['components'].items() if m.get('type') == 'address']   # a wallet can be a key too (uint256(uint160(addr)))
     index_comps = [c for c, m in spec['components'].items() if c.startswith('Index') and (m.get('type') or '').startswith('uint')]
     string_comps = [c for c, m in spec['components'].items() if m.get('type') == 'string']
     def candidates(ns, r, key, ctx_ents, targets=()):
@@ -152,21 +156,27 @@ def main():
         parents = parents if isinstance(parents, list) else [parents] if parents else []
         parents = [p for p in parents if p in spec['entities']]
         if ty == 'string':
-            vals = {v.encode() for v in (r.get('key_values') or {}).get(key, [])}
-            for e in targets:
+            vals = {v for v in (r.get('key_values') or {}).get(key, [])}
+            own = set()   # strings the candidate records and the transaction's entities carry
+            for e in list(targets) + (list(ctx_ents) if ctx_ents else []):
                 for c in string_comps:
                     if c in ents[e]:
                         v = abi_string(ents[e][c])
-                        if v: vals.add(v.encode())
-            return sorted(vals)
+                        if v: own.add(v)
+            vals |= {v for v in own if targets}
+            # a key built by concatenation: * stands for a shape name, a string the transaction carries, or nothing
+            fills = set(spec['entities']) | own | {''}
+            for pat in (r.get('key_patterns') or {}).get(key, []):
+                for fill in fills: vals.add(pat.replace('*', fill))
+            return sorted(v.encode() for v in vals)
         if ty == 'uint256':
             if ctx_ents is None: return [int(x, 16) for p in parents for x in by_type[p]] if parents else []
-            vals = {int(x, 16) for x in ctx_ents} | {int(x, 16) for x in singles}
+            vals = {int(x, 16) for x in ctx_ents} | {int(x, 16) for x in singles} | set(range(0, 33))   # small numbers: epochs, 0 for global
             for x in ctx_ents:
-                for c in pointer_comps:
+                for c in pointer_comps + address_comps:
                     if c in ents[x]: vals.add(int.from_bytes(ents[x][c], 'big'))
             if parents:   # keep ids of the parent types, and pointed-at ids whose type we know to be a parent
-                vals = {v for v in vals if kind.get('%064x' % v, ('', ''))[1] in parents or '%064x' % v in singles or '%064x' % v not in kind}
+                vals = {v for v in vals if kind.get('%064x' % v, ('', ''))[1] in parents or '%064x' % v in singles or '%064x' % v not in kind or v < 33}
             return sorted(vals)
         if ty and ty.startswith('uint'):
             if ctx_ents is None:
@@ -204,24 +214,31 @@ def main():
             ctx = in_tx[tx]
             if len(ctx) > 600: big_tx += 1; continue   # a registry setup writing thousands of entities: no useful context
             fields = {ns: set(r['fields']) for ns, r in ctx_records}
+            dbg = a.debug and any(e.startswith(a.debug) for e in targets)
+            if dbg: print('debug tx', tx, 'targets', len(targets), 'ctx', len(ctx))
             for ns, r in ctx_records:
                 if not any(set(ents[e]) <= fields[ns] for e in targets if e not in kind): continue   # no target could be this record
                 here = [e for e in targets if e not in kind and set(ents[e]) <= fields[ns]]
                 cands = [candidates(ns, r, k, ctx, here) for k in r['key_order']]
+                if dbg: print('  ', ns, 'cands', [len(c) for c in cands], 'types', [r['key_types'].get(k) for k in r['key_order']])
                 if any(not c for c in cands): continue
                 total = 1
                 for c in cands: total *= len(c)
                 if total > 300_000: continue
+                hs = set()
                 for combo in itertools.product(*cands):
                     h = hashed_id(ns, r['key_order'], r['key_types'], dict(zip(r['key_order'], combo)), 'Packed' in r['encoding']).hex()
+                    hs.add(h)
                     if h in targets and h not in kind: kind[h] = ('record', ns); ctx_hits[ns] += 1
+                if dbg: print('     hashes', len(hs), 'targets hit', len(hs & targets), '| sample target', sorted(targets)[0][:16], '| encoding', r['encoding'], '| holders', [('%064x' % v)[:10] for v in cands[0]][:4] if r['key_types'].get(r['key_order'][0]) == 'uint256' else cands[0][:4])
                 if all(e in kind for e in targets): break
 
     # 2c. no context (imported by a snapshot): every parent id and index value in the state, and the literals.
     # Only worth it with the fast keccak; the pure-Python one would take hours.
     brute_hits = collections.Counter()
-    if FAST and any(e not in kind for e in live):
-        all_ids = [int(x, 16) for x in kind if kind[x][0] == 'type'] + [int(x, 16) for x in singles] + [0]
+    if FAST and not a.no_brute and any(e not in kind for e in live):
+        all_ids = sorted({int(x, 16) for x in kind if kind[x][0] == 'type'} | {int(x, 16) for x in singles} | {0}
+                         | {int.from_bytes(ents[x][c], 'big') for x in ents for c in address_comps if c in ents[x]})
         all_idx = sorted({int.from_bytes(ents[x][c], 'big') for x in ents for c in index_comps if c in ents[x]} | {0})
         for ns, r in sorted(records.items(), key=lambda kv: len(kv[1].get('key_order', ()))):
             if 'key_order' not in r: continue
@@ -285,6 +302,11 @@ def main():
     for ns, n in addr_hits.most_common(): print('   %-26s %6d' % (ns, n))
     print('\n4. untyped shapes by signature%s: %d' % (' and creating system' if created_by else '', sum(sig_hits.values())))
     for k, n in sig_hits.most_common(): print('   %-26s %6d' % (k, n))
+    if a.dump:
+        with open(a.dump, 'w') as f:
+            w = csv.writer(f)
+            for eid, comps in ents.items():
+                if eid in live and eid not in kind: w.writerow([eid, ' '.join(sorted(comps)), created_by.get(eid, '')])
     print('\nunrecognised: %d entities' % sum(unmatched.values()))
     for sig, n in unmatched.most_common(10): print('   %6d  %s' % (n, ', '.join(sig)))
     if a.show:

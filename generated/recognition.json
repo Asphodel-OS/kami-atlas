@@ -2236,6 +2236,16 @@
       "index": "uint32",
       "type_": "string"
      },
+     "key_patterns": {
+      "type_": [
+       "**",
+       "*_ITEM_USE",
+       "HARVEST_AFFINITY_*",
+       "HARVEST_TIME_*",
+       "HARVEST_WHEN_*",
+       "LIQ_WHEN_*"
+      ]
+     },
      "key_values": {
       "type_": [
        "CRAFT_ITEM",
@@ -2243,12 +2253,15 @@
        "DROPTABLE_ITEM_TOTAL",
        "GACHA_COMMITS_PENDING",
        "GOAL_CONTRIBUTION",
+       "HARVEST_AT_NODE",
+       "HARVEST_TIME",
        "ITEM_AUCTION_BUY",
        "ITEM_AUCTION_SPEND",
        "ITEM_BURN",
        "ITEM_COUNT",
        "ITEM_REVENUE",
        "ITEM_SPEND",
+       "ITEM_TOTAL",
        "ITEM_USE",
        "KAMI721_UNSTAKE",
        "KAMI_GACHA_MINT",
@@ -2266,7 +2279,13 @@
        "KAMI_STAKE",
        "KILL_BOUNTIES",
        "LIQUIDATED_VICTIM",
+       "LIQUIDATE_AT_NODE",
+       "LIQUIDATE_TOTAL",
        "LIQ_TARGET_ACC",
+       "LISTING_BUY",
+       "LISTING_BUY_TOTAL",
+       "LISTING_SELL",
+       "LISTING_SELL_TOTAL",
        "MESSAGES",
        "MINT_NUM_PUBLIC",
        "MINT_NUM_TOTAL",
@@ -3743,6 +3762,11 @@
       "anchorID": "uint256",
       "type_": "string",
       "index": "uint32"
+     },
+     "key_patterns": {
+      "type_": [
+       "**"
+      ]
      },
      "key_values": {
       "type_": [
@@ -5228,7 +5252,13 @@
       "_type": "string"
      },
      "key_values": {
-      "_type": []
+      "_type": [
+       "BACKGROUND",
+       "BODY",
+       "COLOR",
+       "FACE",
+       "HAND"
+      ]
      },
      "pointed_at_by": [
       "IDAnchor"

@@ -18,7 +18,8 @@ What it makes, all under a `domain` schema in PostgreSQL:
   domain.outbox             what changed, per block and transaction: kind, id, columns; the feed for subscriptions
   domain.bootstrap()        fills the entity-type tables from ecs.state (current values); records are filled by the
                             per-transaction populator, which has the context their keys need
-Decoding helpers (domain.*) are self-contained plpgsql: uint, int32, bool, string, address, Stat, Coord, uint arrays.
+Decoding helpers (domain.*) are self-contained plpgsql: uint, bigint (range-guarded), signed bigint, int32, bool, string,
+address, Stat, Coord, uint arrays. Column types: see SMALL_UINT, VALUE_TYPES and WEI_KINDS below.
 The migration is a pure function of the spec; its header names the contracts commit the spec came from.
 Standard library only.
 """
@@ -46,8 +47,24 @@ def table_name(kind, is_record):
 POINTER = re.compile(r'^(ID|Id)[A-Z]')
 
 
-def columns_for(comp, ctype):
-    """(column name, sql type, decoding expression over value v) list for one component."""
+# uint256 on chain, small numbers in practice: epoch seconds, levels, counters, rates. bigint instead of numeric(78).
+SMALL_UINT = re.compile(r'^(Time\w*|Experience|Level|Rate|Cost|Max|Rarity|Tax|Reroll|SkillPoint|BlockReveal)$')
+# Value is overloaded: a count or amount on most kinds, but signed on bonuses, packed on allocations and configs, a hash on
+# room gates, a count or a component id on conditions, and an ERC-20 amount (wei) on the kami market, pools and the
+# token portal. Measured on the world-creation slice (kami-atlas notes); kinds not listed get bigint.
+VALUE_TYPES = {
+    'bonus': ('bigint', 'domain.to_int_bigint(v)'),          # int256 cast to uint256 by LibBonus: negatives
+    'allocation': ('bytea', 'domain.id32(v)'),               # packed: two 128-bit halves
+    'condition': ('numeric', 'domain.to_uint(v)'),           # a count (ITEM, LEVEL) or a component id (COMPLETE_COMP)
+    'room_gate': ('bytea', 'domain.id32(v)'),                # a 32-byte hash
+    'is.config': ('bytea', 'domain.id32(v)'),                # anything: number, bytes32 string, address, timestamp
+}
+WEI_KINDS = {'kami_listing', 'kami_offer', 'kami_collection_offer', 'pool', 'pool_share', 'token_receipt'}   # Value, Tax: token amounts
+
+
+def columns_for(comp, ctype, owner=None):
+    """(column name, sql type, decoding expression over value v) list for one component of one entity type or record
+    kind (owner: the spec's name, None when the owner does not matter)."""
     c = snake(comp)
     if ctype == 'Stat':
         return [(c + '_' + part, 'integer', 'domain.stat_part(v, %d)' % i) for i, part in enumerate(('base', 'shift', 'boost', 'sync'))]
@@ -55,20 +72,25 @@ def columns_for(comp, ctype):
         return [(c + '_' + part, 'integer', 'domain.coord_part(v, %d)' % i) for i, part in enumerate(('x', 'y', 'z'))]
     if ctype == 'uint256':
         if POINTER.match(comp): return [(c, 'bytea', 'domain.id32(v)')]   # an entity id: keep the 32 bytes for joins
+        kind = owner if owner is None or '.' in owner else snake(owner)   # record namespace as is, entity type as its table name
+        if comp == 'Value' and kind in VALUE_TYPES: return [(c,) + VALUE_TYPES[kind]]
+        if kind in WEI_KINDS and comp in ('Value', 'Tax'): return [(c, 'numeric', 'domain.to_uint(v)')]
+        if comp == 'Value' or SMALL_UINT.match(comp): return [(c, 'bigint', 'domain.to_bigint(v)')]
         return [(c, 'numeric', 'domain.to_uint(v)')]
     if ctype in ('uint32', 'uint8', 'uint16', 'uint64'): return [(c, 'bigint', 'domain.to_uint(v)::bigint')]
     if ctype in ('int32', 'int8', 'int16', 'int64'): return [(c, 'integer' if ctype != 'int64' else 'bigint', 'domain.to_int32(v)' if ctype == 'int32' else 'domain.to_uint(v)::bigint')]
     if ctype == 'bool': return [(c, 'boolean', 'domain.to_bool(v)')]
     if ctype == 'string': return [(c, 'text', 'domain.to_string(v)')]
     if ctype == 'address': return [(c, 'bytea', 'domain.to_address(v)')]
-    if ctype in ('uint32[]', 'uint256[]', 'int32[]'): return [(c, 'numeric[]', 'domain.to_uint_array(v)')]
+    if ctype in ('uint32[]', 'uint8[]', 'uint16[]'): return [(c, 'bigint[]', 'domain.to_uint_array(v)::bigint[]')]
+    if ctype in ('uint256[]', 'int32[]'): return [(c, 'numeric[]', 'domain.to_uint_array(v)')]
     if ctype == 'string[]': return [(c, 'text[]', 'domain.to_string_array(v)')]
     return [(c, 'bytea', 'v')]   # unknown: keep the raw bytes
 
 
 def key_column(key, ktype, parents):
     k = 'key_' + snake(key).rstrip('_')   # has.flag(id, flagType): the key "id" would collide with the row id
-    if ktype == 'uint256': return (k, 'bytea' if parents or key.lower().endswith('id') else 'numeric')
+    if ktype == 'uint256': return (k, 'bytea' if parents or key.lower().endswith('id') else 'bigint')   # epochs, durations
     if ktype and ktype.startswith('uint'): return (k, 'bigint')
     if ktype == 'string': return (k, 'text')
     if ktype == 'address': return (k, 'bytea')
@@ -87,6 +109,33 @@ DECLARE r numeric := 0; i int; b bytea := domain.id32(v);
 BEGIN
   FOR i IN 0..31 LOOP r := r * 256 + get_byte(b, i); END LOOP;
   RETURN r;
+END $$;
+-- +goose StatementEnd
+-- +goose StatementBegin
+-- a uint256 that is a small number on chain; a value past bigint is NULL and a WARNING in the log, never a failed block
+CREATE OR REPLACE FUNCTION domain.to_bigint(v bytea) RETURNS bigint LANGUAGE plpgsql IMMUTABLE STRICT AS $$
+DECLARE n numeric := domain.to_uint(v);
+BEGIN
+  IF n > 9223372036854775807 THEN
+    RAISE WARNING 'domain.to_bigint: value out of range: 0x%', encode(v, 'hex');
+    RETURN NULL;
+  END IF;
+  RETURN n::bigint;
+END $$;
+-- +goose StatementEnd
+-- +goose StatementBegin
+-- an int256 stored through a uint256 component (two's complement); same range guard
+CREATE OR REPLACE FUNCTION domain.to_int_bigint(v bytea) RETURNS bigint LANGUAGE plpgsql IMMUTABLE STRICT AS $$
+DECLARE n numeric := domain.to_uint(v);
+BEGIN
+  IF n >= 57896044618658097711785492504343953926634992332820282019728792003956564819968 THEN   -- 2^255: negative
+    n := n - 115792089237316195423570985008687907853269984665640564039457584007913129639936;    -- 2^256
+  END IF;
+  IF n > 9223372036854775807 OR n < -9223372036854775808 THEN
+    RAISE WARNING 'domain.to_int_bigint: value out of range: 0x%', encode(v, 'hex');
+    RETURN NULL;
+  END IF;
+  RETURN n::bigint;
 END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
@@ -289,7 +338,7 @@ CREATE INDEX IF NOT EXISTS idx_domain_outbox_kind_id ON domain.outbox(kind, id);
         cols = []
         for comp in e['components'] + e['components_later']:
             if comp == 'EntityType' or comp not in comps: continue
-            cols += [(col, typ, expr, comp) for col, typ, expr in columns_for(comp, comps[comp].get('type'))]
+            cols += [(col, typ, expr, comp) for col, typ, expr in columns_for(comp, comps[comp].get('type'), t)]
         table_cols[t] = cols
         w('CREATE TABLE IF NOT EXISTS domain.%s (\n  id bytea PRIMARY KEY,\n  block_number integer NOT NULL,\n  %s\n);' % (
             table_name(t, False), ',\n  '.join('%s %s' % (col, typ) for col, typ, _, _ in cols)))
@@ -303,7 +352,7 @@ CREATE INDEX IF NOT EXISTS idx_domain_outbox_kind_id ON domain.outbox(kind, id);
         kcols = [key_column(k, (r.get('key_types') or {}).get(k), r['keys'].get(k)) for k in keys]
         fcols = []
         for f in r['fields']:
-            if f in comps: fcols += [(col, typ, expr, f) for col, typ, expr in columns_for(f, comps[f].get('type'))]
+            if f in comps: fcols += [(col, typ, expr, f) for col, typ, expr in columns_for(f, comps[f].get('type'), ns)]
         seen = set(); kcols = [kc for kc in kcols if not (kc[0] in seen or seen.add(kc[0]))]
         rec_cols[ns] = fcols
         w('CREATE TABLE IF NOT EXISTS domain.%s (\n  id bytea PRIMARY KEY,\n  block_number integer NOT NULL,\n  parent bytea,\n  %s%s\n);' % (

@@ -237,8 +237,8 @@ def main():
     # Only worth it with the fast keccak; the pure-Python one would take hours.
     brute_hits = collections.Counter()
     if FAST and not a.no_brute and any(e not in kind for e in live):
-        all_ids = sorted({int(x, 16) for x in kind if kind[x][0] == 'type'} | {int(x, 16) for x in singles} | {0}
-                         | {int.from_bytes(ents[x][c], 'big') for x in ents for c in address_comps if c in ents[x]})
+        all_ids = sorted({int(x, 16) for x in kind if kind[x][0] == 'type'} | {int(x, 16) for x in singles} | set(range(0, 33))
+                         | {int.from_bytes(ents[x][c], 'big') for x in ents for c in address_comps + pointer_comps if c in ents[x]})
         all_idx = sorted({int.from_bytes(ents[x][c], 'big') for x in ents for c in index_comps if c in ents[x]} | {0})
         for ns, r in sorted(records.items(), key=lambda kv: len(kv[1].get('key_order', ()))):
             if 'key_order' not in r: continue

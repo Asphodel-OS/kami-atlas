@@ -18,8 +18,8 @@ What it makes, all under a `domain` schema in PostgreSQL:
   domain.outbox             what changed, per block and transaction: kind, id, columns; the feed for subscriptions
   domain.bootstrap()        fills the entity-type tables from ecs.state (current values); records are filled by the
                             per-transaction populator, which has the context their keys need
-Decoding helpers (domain.*) are self-contained plpgsql: uint, bigint (range-guarded), signed bigint, int32, bool, string,
-address, Stat, Coord, uint arrays. Column types: see SMALL_UINT, VALUE_TYPES and WEI_KINDS below.
+Decoding helpers (domain.*) are self-contained plpgsql: uint, bigint and integer (range-guarded), signed bigint, timestamptz,
+int32, bool, string, address, Stat, Coord, uint arrays. Column types: INTEGER_UINT, BIGINT_UINT, TIMESTAMP_UINT, VALUE_TYPES, WEI_KINDS.
 The migration is a pure function of the spec; its header names the contracts commit the spec came from.
 Standard library only.
 """
@@ -47,11 +47,15 @@ def table_name(kind, is_record):
 POINTER = re.compile(r'^(ID|Id)[A-Z]')
 
 
-# uint256 on chain, small numbers in practice: epoch seconds, levels, counters, rates. bigint instead of numeric(78).
-SMALL_UINT = re.compile(r'^(Time\w*|Experience|Level|Rate|Cost|Max|Rarity|Tax|Reroll|SkillPoint|BlockReveal)$')
-# Value is overloaded: a count or amount on most kinds, but signed on bonuses, packed on allocations and configs, a hash on
-# room gates, a count or a component id on conditions, and an ERC-20 amount (wei) on the kami market, pools and the
-# token portal. Measured on the world-creation slice (kami-atlas notes); kinds not listed get bigint.
+# Column types, decided per component with Acheron on 2026-10-19 from where each one is written and read (kami-atlas
+# README: Domain schema). One type per component wherever it lands; Value is the one exception, typed per kind.
+INTEGER_UINT = {'Level', 'SkillPoint', 'Rarity', 'Cost', 'Max', 'Reroll', 'BlockReveal', 'Time'}   # bounded by design; Time is
+                                                                                                    # seconds (a duration or an instant)
+BIGINT_UINT = {'Experience', 'Rate'}                                                                # lifetime accumulator; fixed-point rates
+TIMESTAMP_UINT = {'TimeStart', 'TimeLast', 'TimeLastAction', 'TimeEnd', 'TimeNext', 'TimeReset'}    # always block.timestamp-like instants
+# Value is overloaded: a count or amount on most kinds (bigint), but signed on bonuses, packed on allocations and configs, a
+# hash on room gates, a count or a component id on conditions, and an ERC-20 amount (wei) on the kami market, pools and
+# the token portal. Measured on the world-creation slice; kinds not listed get bigint.
 VALUE_TYPES = {
     'bonus': ('bigint', 'domain.to_int_bigint(v)'),          # int256 cast to uint256 by LibBonus: negatives
     'allocation': ('bytea', 'domain.id32(v)'),               # packed: two 128-bit halves
@@ -75,14 +79,17 @@ def columns_for(comp, ctype, owner=None):
         kind = owner if owner is None or '.' in owner else snake(owner)   # record namespace as is, entity type as its table name
         if comp == 'Value' and kind in VALUE_TYPES: return [(c,) + VALUE_TYPES[kind]]
         if kind in WEI_KINDS and comp in ('Value', 'Tax'): return [(c, 'numeric', 'domain.to_uint(v)')]
-        if comp == 'Value' or SMALL_UINT.match(comp): return [(c, 'bigint', 'domain.to_bigint(v)')]
+        if comp == 'Value' or comp in BIGINT_UINT: return [(c, 'bigint', 'domain.to_bigint(v)')]
+        if comp in INTEGER_UINT: return [(c, 'integer', 'domain.to_integer(v)')]
+        if comp in TIMESTAMP_UINT: return [(c, 'timestamptz', 'domain.to_timestamp(v)')]
         return [(c, 'numeric', 'domain.to_uint(v)')]
-    if ctype in ('uint32', 'uint8', 'uint16', 'uint64'): return [(c, 'bigint', 'domain.to_uint(v)::bigint')]
+    if ctype in ('uint32', 'uint8', 'uint16'): return [(c, 'integer', 'domain.to_integer(v)')]
+    if ctype == 'uint64': return [(c, 'bigint', 'domain.to_bigint(v)')]
     if ctype in ('int32', 'int8', 'int16', 'int64'): return [(c, 'integer' if ctype != 'int64' else 'bigint', 'domain.to_int32(v)' if ctype == 'int32' else 'domain.to_uint(v)::bigint')]
     if ctype == 'bool': return [(c, 'boolean', 'domain.to_bool(v)')]
     if ctype == 'string': return [(c, 'text', 'domain.to_string(v)')]
     if ctype == 'address': return [(c, 'bytea', 'domain.to_address(v)')]
-    if ctype in ('uint32[]', 'uint8[]', 'uint16[]'): return [(c, 'bigint[]', 'domain.to_uint_array(v)::bigint[]')]
+    if ctype in ('uint32[]', 'uint8[]', 'uint16[]'): return [(c, 'integer[]', 'domain.to_uint_array(v)::integer[]')]
     if ctype in ('uint256[]', 'int32[]'): return [(c, 'numeric[]', 'domain.to_uint_array(v)')]
     if ctype == 'string[]': return [(c, 'text[]', 'domain.to_string_array(v)')]
     return [(c, 'bytea', 'v')]   # unknown: keep the raw bytes
@@ -90,8 +97,8 @@ def columns_for(comp, ctype, owner=None):
 
 def key_column(key, ktype, parents):
     k = 'key_' + snake(key).rstrip('_')   # has.flag(id, flagType): the key "id" would collide with the row id
-    if ktype == 'uint256': return (k, 'bytea' if parents or key.lower().endswith('id') else 'bigint')   # epochs, durations
-    if ktype and ktype.startswith('uint'): return (k, 'bigint')
+    if ktype == 'uint256': return (k, 'bytea' if parents or key.lower().endswith('id') else 'integer')   # epochs, expiries
+    if ktype and ktype.startswith('uint'): return (k, 'integer')
     if ktype == 'string': return (k, 'text')
     if ktype == 'address': return (k, 'bytea')
     return (k, 'bytea')
@@ -121,6 +128,30 @@ BEGIN
     RETURN NULL;
   END IF;
   RETURN n::bigint;
+END $$;
+-- +goose StatementEnd
+-- +goose StatementBegin
+-- a uint256 (or uint32) that is bounded by design; same guard as to_bigint
+CREATE OR REPLACE FUNCTION domain.to_integer(v bytea) RETURNS integer LANGUAGE plpgsql IMMUTABLE STRICT AS $$
+DECLARE n numeric := domain.to_uint(v);
+BEGIN
+  IF n > 2147483647 THEN
+    RAISE WARNING 'domain.to_integer: value out of range: 0x%', encode(v, 'hex');
+    RETURN NULL;
+  END IF;
+  RETURN n::integer;
+END $$;
+-- +goose StatementEnd
+-- +goose StatementBegin
+-- a uint256 holding block.timestamp (seconds); guarded well past any real date
+CREATE OR REPLACE FUNCTION domain.to_timestamp(v bytea) RETURNS timestamptz LANGUAGE plpgsql IMMUTABLE STRICT AS $$
+DECLARE n numeric := domain.to_uint(v);
+BEGIN
+  IF n > 9223372036854 THEN
+    RAISE WARNING 'domain.to_timestamp: value out of range: 0x%', encode(v, 'hex');
+    RETURN NULL;
+  END IF;
+  RETURN to_timestamp(n::double precision);
 END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin

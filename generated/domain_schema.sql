@@ -30,6 +30,30 @@ BEGIN
 END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
+-- a uint256 (or uint32) that is bounded by design; same guard as to_bigint
+CREATE OR REPLACE FUNCTION domain.to_integer(v bytea) RETURNS integer LANGUAGE plpgsql IMMUTABLE STRICT AS $$
+DECLARE n numeric := domain.to_uint(v);
+BEGIN
+  IF n > 2147483647 THEN
+    RAISE WARNING 'domain.to_integer: value out of range: 0x%', encode(v, 'hex');
+    RETURN NULL;
+  END IF;
+  RETURN n::integer;
+END $$;
+-- +goose StatementEnd
+-- +goose StatementBegin
+-- a uint256 holding block.timestamp (seconds); guarded well past any real date
+CREATE OR REPLACE FUNCTION domain.to_timestamp(v bytea) RETURNS timestamptz LANGUAGE plpgsql IMMUTABLE STRICT AS $$
+DECLARE n numeric := domain.to_uint(v);
+BEGIN
+  IF n > 9223372036854 THEN
+    RAISE WARNING 'domain.to_timestamp: value out of range: 0x%', encode(v, 'hex');
+    RETURN NULL;
+  END IF;
+  RETURN to_timestamp(n::double precision);
+END $$;
+-- +goose StatementEnd
+-- +goose StatementBegin
 -- an int256 stored through a uint256 component (two's complement); same range guard
 CREATE OR REPLACE FUNCTION domain.to_int_bigint(v bytea) RETURNS bigint LANGUAGE plpgsql IMMUTABLE STRICT AS $$
 DECLARE n numeric := domain.to_uint(v);
@@ -494,26 +518,26 @@ CREATE TABLE IF NOT EXISTS domain.account (
   address_operator bytea,
   address_owner bytea,
   cache_operator bytea,
-  index_account bigint,
-  index_room bigint,
+  index_account integer,
+  index_room integer,
   stamina_base integer,
   stamina_shift integer,
   stamina_boost integer,
   stamina_sync integer,
-  time_last bigint,
-  time_last_action bigint,
-  time_start bigint,
+  time_last timestamptz,
+  time_last_action timestamptz,
+  time_start timestamptz,
   value bigint,
   description text,
   experience bigint,
   name text,
   state text,
-  time_next bigint
+  time_next timestamptz
 );
 CREATE TABLE IF NOT EXISTS domain.commit (
   id bytea PRIMARY KEY,
   block_number integer NOT NULL,
-  block_reveal bigint,
+  block_reveal integer,
   id_holder bytea,
   type text
 );
@@ -523,7 +547,7 @@ CREATE TABLE IF NOT EXISTS domain.equipment (
   block_number integer NOT NULL,
   for_ text,
   id_owns_equipment bytea,
-  index_item bigint
+  index_item integer
 );
 CREATE INDEX IF NOT EXISTS idx_domain_equipment_id_owns_equipment ON domain.equipment(id_owns_equipment);
 CREATE TABLE IF NOT EXISTS domain.friendship (
@@ -543,9 +567,9 @@ CREATE TABLE IF NOT EXISTS domain.harvest (
   id_holder bytea,
   id_source bytea,
   state text,
-  time_last bigint,
-  time_reset bigint,
-  time_start bigint,
+  time_last timestamptz,
+  time_reset timestamptz,
+  time_start timestamptz,
   value bigint
 );
 CREATE INDEX IF NOT EXISTS idx_domain_harvest_id_holder ON domain.harvest(id_holder);
@@ -554,7 +578,7 @@ CREATE TABLE IF NOT EXISTS domain.inventory (
   id bytea PRIMARY KEY,
   block_number integer NOT NULL,
   id_owns_inventory bytea,
-  index_item bigint,
+  index_item integer,
   value bigint
 );
 CREATE INDEX IF NOT EXISTS idx_domain_inventory_id_owns_inventory ON domain.inventory(id_owns_inventory);
@@ -571,20 +595,20 @@ CREATE TABLE IF NOT EXISTS domain.kami (
   health_boost integer,
   health_sync integer,
   id_owns_kami bytea,
-  index_background bigint,
-  index_body bigint,
-  index_color bigint,
-  index_face bigint,
-  index_hand bigint,
-  index_kami bigint,
-  level bigint,
+  index_background integer,
+  index_body integer,
+  index_color integer,
+  index_face integer,
+  index_hand integer,
+  index_kami integer,
+  level integer,
   media_uri text,
   name text,
   power_base integer,
   power_shift integer,
   power_boost integer,
   power_sync integer,
-  skill_point bigint,
+  skill_point integer,
   slots_base integer,
   slots_shift integer,
   slots_boost integer,
@@ -594,10 +618,10 @@ CREATE TABLE IF NOT EXISTS domain.kami (
   violence_shift integer,
   violence_boost integer,
   violence_sync integer,
-  index_room bigint,
-  reroll bigint,
-  time_last bigint,
-  time_next bigint
+  index_room integer,
+  reroll integer,
+  time_last timestamptz,
+  time_next timestamptz
 );
 CREATE INDEX IF NOT EXISTS idx_domain_kami_id_owns_kami ON domain.kami(id_owns_kami);
 CREATE TABLE IF NOT EXISTS domain.kami_collection_offer (
@@ -605,10 +629,10 @@ CREATE TABLE IF NOT EXISTS domain.kami_collection_offer (
   block_number integer NOT NULL,
   balance integer,
   id_owns_kami_order bytea,
-  max bigint,
+  max integer,
   state text,
-  time_end bigint,
-  time_start bigint,
+  time_end timestamptz,
+  time_start timestamptz,
   value numeric
 );
 CREATE INDEX IF NOT EXISTS idx_domain_kami_collection_offer_id_owns_kami_order ON domain.kami_collection_offer(id_owns_kami_order);
@@ -616,10 +640,10 @@ CREATE TABLE IF NOT EXISTS domain.kami_listing (
   id bytea PRIMARY KEY,
   block_number integer NOT NULL,
   id_owns_kami_order bytea,
-  index_kami_listing bigint,
+  index_kami_listing integer,
   state text,
-  time_end bigint,
-  time_start bigint,
+  time_end timestamptz,
+  time_start timestamptz,
   value numeric,
   values_ numeric[]
 );
@@ -628,10 +652,10 @@ CREATE TABLE IF NOT EXISTS domain.kami_offer (
   id bytea PRIMARY KEY,
   block_number integer NOT NULL,
   id_owns_kami_order bytea,
-  index_kami bigint,
+  index_kami integer,
   state text,
-  time_end bigint,
-  time_start bigint,
+  time_end timestamptz,
+  time_start timestamptz,
   value numeric
 );
 CREATE INDEX IF NOT EXISTS idx_domain_kami_offer_id_owns_kami_order ON domain.kami_offer(id_owns_kami_order);
@@ -657,10 +681,10 @@ CREATE TABLE IF NOT EXISTS domain.token_receipt (
   id bytea PRIMARY KEY,
   block_number integer NOT NULL,
   id_owns_withdrawal bytea,
-  index_item bigint,
+  index_item integer,
   tax numeric,
-  time_end bigint,
-  time_start bigint,
+  time_end timestamptz,
+  time_start timestamptz,
   token_address bytea,
   value numeric
 );
@@ -671,8 +695,8 @@ CREATE TABLE IF NOT EXISTS domain.trade (
   id_owns_inventory bytea,
   id_owns_trade bytea,
   id_target bytea,
-  index_item bigint,
-  keys bigint[],
+  index_item integer,
+  keys integer[],
   state text,
   value bigint,
   values_ numeric[]
@@ -687,17 +711,17 @@ CREATE TABLE IF NOT EXISTS domain.quest (
   description_alt text,
   id_anchor bytea,
   id_owns_quest bytea,
-  index_quest bigint,
+  index_quest integer,
   is_disabled boolean,
   is_registry boolean,
   name text,
   subtype text,
-  time_start bigint,
+  time_start timestamptz,
   type text,
   value bigint,
   is_complete boolean,
-  time bigint,
-  time_last bigint
+  time integer,
+  time_last timestamptz
 );
 CREATE INDEX IF NOT EXISTS idx_domain_quest_id_anchor ON domain.quest(id_anchor);
 CREATE INDEX IF NOT EXISTS idx_domain_quest_id_owns_quest ON domain.quest(id_owns_quest);
@@ -705,33 +729,33 @@ CREATE TABLE IF NOT EXISTS domain.relationship (
   id bytea PRIMARY KEY,
   block_number integer NOT NULL,
   id_owns_relationship bytea,
-  index_npc bigint,
-  index_relationship bigint,
+  index_npc integer,
+  index_relationship integer,
   is_registry boolean,
-  blacklist bigint[],
+  blacklist integer[],
   name text,
-  whitelist bigint[]
+  whitelist integer[]
 );
 CREATE INDEX IF NOT EXISTS idx_domain_relationship_id_owns_relationship ON domain.relationship(id_owns_relationship);
 CREATE TABLE IF NOT EXISTS domain.skill (
   id bytea PRIMARY KEY,
   block_number integer NOT NULL,
-  cost bigint,
+  cost integer,
   description text,
   for_ text,
   id_anchor bytea,
   id_owns_skill bytea,
   id_type bytea,
   id_source bytea,
-  index_skill bigint,
+  index_skill integer,
   is_registry boolean,
-  level bigint,
-  max bigint,
+  level integer,
+  max integer,
   media_uri text,
   name text,
-  skill_point bigint,
+  skill_point integer,
   subtype text,
-  time bigint,
+  time integer,
   type text,
   value bigint
 );
@@ -744,9 +768,9 @@ CREATE TABLE IF NOT EXISTS domain.allocation (
   block_number integer NOT NULL,
   id_anchor bytea,
   id_source bytea,
-  index bigint,
+  index integer,
   type text,
-  keys bigint[],
+  keys integer[],
   value bytea,
   weights numeric[]
 );
@@ -757,12 +781,12 @@ CREATE TABLE IF NOT EXISTS domain.auction (
   block_number integer NOT NULL,
   balance integer,
   decay integer,
-  index_currency bigint,
-  index_item bigint,
-  max bigint,
+  index_currency integer,
+  index_item integer,
+  max integer,
   period integer,
   rate bigint,
-  time_start bigint,
+  time_start timestamptz,
   value bigint
 );
 CREATE TABLE IF NOT EXISTS domain.bonus (
@@ -772,7 +796,7 @@ CREATE TABLE IF NOT EXISTS domain.bonus (
   id_source bytea,
   is_registry boolean,
   subtype text,
-  time bigint,
+  time integer,
   type text,
   value bigint,
   id_type bytea
@@ -785,7 +809,7 @@ CREATE TABLE IF NOT EXISTS domain.condition (
   block_number integer NOT NULL,
   for_ text,
   id_anchor bytea,
-  index bigint,
+  index integer,
   logic_type text,
   type text,
   value numeric
@@ -795,7 +819,7 @@ CREATE TABLE IF NOT EXISTS domain.faction (
   id bytea PRIMARY KEY,
   block_number integer NOT NULL,
   description text,
-  index_faction bigint,
+  index_faction integer,
   is_registry boolean,
   media_uri text,
   name text,
@@ -810,8 +834,8 @@ CREATE TABLE IF NOT EXISTS domain.goal (
   block_number integer NOT NULL,
   description text,
   for_ text,
-  index bigint,
-  index_room bigint,
+  index integer,
+  index_room integer,
   is_disabled boolean,
   logic_type text,
   name text,
@@ -830,11 +854,11 @@ CREATE TABLE IF NOT EXISTS domain.item (
   has_flag boolean,
   id_owns_flag bytea,
   id_type bytea,
-  index_item bigint,
+  index_item integer,
   is_registry boolean,
   media_uri text,
   name text,
-  rarity bigint,
+  rarity integer,
   type text,
   for_ text,
   is_disabled boolean,
@@ -847,10 +871,10 @@ CREATE TABLE IF NOT EXISTS domain.listing (
   id bytea PRIMARY KEY,
   block_number integer NOT NULL,
   balance integer,
-  index_currency bigint,
-  index_item bigint,
-  index_npc bigint,
-  time_start bigint,
+  index_currency integer,
+  index_item integer,
+  index_npc integer,
+  time_start timestamptz,
   value bigint,
   decay integer,
   period integer,
@@ -863,25 +887,25 @@ CREATE TABLE IF NOT EXISTS domain.node (
   block_number integer NOT NULL,
   affinity text,
   description text,
-  index_item bigint,
-  index_node bigint,
-  index_room bigint,
+  index_item integer,
+  index_node integer,
+  index_room integer,
   name text,
   type text
 );
 CREATE TABLE IF NOT EXISTS domain.npc (
   id bytea PRIMARY KEY,
   block_number integer NOT NULL,
-  index_npc bigint,
-  index_room bigint,
+  index_npc integer,
+  index_room integer,
   name text
 );
 CREATE TABLE IF NOT EXISTS domain.pool (
   id bytea PRIMARY KEY,
   block_number integer NOT NULL,
-  keys bigint[],
+  keys integer[],
   rate bigint,
-  time_start bigint,
+  time_start timestamptz,
   is_disabled boolean,
   value numeric
 );
@@ -889,9 +913,9 @@ CREATE TABLE IF NOT EXISTS domain.recipe (
   id bytea PRIMARY KEY,
   block_number integer NOT NULL,
   experience bigint,
-  index_recipe bigint,
+  index_recipe integer,
   is_registry boolean,
-  keys bigint[],
+  keys integer[],
   stamina_base integer,
   stamina_shift integer,
   stamina_boost integer,
@@ -909,12 +933,12 @@ CREATE TABLE IF NOT EXISTS domain.room (
   id bytea PRIMARY KEY,
   block_number integer NOT NULL,
   description text,
-  index_room bigint,
+  index_room integer,
   location_x integer,
   location_y integer,
   location_z integer,
   name text,
-  exits bigint[]
+  exits integer[]
 );
 CREATE TABLE IF NOT EXISTS domain.room_gate (
   id bytea PRIMARY KEY,
@@ -923,7 +947,7 @@ CREATE TABLE IF NOT EXISTS domain.room_gate (
   id_from bytea,
   id_to bytea,
   id_source bytea,
-  index bigint,
+  index integer,
   logic_type text,
   type text,
   value bytea
@@ -935,7 +959,7 @@ CREATE TABLE IF NOT EXISTS domain.scavenge (
   id bytea PRIMARY KEY,
   block_number integer NOT NULL,
   affinity text,
-  index bigint,
+  index integer,
   is_registry boolean,
   type text,
   value bigint
@@ -953,18 +977,18 @@ CREATE TABLE IF NOT EXISTS domain.trait (
   health_boost integer,
   health_sync integer,
   id_anchor bytea,
-  index_background bigint,
-  index_body bigint,
-  index_color bigint,
-  index_face bigint,
-  index_hand bigint,
+  index_background integer,
+  index_body integer,
+  index_color integer,
+  index_face integer,
+  index_hand integer,
   is_registry boolean,
   name text,
   power_base integer,
   power_shift integer,
   power_boost integer,
   power_sync integer,
-  rarity bigint,
+  rarity integer,
   slots_base integer,
   slots_shift integer,
   slots_boost integer,
@@ -980,7 +1004,7 @@ CREATE TABLE IF NOT EXISTS domain.rec_faction_reputation (
   block_number integer NOT NULL,
   parent bytea,
   key_holder_id bytea,
-  key_index bigint,
+  key_index integer,
   id_type bytea,
   id_holder bytea,
   value bigint
@@ -1011,7 +1035,7 @@ CREATE TABLE IF NOT EXISTS domain.rec_is_data (
   block_number integer NOT NULL,
   parent bytea,
   key_holder_id bytea,
-  key_index bigint,
+  key_index integer,
   key_type text,
   value bigint
 );
@@ -1021,8 +1045,8 @@ CREATE TABLE IF NOT EXISTS domain.rec_is_score (
   block_number integer NOT NULL,
   parent bytea,
   key_holder_id bytea,
-  key_epoch bigint,
-  key_index bigint,
+  key_epoch integer,
+  key_index integer,
   key_type text,
   id_type bytea,
   id_holder bytea,
@@ -1042,7 +1066,7 @@ CREATE TABLE IF NOT EXISTS domain.rec_scavenge_instance (
   block_number integer NOT NULL,
   parent bytea,
   key_field text,
-  key_index bigint,
+  key_index integer,
   key_holder_id bytea,
   value bigint
 );
@@ -1076,7 +1100,7 @@ CREATE TABLE IF NOT EXISTS domain.rec_trade_buy (
   block_number integer NOT NULL,
   parent bytea,
   key_trade_id bytea,
-  keys bigint[],
+  keys integer[],
   values_ numeric[]
 );
 CREATE INDEX IF NOT EXISTS idx_domain_rec_trade_buy_parent ON domain.rec_trade_buy(parent);
@@ -1085,7 +1109,7 @@ CREATE TABLE IF NOT EXISTS domain.rec_trade_sell (
   block_number integer NOT NULL,
   parent bytea,
   key_trade_id bytea,
-  keys bigint[],
+  keys integer[],
   values_ numeric[]
 );
 CREATE INDEX IF NOT EXISTS idx_domain_rec_trade_sell_parent ON domain.rec_trade_sell(parent);
@@ -1096,7 +1120,7 @@ CREATE TABLE IF NOT EXISTS domain.rec_quest_objective_snapshot (
   key_quest_id bytea,
   key_logic_type text,
   key__type text,
-  key_index bigint,
+  key_index integer,
   id_anchor bytea,
   value bigint
 );
@@ -1105,21 +1129,21 @@ CREATE TABLE IF NOT EXISTS domain.rec_registry_quest_objective (
   id bytea PRIMARY KEY,
   block_number integer NOT NULL,
   parent bytea,
-  key_index bigint
+  key_index integer
 );
 CREATE INDEX IF NOT EXISTS idx_domain_rec_registry_quest_objective_parent ON domain.rec_registry_quest_objective(parent);
 CREATE TABLE IF NOT EXISTS domain.rec_registry_quest_requirement (
   id bytea PRIMARY KEY,
   block_number integer NOT NULL,
   parent bytea,
-  key_index bigint
+  key_index integer
 );
 CREATE INDEX IF NOT EXISTS idx_domain_rec_registry_quest_requirement_parent ON domain.rec_registry_quest_requirement(parent);
 CREATE TABLE IF NOT EXISTS domain.rec_registry_quest_reward (
   id bytea PRIMARY KEY,
   block_number integer NOT NULL,
   parent bytea,
-  key_index bigint
+  key_index integer
 );
 CREATE INDEX IF NOT EXISTS idx_domain_rec_registry_quest_reward_parent ON domain.rec_registry_quest_reward(parent);
 CREATE TABLE IF NOT EXISTS domain.rec_snapshot_anchor (
@@ -1133,14 +1157,14 @@ CREATE TABLE IF NOT EXISTS domain.rec_registry_skill_bonus (
   id bytea PRIMARY KEY,
   block_number integer NOT NULL,
   parent bytea,
-  key_index bigint
+  key_index integer
 );
 CREATE INDEX IF NOT EXISTS idx_domain_rec_registry_skill_bonus_parent ON domain.rec_registry_skill_bonus(parent);
 CREATE TABLE IF NOT EXISTS domain.rec_registry_skill_requirement (
   id bytea PRIMARY KEY,
   block_number integer NOT NULL,
   parent bytea,
-  key_index bigint
+  key_index integer
 );
 CREATE INDEX IF NOT EXISTS idx_domain_rec_registry_skill_requirement_parent ON domain.rec_registry_skill_requirement(parent);
 CREATE TABLE IF NOT EXISTS domain.rec_auction_requirement (
@@ -1157,7 +1181,7 @@ CREATE TABLE IF NOT EXISTS domain.rec_goal_objective (
   key_goal_id bytea,
   for_ text,
   id_anchor bytea,
-  index bigint,
+  index integer,
   logic_type text,
   type text,
   value bigint
@@ -1167,7 +1191,7 @@ CREATE TABLE IF NOT EXISTS domain.rec_goal_requirement (
   id bytea PRIMARY KEY,
   block_number integer NOT NULL,
   parent bytea,
-  key_index bigint
+  key_index integer
 );
 CREATE INDEX IF NOT EXISTS idx_domain_rec_goal_requirement_parent ON domain.rec_goal_requirement(parent);
 CREATE TABLE IF NOT EXISTS domain.rec_goal_reward (
@@ -1181,7 +1205,7 @@ CREATE TABLE IF NOT EXISTS domain.rec_goal_tier (
   id bytea PRIMARY KEY,
   block_number integer NOT NULL,
   parent bytea,
-  key_goal_index bigint
+  key_goal_index integer
 );
 CREATE INDEX IF NOT EXISTS idx_domain_rec_goal_tier_parent ON domain.rec_goal_tier(parent);
 CREATE TABLE IF NOT EXISTS domain.rec_item_allo (
@@ -1202,7 +1226,7 @@ CREATE TABLE IF NOT EXISTS domain.rec_item_usecase (
   id bytea PRIMARY KEY,
   block_number integer NOT NULL,
   parent bytea,
-  key_index bigint
+  key_index integer
 );
 CREATE INDEX IF NOT EXISTS idx_domain_rec_item_usecase_parent ON domain.rec_item_usecase(parent);
 CREATE TABLE IF NOT EXISTS domain.rec_listing_buy (
@@ -1242,22 +1266,22 @@ CREATE TABLE IF NOT EXISTS domain.rec_node_bonus (
   id bytea PRIMARY KEY,
   block_number integer NOT NULL,
   parent bytea,
-  key_index bigint
+  key_index integer
 );
 CREATE INDEX IF NOT EXISTS idx_domain_rec_node_bonus_parent ON domain.rec_node_bonus(parent);
 CREATE TABLE IF NOT EXISTS domain.rec_node_requirement (
   id bytea PRIMARY KEY,
   block_number integer NOT NULL,
   parent bytea,
-  key_index bigint
+  key_index integer
 );
 CREATE INDEX IF NOT EXISTS idx_domain_rec_node_requirement_parent ON domain.rec_node_requirement(parent);
 CREATE TABLE IF NOT EXISTS domain.rec_recipe_input (
   id bytea PRIMARY KEY,
   block_number integer NOT NULL,
   parent bytea,
-  key_recipe_index bigint,
-  keys bigint[],
+  key_recipe_index integer,
+  keys integer[],
   values_ numeric[]
 );
 CREATE INDEX IF NOT EXISTS idx_domain_rec_recipe_input_parent ON domain.rec_recipe_input(parent);
@@ -1265,8 +1289,8 @@ CREATE TABLE IF NOT EXISTS domain.rec_recipe_output (
   id bytea PRIMARY KEY,
   block_number integer NOT NULL,
   parent bytea,
-  key_recipe_index bigint,
-  keys bigint[],
+  key_recipe_index integer,
+  keys integer[],
   values_ numeric[]
 );
 CREATE INDEX IF NOT EXISTS idx_domain_rec_recipe_output_parent ON domain.rec_recipe_output(parent);
@@ -1274,7 +1298,7 @@ CREATE TABLE IF NOT EXISTS domain.rec_recipe_requirement (
   id bytea PRIMARY KEY,
   block_number integer NOT NULL,
   parent bytea,
-  key_recipe_index bigint
+  key_recipe_index integer
 );
 CREATE INDEX IF NOT EXISTS idx_domain_rec_recipe_requirement_parent ON domain.rec_recipe_requirement(parent);
 CREATE TABLE IF NOT EXISTS domain.rec_scavenge_reward (
@@ -1305,11 +1329,11 @@ CREATE TABLE IF NOT EXISTS domain.rec_bonus_instance (
   parent bytea,
   key_reg_id bytea,
   key_holder_id bytea,
-  key_duration bigint,
+  key_duration integer,
   id_anchor bytea,
   id_type bytea,
   id_source bytea,
-  time bigint
+  time integer
 );
 CREATE INDEX IF NOT EXISTS idx_domain_rec_bonus_instance_parent ON domain.rec_bonus_instance(parent);
 CREATE TABLE IF NOT EXISTS domain.rec_droptable_item_log (
@@ -1318,7 +1342,7 @@ CREATE TABLE IF NOT EXISTS domain.rec_droptable_item_log (
   parent bytea,
   key_holder_id bytea,
   key_dt_id bytea,
-  time bigint,
+  time integer,
   values_ numeric[]
 );
 CREATE INDEX IF NOT EXISTS idx_domain_rec_droptable_item_log_parent ON domain.rec_droptable_item_log(parent);
@@ -1354,14 +1378,14 @@ CREATE TABLE IF NOT EXISTS domain.rec_room_gate_from (
   id bytea PRIMARY KEY,
   block_number integer NOT NULL,
   parent bytea,
-  key_index bigint
+  key_index integer
 );
 CREATE INDEX IF NOT EXISTS idx_domain_rec_room_gate_from_parent ON domain.rec_room_gate_from(parent);
 CREATE TABLE IF NOT EXISTS domain.rec_room_gate_to (
   id bytea PRIMARY KEY,
   block_number integer NOT NULL,
   parent bytea,
-  key_index bigint
+  key_index integer
 );
 CREATE INDEX IF NOT EXISTS idx_domain_rec_room_gate_to_parent ON domain.rec_room_gate_to(parent);
 CREATE TABLE IF NOT EXISTS domain.rec_sacrifice_log (
@@ -1370,7 +1394,7 @@ CREATE TABLE IF NOT EXISTS domain.rec_sacrifice_log (
   parent bytea,
   key_holder_id bytea,
   key_dt_id bytea,
-  time bigint,
+  time integer,
   values_ numeric[]
 );
 CREATE INDEX IF NOT EXISTS idx_domain_rec_sacrifice_log_parent ON domain.rec_sacrifice_log(parent);
@@ -1386,8 +1410,8 @@ CREATE TABLE IF NOT EXISTS domain.rec_score_type (
   id bytea PRIMARY KEY,
   block_number integer NOT NULL,
   parent bytea,
-  key_epoch bigint,
-  key_index bigint,
+  key_epoch integer,
+  key_index integer,
   key_score_type text
 );
 CREATE INDEX IF NOT EXISTS idx_domain_rec_score_type_parent ON domain.rec_score_type(parent);
@@ -1397,21 +1421,21 @@ CREATE OR REPLACE FUNCTION domain.refresh_account(ids bytea[]) RETURNS void LANG
   SELECT domain.id32(e.id), max(s.block_number), domain.to_address((array_agg(s.value) FILTER (WHERE c.id = '\x8a1264e7094de803414cccf0c32d2bd50f25c909fa2415b38f065f320e4eabe6'))[1]) AS address_operator,
     domain.to_address((array_agg(s.value) FILTER (WHERE c.id = '\x6caa0553213b46b61cbf982ee3246d8a2a4e5b4936a7594770d391463046f22e'))[1]) AS address_owner,
     domain.to_address((array_agg(s.value) FILTER (WHERE c.id = '\xf9b94d2a933222e58f90359e8ec33041c5f08d7bc4304958d1c52c21991da575'))[1]) AS cache_operator,
-    domain.to_uint((array_agg(s.value) FILTER (WHERE c.id = '\x70cc041351935ace62b695dbbdf5596e58eca0b3e88afa19b17d006c9a058dc0'))[1])::bigint AS index_account,
-    domain.to_uint((array_agg(s.value) FILTER (WHERE c.id = '\x3be9611062b8582cf4b9a4eafe577dbde7dcd7779a1efb46d73e212026c4b0cc'))[1])::bigint AS index_room,
+    domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\x70cc041351935ace62b695dbbdf5596e58eca0b3e88afa19b17d006c9a058dc0'))[1]) AS index_account,
+    domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\x3be9611062b8582cf4b9a4eafe577dbde7dcd7779a1efb46d73e212026c4b0cc'))[1]) AS index_room,
     domain.stat_part((array_agg(s.value) FILTER (WHERE c.id = '\x1229189cff138f94363a6274f6ec5003a4a6372db248c6985d3b3301024eb8ec'))[1], 0) AS stamina_base,
     domain.stat_part((array_agg(s.value) FILTER (WHERE c.id = '\x1229189cff138f94363a6274f6ec5003a4a6372db248c6985d3b3301024eb8ec'))[1], 1) AS stamina_shift,
     domain.stat_part((array_agg(s.value) FILTER (WHERE c.id = '\x1229189cff138f94363a6274f6ec5003a4a6372db248c6985d3b3301024eb8ec'))[1], 2) AS stamina_boost,
     domain.stat_part((array_agg(s.value) FILTER (WHERE c.id = '\x1229189cff138f94363a6274f6ec5003a4a6372db248c6985d3b3301024eb8ec'))[1], 3) AS stamina_sync,
-    domain.to_bigint((array_agg(s.value) FILTER (WHERE c.id = '\x342adee7430e96bca6f5d4fe57ba5155dc7271000494e77110c292d51ae887fa'))[1]) AS time_last,
-    domain.to_bigint((array_agg(s.value) FILTER (WHERE c.id = '\x5f9759544a286ad42df1aa1cab6dca162b48885d3060ac74aecbf8ff4483ad1b'))[1]) AS time_last_action,
-    domain.to_bigint((array_agg(s.value) FILTER (WHERE c.id = '\x9ee42634d52dbd5a24ad226010389fb7306af59bdaec5e20547162dd896dacad'))[1]) AS time_start,
+    domain.to_timestamp((array_agg(s.value) FILTER (WHERE c.id = '\x342adee7430e96bca6f5d4fe57ba5155dc7271000494e77110c292d51ae887fa'))[1]) AS time_last,
+    domain.to_timestamp((array_agg(s.value) FILTER (WHERE c.id = '\x5f9759544a286ad42df1aa1cab6dca162b48885d3060ac74aecbf8ff4483ad1b'))[1]) AS time_last_action,
+    domain.to_timestamp((array_agg(s.value) FILTER (WHERE c.id = '\x9ee42634d52dbd5a24ad226010389fb7306af59bdaec5e20547162dd896dacad'))[1]) AS time_start,
     domain.to_bigint((array_agg(s.value) FILTER (WHERE c.id = '\xb25ea67b55901db62e4b14311a8c1ab178fec3948b4b493a711970a50aa2a2e1'))[1]) AS value,
     domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\xfdbdfda9d0933af67d5682f368771753d17c0fef55c57d62a98476dd75090580'))[1]) AS description,
     domain.to_bigint((array_agg(s.value) FILTER (WHERE c.id = '\xf751b4a95c9cfabe52899e09ae113eac17e41cc0cc2dad670d2789ecc1251add'))[1]) AS experience,
     domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\x2acf3c3c6b18ed6530ed0fd161fd0b65f4febe79d1182824d3263e852d29ca03'))[1]) AS name,
     domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\x3630e5d2b4dfc42bb69d52e4eef89343acb69d5153f64efe5860a680a55082e7'))[1]) AS state,
-    domain.to_bigint((array_agg(s.value) FILTER (WHERE c.id = '\x9a455692d645d22a9a9d1b48a1db11967dcc5afa935001d61a87f6847311cf23'))[1]) AS time_next
+    domain.to_timestamp((array_agg(s.value) FILTER (WHERE c.id = '\x9a455692d645d22a9a9d1b48a1db11967dcc5afa935001d61a87f6847311cf23'))[1]) AS time_next
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id
@@ -1420,7 +1444,7 @@ CREATE OR REPLACE FUNCTION domain.refresh_account(ids bytea[]) RETURNS void LANG
 -- +goose StatementBegin
 CREATE OR REPLACE FUNCTION domain.refresh_commit(ids bytea[]) RETURNS void LANGUAGE sql AS $$
   INSERT INTO domain.commit (id, block_number, block_reveal, id_holder, type)
-  SELECT domain.id32(e.id), max(s.block_number), domain.to_bigint((array_agg(s.value) FILTER (WHERE c.id = '\xeb96d6a560bda13fa9b1f5e6458550803932abff9fe730fa1f8c3a6ddcb67e6b'))[1]) AS block_reveal,
+  SELECT domain.id32(e.id), max(s.block_number), domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\xeb96d6a560bda13fa9b1f5e6458550803932abff9fe730fa1f8c3a6ddcb67e6b'))[1]) AS block_reveal,
     domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\x5bc28889d745caef68975e56a733199d93efb3f5ae8e4606262ab97c83f72648'))[1]) AS id_holder,
     domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\x024accd0d273ef6123273b21662f5cc055a7d58adf98cc1b060edd029af93f7f'))[1]) AS type
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
@@ -1433,7 +1457,7 @@ CREATE OR REPLACE FUNCTION domain.refresh_equipment(ids bytea[]) RETURNS void LA
   INSERT INTO domain.equipment (id, block_number, for_, id_owns_equipment, index_item)
   SELECT domain.id32(e.id), max(s.block_number), domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\x0e980fab8730829e1930c8cdc024ae35650d9eec12d20425b19fc4ade883178c'))[1]) AS for_,
     domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\xdae45b6433b7ad9982276bf2ad80e49f631fb4705c2475cf1795cfe45b6568ab'))[1]) AS id_owns_equipment,
-    domain.to_uint((array_agg(s.value) FILTER (WHERE c.id = '\xd3da495fedd385ac62763d969054ffb19f1777e687374cceb91f1237ddd6bfb3'))[1])::bigint AS index_item
+    domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\xd3da495fedd385ac62763d969054ffb19f1777e687374cceb91f1237ddd6bfb3'))[1]) AS index_item
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id
@@ -1457,9 +1481,9 @@ CREATE OR REPLACE FUNCTION domain.refresh_harvest(ids bytea[]) RETURNS void LANG
   SELECT domain.id32(e.id), max(s.block_number), domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\x5bc28889d745caef68975e56a733199d93efb3f5ae8e4606262ab97c83f72648'))[1]) AS id_holder,
     domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\xc81ce03c0ce7d95786aa8f43fb06c16da8357e856cb08b2052b4bf1807cf8ab3'))[1]) AS id_source,
     domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\x3630e5d2b4dfc42bb69d52e4eef89343acb69d5153f64efe5860a680a55082e7'))[1]) AS state,
-    domain.to_bigint((array_agg(s.value) FILTER (WHERE c.id = '\x342adee7430e96bca6f5d4fe57ba5155dc7271000494e77110c292d51ae887fa'))[1]) AS time_last,
-    domain.to_bigint((array_agg(s.value) FILTER (WHERE c.id = '\xe9a47ac95fcb0b9bf41f159be66a677a5f0eac800ea6adafa4749c9108d191ba'))[1]) AS time_reset,
-    domain.to_bigint((array_agg(s.value) FILTER (WHERE c.id = '\x9ee42634d52dbd5a24ad226010389fb7306af59bdaec5e20547162dd896dacad'))[1]) AS time_start,
+    domain.to_timestamp((array_agg(s.value) FILTER (WHERE c.id = '\x342adee7430e96bca6f5d4fe57ba5155dc7271000494e77110c292d51ae887fa'))[1]) AS time_last,
+    domain.to_timestamp((array_agg(s.value) FILTER (WHERE c.id = '\xe9a47ac95fcb0b9bf41f159be66a677a5f0eac800ea6adafa4749c9108d191ba'))[1]) AS time_reset,
+    domain.to_timestamp((array_agg(s.value) FILTER (WHERE c.id = '\x9ee42634d52dbd5a24ad226010389fb7306af59bdaec5e20547162dd896dacad'))[1]) AS time_start,
     domain.to_bigint((array_agg(s.value) FILTER (WHERE c.id = '\xb25ea67b55901db62e4b14311a8c1ab178fec3948b4b493a711970a50aa2a2e1'))[1]) AS value
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
@@ -1470,7 +1494,7 @@ CREATE OR REPLACE FUNCTION domain.refresh_harvest(ids bytea[]) RETURNS void LANG
 CREATE OR REPLACE FUNCTION domain.refresh_inventory(ids bytea[]) RETURNS void LANGUAGE sql AS $$
   INSERT INTO domain.inventory (id, block_number, id_owns_inventory, index_item, value)
   SELECT domain.id32(e.id), max(s.block_number), domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\x1ee9964c9c16bbb74f9e401f1ab450f99b2343a602036525f23f0da350bc74d0'))[1]) AS id_owns_inventory,
-    domain.to_uint((array_agg(s.value) FILTER (WHERE c.id = '\xd3da495fedd385ac62763d969054ffb19f1777e687374cceb91f1237ddd6bfb3'))[1])::bigint AS index_item,
+    domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\xd3da495fedd385ac62763d969054ffb19f1777e687374cceb91f1237ddd6bfb3'))[1]) AS index_item,
     domain.to_bigint((array_agg(s.value) FILTER (WHERE c.id = '\xb25ea67b55901db62e4b14311a8c1ab178fec3948b4b493a711970a50aa2a2e1'))[1]) AS value
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
@@ -1490,20 +1514,20 @@ CREATE OR REPLACE FUNCTION domain.refresh_kami(ids bytea[]) RETURNS void LANGUAG
     domain.stat_part((array_agg(s.value) FILTER (WHERE c.id = '\x7f11100822994501b15df98b1bd24b3eb0d73863f512da0bf8f165b0150c537d'))[1], 2) AS health_boost,
     domain.stat_part((array_agg(s.value) FILTER (WHERE c.id = '\x7f11100822994501b15df98b1bd24b3eb0d73863f512da0bf8f165b0150c537d'))[1], 3) AS health_sync,
     domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\xdb1228220c36234210e3f04b6ac039f5d81c4d6d81f43d9b4a9d70c4d5bcfac1'))[1]) AS id_owns_kami,
-    domain.to_uint((array_agg(s.value) FILTER (WHERE c.id = '\x7e27420aa87c5cbb18c784ab6d5674344bec224f17946d4670418a9ad61a8fa5'))[1])::bigint AS index_background,
-    domain.to_uint((array_agg(s.value) FILTER (WHERE c.id = '\xb67326ca4d9276389479ad92732df89fdb51a6722bcc762224a361d37e6a44cf'))[1])::bigint AS index_body,
-    domain.to_uint((array_agg(s.value) FILTER (WHERE c.id = '\x9ec7fdb312cfd917b9499405d9619afea82cbe7bc994a6d9b97aa4a29d95cba4'))[1])::bigint AS index_color,
-    domain.to_uint((array_agg(s.value) FILTER (WHERE c.id = '\x3bcf9f91d55a1da72cd97d60b22f351bd7b605705fcb526dbf324094ea34be3c'))[1])::bigint AS index_face,
-    domain.to_uint((array_agg(s.value) FILTER (WHERE c.id = '\xfc3224e0c88a32d827dec77db300ba465decc407b22c4ff1e3dd50db23a15bb6'))[1])::bigint AS index_hand,
-    domain.to_uint((array_agg(s.value) FILTER (WHERE c.id = '\xcd6257c5a7fd5523bf675476a783746b8e1aed9c92992221af0f776ac5562b34'))[1])::bigint AS index_kami,
-    domain.to_bigint((array_agg(s.value) FILTER (WHERE c.id = '\xf8911dfd3f908e7a27ff20b80381dc7334f6abc557cdd58de4a9bfb47ebde734'))[1]) AS level,
+    domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\x7e27420aa87c5cbb18c784ab6d5674344bec224f17946d4670418a9ad61a8fa5'))[1]) AS index_background,
+    domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\xb67326ca4d9276389479ad92732df89fdb51a6722bcc762224a361d37e6a44cf'))[1]) AS index_body,
+    domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\x9ec7fdb312cfd917b9499405d9619afea82cbe7bc994a6d9b97aa4a29d95cba4'))[1]) AS index_color,
+    domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\x3bcf9f91d55a1da72cd97d60b22f351bd7b605705fcb526dbf324094ea34be3c'))[1]) AS index_face,
+    domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\xfc3224e0c88a32d827dec77db300ba465decc407b22c4ff1e3dd50db23a15bb6'))[1]) AS index_hand,
+    domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\xcd6257c5a7fd5523bf675476a783746b8e1aed9c92992221af0f776ac5562b34'))[1]) AS index_kami,
+    domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\xf8911dfd3f908e7a27ff20b80381dc7334f6abc557cdd58de4a9bfb47ebde734'))[1]) AS level,
     domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\x4683ab681c8fb08ca17959d67c914890fbdf5a6fce1f72e885b7a2ebe6856afd'))[1]) AS media_uri,
     domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\x2acf3c3c6b18ed6530ed0fd161fd0b65f4febe79d1182824d3263e852d29ca03'))[1]) AS name,
     domain.stat_part((array_agg(s.value) FILTER (WHERE c.id = '\x036642765aca64d0dc0aa7a1a5b293901589aec219fb89c7c5e7c042e927386c'))[1], 0) AS power_base,
     domain.stat_part((array_agg(s.value) FILTER (WHERE c.id = '\x036642765aca64d0dc0aa7a1a5b293901589aec219fb89c7c5e7c042e927386c'))[1], 1) AS power_shift,
     domain.stat_part((array_agg(s.value) FILTER (WHERE c.id = '\x036642765aca64d0dc0aa7a1a5b293901589aec219fb89c7c5e7c042e927386c'))[1], 2) AS power_boost,
     domain.stat_part((array_agg(s.value) FILTER (WHERE c.id = '\x036642765aca64d0dc0aa7a1a5b293901589aec219fb89c7c5e7c042e927386c'))[1], 3) AS power_sync,
-    domain.to_bigint((array_agg(s.value) FILTER (WHERE c.id = '\xa9cdfb538e696edc6dbd04076226eae5d97822d1205fdc5bffebbd98741fdafa'))[1]) AS skill_point,
+    domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\xa9cdfb538e696edc6dbd04076226eae5d97822d1205fdc5bffebbd98741fdafa'))[1]) AS skill_point,
     domain.stat_part((array_agg(s.value) FILTER (WHERE c.id = '\x3e4a46df40b228c2d9f3b8ddde72a1c29045de822f058698341c5adb1d02f17d'))[1], 0) AS slots_base,
     domain.stat_part((array_agg(s.value) FILTER (WHERE c.id = '\x3e4a46df40b228c2d9f3b8ddde72a1c29045de822f058698341c5adb1d02f17d'))[1], 1) AS slots_shift,
     domain.stat_part((array_agg(s.value) FILTER (WHERE c.id = '\x3e4a46df40b228c2d9f3b8ddde72a1c29045de822f058698341c5adb1d02f17d'))[1], 2) AS slots_boost,
@@ -1513,10 +1537,10 @@ CREATE OR REPLACE FUNCTION domain.refresh_kami(ids bytea[]) RETURNS void LANGUAG
     domain.stat_part((array_agg(s.value) FILTER (WHERE c.id = '\x9d3e17e61f5f07f24e173edb93a8af1d5b797396ea02343c0feee16bdf497d4f'))[1], 1) AS violence_shift,
     domain.stat_part((array_agg(s.value) FILTER (WHERE c.id = '\x9d3e17e61f5f07f24e173edb93a8af1d5b797396ea02343c0feee16bdf497d4f'))[1], 2) AS violence_boost,
     domain.stat_part((array_agg(s.value) FILTER (WHERE c.id = '\x9d3e17e61f5f07f24e173edb93a8af1d5b797396ea02343c0feee16bdf497d4f'))[1], 3) AS violence_sync,
-    domain.to_uint((array_agg(s.value) FILTER (WHERE c.id = '\x3be9611062b8582cf4b9a4eafe577dbde7dcd7779a1efb46d73e212026c4b0cc'))[1])::bigint AS index_room,
-    domain.to_bigint((array_agg(s.value) FILTER (WHERE c.id = '\xd3d6110f8c07a5a54442b3c3ae6c6c55da5e123d17d83305858b216fc0078e83'))[1]) AS reroll,
-    domain.to_bigint((array_agg(s.value) FILTER (WHERE c.id = '\x342adee7430e96bca6f5d4fe57ba5155dc7271000494e77110c292d51ae887fa'))[1]) AS time_last,
-    domain.to_bigint((array_agg(s.value) FILTER (WHERE c.id = '\x9a455692d645d22a9a9d1b48a1db11967dcc5afa935001d61a87f6847311cf23'))[1]) AS time_next
+    domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\x3be9611062b8582cf4b9a4eafe577dbde7dcd7779a1efb46d73e212026c4b0cc'))[1]) AS index_room,
+    domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\xd3d6110f8c07a5a54442b3c3ae6c6c55da5e123d17d83305858b216fc0078e83'))[1]) AS reroll,
+    domain.to_timestamp((array_agg(s.value) FILTER (WHERE c.id = '\x342adee7430e96bca6f5d4fe57ba5155dc7271000494e77110c292d51ae887fa'))[1]) AS time_last,
+    domain.to_timestamp((array_agg(s.value) FILTER (WHERE c.id = '\x9a455692d645d22a9a9d1b48a1db11967dcc5afa935001d61a87f6847311cf23'))[1]) AS time_next
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id
@@ -1527,10 +1551,10 @@ CREATE OR REPLACE FUNCTION domain.refresh_kami_collection_offer(ids bytea[]) RET
   INSERT INTO domain.kami_collection_offer (id, block_number, balance, id_owns_kami_order, max, state, time_end, time_start, value)
   SELECT domain.id32(e.id), max(s.block_number), domain.to_int32((array_agg(s.value) FILTER (WHERE c.id = '\x3be5761f4444019a26faec2991f5bf613add59db9423d5295caf36a8cd971efd'))[1]) AS balance,
     domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\xe71badbf78da4d89e78fdcc5cab0a0bbdc0172feed5567d2bcfd4c351a8d67b6'))[1]) AS id_owns_kami_order,
-    domain.to_bigint((array_agg(s.value) FILTER (WHERE c.id = '\xa16b9e3c7b1cf5ed0d78453246beb22936495b03bbb53987060cf018672ac5bd'))[1]) AS max,
+    domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\xa16b9e3c7b1cf5ed0d78453246beb22936495b03bbb53987060cf018672ac5bd'))[1]) AS max,
     domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\x3630e5d2b4dfc42bb69d52e4eef89343acb69d5153f64efe5860a680a55082e7'))[1]) AS state,
-    domain.to_bigint((array_agg(s.value) FILTER (WHERE c.id = '\x3389be3fd45382f52327bb456aea60eeff2690763a6bfa49719045a6c4afba72'))[1]) AS time_end,
-    domain.to_bigint((array_agg(s.value) FILTER (WHERE c.id = '\x9ee42634d52dbd5a24ad226010389fb7306af59bdaec5e20547162dd896dacad'))[1]) AS time_start,
+    domain.to_timestamp((array_agg(s.value) FILTER (WHERE c.id = '\x3389be3fd45382f52327bb456aea60eeff2690763a6bfa49719045a6c4afba72'))[1]) AS time_end,
+    domain.to_timestamp((array_agg(s.value) FILTER (WHERE c.id = '\x9ee42634d52dbd5a24ad226010389fb7306af59bdaec5e20547162dd896dacad'))[1]) AS time_start,
     domain.to_uint((array_agg(s.value) FILTER (WHERE c.id = '\xb25ea67b55901db62e4b14311a8c1ab178fec3948b4b493a711970a50aa2a2e1'))[1]) AS value
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
@@ -1541,10 +1565,10 @@ CREATE OR REPLACE FUNCTION domain.refresh_kami_collection_offer(ids bytea[]) RET
 CREATE OR REPLACE FUNCTION domain.refresh_kami_listing(ids bytea[]) RETURNS void LANGUAGE sql AS $$
   INSERT INTO domain.kami_listing (id, block_number, id_owns_kami_order, index_kami_listing, state, time_end, time_start, value, values_)
   SELECT domain.id32(e.id), max(s.block_number), domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\xe71badbf78da4d89e78fdcc5cab0a0bbdc0172feed5567d2bcfd4c351a8d67b6'))[1]) AS id_owns_kami_order,
-    domain.to_uint((array_agg(s.value) FILTER (WHERE c.id = '\xbb85cb86df63178180cd5cbe5ea0b70a78003460a2729aaac0ec4c2627bb48c6'))[1])::bigint AS index_kami_listing,
+    domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\xbb85cb86df63178180cd5cbe5ea0b70a78003460a2729aaac0ec4c2627bb48c6'))[1]) AS index_kami_listing,
     domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\x3630e5d2b4dfc42bb69d52e4eef89343acb69d5153f64efe5860a680a55082e7'))[1]) AS state,
-    domain.to_bigint((array_agg(s.value) FILTER (WHERE c.id = '\x3389be3fd45382f52327bb456aea60eeff2690763a6bfa49719045a6c4afba72'))[1]) AS time_end,
-    domain.to_bigint((array_agg(s.value) FILTER (WHERE c.id = '\x9ee42634d52dbd5a24ad226010389fb7306af59bdaec5e20547162dd896dacad'))[1]) AS time_start,
+    domain.to_timestamp((array_agg(s.value) FILTER (WHERE c.id = '\x3389be3fd45382f52327bb456aea60eeff2690763a6bfa49719045a6c4afba72'))[1]) AS time_end,
+    domain.to_timestamp((array_agg(s.value) FILTER (WHERE c.id = '\x9ee42634d52dbd5a24ad226010389fb7306af59bdaec5e20547162dd896dacad'))[1]) AS time_start,
     domain.to_uint((array_agg(s.value) FILTER (WHERE c.id = '\xb25ea67b55901db62e4b14311a8c1ab178fec3948b4b493a711970a50aa2a2e1'))[1]) AS value,
     domain.to_uint_array((array_agg(s.value) FILTER (WHERE c.id = '\xfb08db6d59480b008d636f90eaab4796d6e70486db57ea5b6d38235c97e3a3ec'))[1]) AS values_
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
@@ -1556,10 +1580,10 @@ CREATE OR REPLACE FUNCTION domain.refresh_kami_listing(ids bytea[]) RETURNS void
 CREATE OR REPLACE FUNCTION domain.refresh_kami_offer(ids bytea[]) RETURNS void LANGUAGE sql AS $$
   INSERT INTO domain.kami_offer (id, block_number, id_owns_kami_order, index_kami, state, time_end, time_start, value)
   SELECT domain.id32(e.id), max(s.block_number), domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\xe71badbf78da4d89e78fdcc5cab0a0bbdc0172feed5567d2bcfd4c351a8d67b6'))[1]) AS id_owns_kami_order,
-    domain.to_uint((array_agg(s.value) FILTER (WHERE c.id = '\xcd6257c5a7fd5523bf675476a783746b8e1aed9c92992221af0f776ac5562b34'))[1])::bigint AS index_kami,
+    domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\xcd6257c5a7fd5523bf675476a783746b8e1aed9c92992221af0f776ac5562b34'))[1]) AS index_kami,
     domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\x3630e5d2b4dfc42bb69d52e4eef89343acb69d5153f64efe5860a680a55082e7'))[1]) AS state,
-    domain.to_bigint((array_agg(s.value) FILTER (WHERE c.id = '\x3389be3fd45382f52327bb456aea60eeff2690763a6bfa49719045a6c4afba72'))[1]) AS time_end,
-    domain.to_bigint((array_agg(s.value) FILTER (WHERE c.id = '\x9ee42634d52dbd5a24ad226010389fb7306af59bdaec5e20547162dd896dacad'))[1]) AS time_start,
+    domain.to_timestamp((array_agg(s.value) FILTER (WHERE c.id = '\x3389be3fd45382f52327bb456aea60eeff2690763a6bfa49719045a6c4afba72'))[1]) AS time_end,
+    domain.to_timestamp((array_agg(s.value) FILTER (WHERE c.id = '\x9ee42634d52dbd5a24ad226010389fb7306af59bdaec5e20547162dd896dacad'))[1]) AS time_start,
     domain.to_uint((array_agg(s.value) FILTER (WHERE c.id = '\xb25ea67b55901db62e4b14311a8c1ab178fec3948b4b493a711970a50aa2a2e1'))[1]) AS value
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
@@ -1592,10 +1616,10 @@ CREATE OR REPLACE FUNCTION domain.refresh_tax(ids bytea[]) RETURNS void LANGUAGE
 CREATE OR REPLACE FUNCTION domain.refresh_token_receipt(ids bytea[]) RETURNS void LANGUAGE sql AS $$
   INSERT INTO domain.token_receipt (id, block_number, id_owns_withdrawal, index_item, tax, time_end, time_start, token_address, value)
   SELECT domain.id32(e.id), max(s.block_number), domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\xe93a8d0227b54356d8f8d432c8475f3fc3d46c46d271f0346ed9e6436c10d894'))[1]) AS id_owns_withdrawal,
-    domain.to_uint((array_agg(s.value) FILTER (WHERE c.id = '\xd3da495fedd385ac62763d969054ffb19f1777e687374cceb91f1237ddd6bfb3'))[1])::bigint AS index_item,
+    domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\xd3da495fedd385ac62763d969054ffb19f1777e687374cceb91f1237ddd6bfb3'))[1]) AS index_item,
     domain.to_uint((array_agg(s.value) FILTER (WHERE c.id = '\x21bcbbcf63994fa38357d01b111e9fe623c9548e14d85efdcd5f0021d776ad10'))[1]) AS tax,
-    domain.to_bigint((array_agg(s.value) FILTER (WHERE c.id = '\x3389be3fd45382f52327bb456aea60eeff2690763a6bfa49719045a6c4afba72'))[1]) AS time_end,
-    domain.to_bigint((array_agg(s.value) FILTER (WHERE c.id = '\x9ee42634d52dbd5a24ad226010389fb7306af59bdaec5e20547162dd896dacad'))[1]) AS time_start,
+    domain.to_timestamp((array_agg(s.value) FILTER (WHERE c.id = '\x3389be3fd45382f52327bb456aea60eeff2690763a6bfa49719045a6c4afba72'))[1]) AS time_end,
+    domain.to_timestamp((array_agg(s.value) FILTER (WHERE c.id = '\x9ee42634d52dbd5a24ad226010389fb7306af59bdaec5e20547162dd896dacad'))[1]) AS time_start,
     domain.to_address((array_agg(s.value) FILTER (WHERE c.id = '\x25be228384c105f3b600b6f22fde9094268ac614140d82716b701911ef45eac8'))[1]) AS token_address,
     domain.to_uint((array_agg(s.value) FILTER (WHERE c.id = '\xb25ea67b55901db62e4b14311a8c1ab178fec3948b4b493a711970a50aa2a2e1'))[1]) AS value
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
@@ -1609,8 +1633,8 @@ CREATE OR REPLACE FUNCTION domain.refresh_trade(ids bytea[]) RETURNS void LANGUA
   SELECT domain.id32(e.id), max(s.block_number), domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\x1ee9964c9c16bbb74f9e401f1ab450f99b2343a602036525f23f0da350bc74d0'))[1]) AS id_owns_inventory,
     domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\x4570b4c20b1780474e20c57e9886741763e9fd018b544cf42ed3c228b98e9045'))[1]) AS id_owns_trade,
     domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\x62e5c3a731a312a02bd0a6e08720624c014a22c9f60c82fede06a9606c505815'))[1]) AS id_target,
-    domain.to_uint((array_agg(s.value) FILTER (WHERE c.id = '\xd3da495fedd385ac62763d969054ffb19f1777e687374cceb91f1237ddd6bfb3'))[1])::bigint AS index_item,
-    domain.to_uint_array((array_agg(s.value) FILTER (WHERE c.id = '\xc6a29e9d963ddf0ecc32d72ae16fddf22661517259c701d58065adfefd57eb02'))[1])::bigint[] AS keys,
+    domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\xd3da495fedd385ac62763d969054ffb19f1777e687374cceb91f1237ddd6bfb3'))[1]) AS index_item,
+    domain.to_uint_array((array_agg(s.value) FILTER (WHERE c.id = '\xc6a29e9d963ddf0ecc32d72ae16fddf22661517259c701d58065adfefd57eb02'))[1])::integer[] AS keys,
     domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\x3630e5d2b4dfc42bb69d52e4eef89343acb69d5153f64efe5860a680a55082e7'))[1]) AS state,
     domain.to_bigint((array_agg(s.value) FILTER (WHERE c.id = '\xb25ea67b55901db62e4b14311a8c1ab178fec3948b4b493a711970a50aa2a2e1'))[1]) AS value,
     domain.to_uint_array((array_agg(s.value) FILTER (WHERE c.id = '\xfb08db6d59480b008d636f90eaab4796d6e70486db57ea5b6d38235c97e3a3ec'))[1]) AS values_
@@ -1626,17 +1650,17 @@ CREATE OR REPLACE FUNCTION domain.refresh_quest(ids bytea[]) RETURNS void LANGUA
     domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\xcbf298920e1169006fb9156cfc43d4e04c712f32632465329f52522a9d323c35'))[1]) AS description_alt,
     domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\xb045c5017717023376f3cca4fc00dc4ee26e151a86d28f1db156cf5222daccd1'))[1]) AS id_anchor,
     domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\x2a2f9797d308537ff91ca605795dfe371c297d821901e4d3618d6b4064a02d76'))[1]) AS id_owns_quest,
-    domain.to_uint((array_agg(s.value) FILTER (WHERE c.id = '\x3879d04bcdb27da7a4f7f7e8a6eb6b202b0f5e22dc66fb53ce3b2fc3d9ed63d4'))[1])::bigint AS index_quest,
+    domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\x3879d04bcdb27da7a4f7f7e8a6eb6b202b0f5e22dc66fb53ce3b2fc3d9ed63d4'))[1]) AS index_quest,
     domain.to_bool((array_agg(s.value) FILTER (WHERE c.id = '\xf5fd86907d4f5647b6d2d75edf01c4ff1a7d5bdf6bccf2d4828e86425b83b256'))[1]) AS is_disabled,
     domain.to_bool((array_agg(s.value) FILTER (WHERE c.id = '\xf70dee74a99a7bf98a6058c2e93635b82826d8267ec7a3a05d2f12dcbf92534d'))[1]) AS is_registry,
     domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\x2acf3c3c6b18ed6530ed0fd161fd0b65f4febe79d1182824d3263e852d29ca03'))[1]) AS name,
     domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\xa7b4bd2d760054205ea7cf761a119827e2316646eabcbc6653656187e7d030cb'))[1]) AS subtype,
-    domain.to_bigint((array_agg(s.value) FILTER (WHERE c.id = '\x9ee42634d52dbd5a24ad226010389fb7306af59bdaec5e20547162dd896dacad'))[1]) AS time_start,
+    domain.to_timestamp((array_agg(s.value) FILTER (WHERE c.id = '\x9ee42634d52dbd5a24ad226010389fb7306af59bdaec5e20547162dd896dacad'))[1]) AS time_start,
     domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\x024accd0d273ef6123273b21662f5cc055a7d58adf98cc1b060edd029af93f7f'))[1]) AS type,
     domain.to_bigint((array_agg(s.value) FILTER (WHERE c.id = '\xb25ea67b55901db62e4b14311a8c1ab178fec3948b4b493a711970a50aa2a2e1'))[1]) AS value,
     domain.to_bool((array_agg(s.value) FILTER (WHERE c.id = '\x9522897410526014691d8a863fac7bd2e048ab08176b6e3c6fa8a1f5195164bb'))[1]) AS is_complete,
-    domain.to_bigint((array_agg(s.value) FILTER (WHERE c.id = '\x040fc38fe5717491c84059f73f7686f4157d14971215773d341a2ede964d65ac'))[1]) AS time,
-    domain.to_bigint((array_agg(s.value) FILTER (WHERE c.id = '\x342adee7430e96bca6f5d4fe57ba5155dc7271000494e77110c292d51ae887fa'))[1]) AS time_last
+    domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\x040fc38fe5717491c84059f73f7686f4157d14971215773d341a2ede964d65ac'))[1]) AS time,
+    domain.to_timestamp((array_agg(s.value) FILTER (WHERE c.id = '\x342adee7430e96bca6f5d4fe57ba5155dc7271000494e77110c292d51ae887fa'))[1]) AS time_last
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id
@@ -1646,12 +1670,12 @@ CREATE OR REPLACE FUNCTION domain.refresh_quest(ids bytea[]) RETURNS void LANGUA
 CREATE OR REPLACE FUNCTION domain.refresh_relationship(ids bytea[]) RETURNS void LANGUAGE sql AS $$
   INSERT INTO domain.relationship (id, block_number, id_owns_relationship, index_npc, index_relationship, is_registry, blacklist, name, whitelist)
   SELECT domain.id32(e.id), max(s.block_number), domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\x8a00a3fe170d893759489495eac7080679e507af83a4195e641912c579f56158'))[1]) AS id_owns_relationship,
-    domain.to_uint((array_agg(s.value) FILTER (WHERE c.id = '\xb29f21e001e93877c0ca9ea2483697e386afbf8bced0360395102afa8c793eea'))[1])::bigint AS index_npc,
-    domain.to_uint((array_agg(s.value) FILTER (WHERE c.id = '\xc2b7d171254fab709835248d31a7d20c430c60ac71e67f09970923fa584b9291'))[1])::bigint AS index_relationship,
+    domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\xb29f21e001e93877c0ca9ea2483697e386afbf8bced0360395102afa8c793eea'))[1]) AS index_npc,
+    domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\xc2b7d171254fab709835248d31a7d20c430c60ac71e67f09970923fa584b9291'))[1]) AS index_relationship,
     domain.to_bool((array_agg(s.value) FILTER (WHERE c.id = '\xf70dee74a99a7bf98a6058c2e93635b82826d8267ec7a3a05d2f12dcbf92534d'))[1]) AS is_registry,
-    domain.to_uint_array((array_agg(s.value) FILTER (WHERE c.id = '\xb3f96e7944f99619a1086b9a1272bbdff635f1cac9c8bf7ba6ce1a9aa202f19c'))[1])::bigint[] AS blacklist,
+    domain.to_uint_array((array_agg(s.value) FILTER (WHERE c.id = '\xb3f96e7944f99619a1086b9a1272bbdff635f1cac9c8bf7ba6ce1a9aa202f19c'))[1])::integer[] AS blacklist,
     domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\x2acf3c3c6b18ed6530ed0fd161fd0b65f4febe79d1182824d3263e852d29ca03'))[1]) AS name,
-    domain.to_uint_array((array_agg(s.value) FILTER (WHERE c.id = '\x4e8e9e1c7a24cab87cf9c93105c2ba1e02c4738f22ecab88b312e4de35819ca6'))[1])::bigint[] AS whitelist
+    domain.to_uint_array((array_agg(s.value) FILTER (WHERE c.id = '\x4e8e9e1c7a24cab87cf9c93105c2ba1e02c4738f22ecab88b312e4de35819ca6'))[1])::integer[] AS whitelist
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id
@@ -1660,22 +1684,22 @@ CREATE OR REPLACE FUNCTION domain.refresh_relationship(ids bytea[]) RETURNS void
 -- +goose StatementBegin
 CREATE OR REPLACE FUNCTION domain.refresh_skill(ids bytea[]) RETURNS void LANGUAGE sql AS $$
   INSERT INTO domain.skill (id, block_number, cost, description, for_, id_anchor, id_owns_skill, id_type, id_source, index_skill, is_registry, level, max, media_uri, name, skill_point, subtype, time, type, value)
-  SELECT domain.id32(e.id), max(s.block_number), domain.to_bigint((array_agg(s.value) FILTER (WHERE c.id = '\x90dcbc5e087c3256549b6c7bca0f1c5c346b54cf5623c913b88198ba64d2cdbe'))[1]) AS cost,
+  SELECT domain.id32(e.id), max(s.block_number), domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\x90dcbc5e087c3256549b6c7bca0f1c5c346b54cf5623c913b88198ba64d2cdbe'))[1]) AS cost,
     domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\xfdbdfda9d0933af67d5682f368771753d17c0fef55c57d62a98476dd75090580'))[1]) AS description,
     domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\x0e980fab8730829e1930c8cdc024ae35650d9eec12d20425b19fc4ade883178c'))[1]) AS for_,
     domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\xb045c5017717023376f3cca4fc00dc4ee26e151a86d28f1db156cf5222daccd1'))[1]) AS id_anchor,
     domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\x062cd306ad225a632b22436963e5460cbeffac9c848eb8ae319dc628c6acd64c'))[1]) AS id_owns_skill,
     domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\x998873aedc8c829f7e25178374ed9431f396bd26c559d29a5ea6de65722045cc'))[1]) AS id_type,
     domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\xc81ce03c0ce7d95786aa8f43fb06c16da8357e856cb08b2052b4bf1807cf8ab3'))[1]) AS id_source,
-    domain.to_uint((array_agg(s.value) FILTER (WHERE c.id = '\x1535e90af6f338896509b09caa109db4f5869e9c19245517da2f1d80a47832a2'))[1])::bigint AS index_skill,
+    domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\x1535e90af6f338896509b09caa109db4f5869e9c19245517da2f1d80a47832a2'))[1]) AS index_skill,
     domain.to_bool((array_agg(s.value) FILTER (WHERE c.id = '\xf70dee74a99a7bf98a6058c2e93635b82826d8267ec7a3a05d2f12dcbf92534d'))[1]) AS is_registry,
-    domain.to_bigint((array_agg(s.value) FILTER (WHERE c.id = '\xf8911dfd3f908e7a27ff20b80381dc7334f6abc557cdd58de4a9bfb47ebde734'))[1]) AS level,
-    domain.to_bigint((array_agg(s.value) FILTER (WHERE c.id = '\xa16b9e3c7b1cf5ed0d78453246beb22936495b03bbb53987060cf018672ac5bd'))[1]) AS max,
+    domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\xf8911dfd3f908e7a27ff20b80381dc7334f6abc557cdd58de4a9bfb47ebde734'))[1]) AS level,
+    domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\xa16b9e3c7b1cf5ed0d78453246beb22936495b03bbb53987060cf018672ac5bd'))[1]) AS max,
     domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\x4683ab681c8fb08ca17959d67c914890fbdf5a6fce1f72e885b7a2ebe6856afd'))[1]) AS media_uri,
     domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\x2acf3c3c6b18ed6530ed0fd161fd0b65f4febe79d1182824d3263e852d29ca03'))[1]) AS name,
-    domain.to_bigint((array_agg(s.value) FILTER (WHERE c.id = '\xa9cdfb538e696edc6dbd04076226eae5d97822d1205fdc5bffebbd98741fdafa'))[1]) AS skill_point,
+    domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\xa9cdfb538e696edc6dbd04076226eae5d97822d1205fdc5bffebbd98741fdafa'))[1]) AS skill_point,
     domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\xa7b4bd2d760054205ea7cf761a119827e2316646eabcbc6653656187e7d030cb'))[1]) AS subtype,
-    domain.to_bigint((array_agg(s.value) FILTER (WHERE c.id = '\x040fc38fe5717491c84059f73f7686f4157d14971215773d341a2ede964d65ac'))[1]) AS time,
+    domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\x040fc38fe5717491c84059f73f7686f4157d14971215773d341a2ede964d65ac'))[1]) AS time,
     domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\x024accd0d273ef6123273b21662f5cc055a7d58adf98cc1b060edd029af93f7f'))[1]) AS type,
     domain.to_bigint((array_agg(s.value) FILTER (WHERE c.id = '\xb25ea67b55901db62e4b14311a8c1ab178fec3948b4b493a711970a50aa2a2e1'))[1]) AS value
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
@@ -1688,9 +1712,9 @@ CREATE OR REPLACE FUNCTION domain.refresh_allocation(ids bytea[]) RETURNS void L
   INSERT INTO domain.allocation (id, block_number, id_anchor, id_source, index, type, keys, value, weights)
   SELECT domain.id32(e.id), max(s.block_number), domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\xb045c5017717023376f3cca4fc00dc4ee26e151a86d28f1db156cf5222daccd1'))[1]) AS id_anchor,
     domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\xc81ce03c0ce7d95786aa8f43fb06c16da8357e856cb08b2052b4bf1807cf8ab3'))[1]) AS id_source,
-    domain.to_uint((array_agg(s.value) FILTER (WHERE c.id = '\x62adc4221185187a288916c2630b5e1f37e9437c5b68d55bc59b9debc23f19d0'))[1])::bigint AS index,
+    domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\x62adc4221185187a288916c2630b5e1f37e9437c5b68d55bc59b9debc23f19d0'))[1]) AS index,
     domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\x024accd0d273ef6123273b21662f5cc055a7d58adf98cc1b060edd029af93f7f'))[1]) AS type,
-    domain.to_uint_array((array_agg(s.value) FILTER (WHERE c.id = '\xc6a29e9d963ddf0ecc32d72ae16fddf22661517259c701d58065adfefd57eb02'))[1])::bigint[] AS keys,
+    domain.to_uint_array((array_agg(s.value) FILTER (WHERE c.id = '\xc6a29e9d963ddf0ecc32d72ae16fddf22661517259c701d58065adfefd57eb02'))[1])::integer[] AS keys,
     domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\xb25ea67b55901db62e4b14311a8c1ab178fec3948b4b493a711970a50aa2a2e1'))[1]) AS value,
     domain.to_uint_array((array_agg(s.value) FILTER (WHERE c.id = '\xc5feb1aac7c8c1b30106b97e2241d75b44c975ca1e5f2f5e02394d8d4257f88c'))[1]) AS weights
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
@@ -1703,12 +1727,12 @@ CREATE OR REPLACE FUNCTION domain.refresh_auction(ids bytea[]) RETURNS void LANG
   INSERT INTO domain.auction (id, block_number, balance, decay, index_currency, index_item, max, period, rate, time_start, value)
   SELECT domain.id32(e.id), max(s.block_number), domain.to_int32((array_agg(s.value) FILTER (WHERE c.id = '\x3be5761f4444019a26faec2991f5bf613add59db9423d5295caf36a8cd971efd'))[1]) AS balance,
     domain.to_int32((array_agg(s.value) FILTER (WHERE c.id = '\xdb0a2c2923f596106d3420f17dba40c6898f9f7ed616487818d18a74165b53b1'))[1]) AS decay,
-    domain.to_uint((array_agg(s.value) FILTER (WHERE c.id = '\x5309efaaef444315bf70eaa34d6ec17ac1fd39ff436ff46d3210f8efb1b467b4'))[1])::bigint AS index_currency,
-    domain.to_uint((array_agg(s.value) FILTER (WHERE c.id = '\xd3da495fedd385ac62763d969054ffb19f1777e687374cceb91f1237ddd6bfb3'))[1])::bigint AS index_item,
-    domain.to_bigint((array_agg(s.value) FILTER (WHERE c.id = '\xa16b9e3c7b1cf5ed0d78453246beb22936495b03bbb53987060cf018672ac5bd'))[1]) AS max,
+    domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\x5309efaaef444315bf70eaa34d6ec17ac1fd39ff436ff46d3210f8efb1b467b4'))[1]) AS index_currency,
+    domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\xd3da495fedd385ac62763d969054ffb19f1777e687374cceb91f1237ddd6bfb3'))[1]) AS index_item,
+    domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\xa16b9e3c7b1cf5ed0d78453246beb22936495b03bbb53987060cf018672ac5bd'))[1]) AS max,
     domain.to_int32((array_agg(s.value) FILTER (WHERE c.id = '\x16d883d37648798ab8e3fa4bb4d4d4680f890b679b13d715f942321c616cbe43'))[1]) AS period,
     domain.to_bigint((array_agg(s.value) FILTER (WHERE c.id = '\x20ab550b15bc644ed0151f9ebe2d55c859a9e4338085826137f0d33968582488'))[1]) AS rate,
-    domain.to_bigint((array_agg(s.value) FILTER (WHERE c.id = '\x9ee42634d52dbd5a24ad226010389fb7306af59bdaec5e20547162dd896dacad'))[1]) AS time_start,
+    domain.to_timestamp((array_agg(s.value) FILTER (WHERE c.id = '\x9ee42634d52dbd5a24ad226010389fb7306af59bdaec5e20547162dd896dacad'))[1]) AS time_start,
     domain.to_bigint((array_agg(s.value) FILTER (WHERE c.id = '\xb25ea67b55901db62e4b14311a8c1ab178fec3948b4b493a711970a50aa2a2e1'))[1]) AS value
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
@@ -1722,7 +1746,7 @@ CREATE OR REPLACE FUNCTION domain.refresh_bonus(ids bytea[]) RETURNS void LANGUA
     domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\xc81ce03c0ce7d95786aa8f43fb06c16da8357e856cb08b2052b4bf1807cf8ab3'))[1]) AS id_source,
     domain.to_bool((array_agg(s.value) FILTER (WHERE c.id = '\xf70dee74a99a7bf98a6058c2e93635b82826d8267ec7a3a05d2f12dcbf92534d'))[1]) AS is_registry,
     domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\xa7b4bd2d760054205ea7cf761a119827e2316646eabcbc6653656187e7d030cb'))[1]) AS subtype,
-    domain.to_bigint((array_agg(s.value) FILTER (WHERE c.id = '\x040fc38fe5717491c84059f73f7686f4157d14971215773d341a2ede964d65ac'))[1]) AS time,
+    domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\x040fc38fe5717491c84059f73f7686f4157d14971215773d341a2ede964d65ac'))[1]) AS time,
     domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\x024accd0d273ef6123273b21662f5cc055a7d58adf98cc1b060edd029af93f7f'))[1]) AS type,
     domain.to_int_bigint((array_agg(s.value) FILTER (WHERE c.id = '\xb25ea67b55901db62e4b14311a8c1ab178fec3948b4b493a711970a50aa2a2e1'))[1]) AS value,
     domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\x998873aedc8c829f7e25178374ed9431f396bd26c559d29a5ea6de65722045cc'))[1]) AS id_type
@@ -1736,7 +1760,7 @@ CREATE OR REPLACE FUNCTION domain.refresh_condition(ids bytea[]) RETURNS void LA
   INSERT INTO domain.condition (id, block_number, for_, id_anchor, index, logic_type, type, value)
   SELECT domain.id32(e.id), max(s.block_number), domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\x0e980fab8730829e1930c8cdc024ae35650d9eec12d20425b19fc4ade883178c'))[1]) AS for_,
     domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\xb045c5017717023376f3cca4fc00dc4ee26e151a86d28f1db156cf5222daccd1'))[1]) AS id_anchor,
-    domain.to_uint((array_agg(s.value) FILTER (WHERE c.id = '\x62adc4221185187a288916c2630b5e1f37e9437c5b68d55bc59b9debc23f19d0'))[1])::bigint AS index,
+    domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\x62adc4221185187a288916c2630b5e1f37e9437c5b68d55bc59b9debc23f19d0'))[1]) AS index,
     domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\x787589c9eda599ea35279a6d93e360e8fdc5402255545ca394f5033f5e58ed42'))[1]) AS logic_type,
     domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\x024accd0d273ef6123273b21662f5cc055a7d58adf98cc1b060edd029af93f7f'))[1]) AS type,
     domain.to_uint((array_agg(s.value) FILTER (WHERE c.id = '\xb25ea67b55901db62e4b14311a8c1ab178fec3948b4b493a711970a50aa2a2e1'))[1]) AS value
@@ -1749,7 +1773,7 @@ CREATE OR REPLACE FUNCTION domain.refresh_condition(ids bytea[]) RETURNS void LA
 CREATE OR REPLACE FUNCTION domain.refresh_faction(ids bytea[]) RETURNS void LANGUAGE sql AS $$
   INSERT INTO domain.faction (id, block_number, description, index_faction, is_registry, media_uri, name, id_type, id_holder, value)
   SELECT domain.id32(e.id), max(s.block_number), domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\xfdbdfda9d0933af67d5682f368771753d17c0fef55c57d62a98476dd75090580'))[1]) AS description,
-    domain.to_uint((array_agg(s.value) FILTER (WHERE c.id = '\x723814baf2dfd4398a4349555ce8bbb88a846ac918eb9b1a3ec2dbeaa37ab23e'))[1])::bigint AS index_faction,
+    domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\x723814baf2dfd4398a4349555ce8bbb88a846ac918eb9b1a3ec2dbeaa37ab23e'))[1]) AS index_faction,
     domain.to_bool((array_agg(s.value) FILTER (WHERE c.id = '\xf70dee74a99a7bf98a6058c2e93635b82826d8267ec7a3a05d2f12dcbf92534d'))[1]) AS is_registry,
     domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\x4683ab681c8fb08ca17959d67c914890fbdf5a6fce1f72e885b7a2ebe6856afd'))[1]) AS media_uri,
     domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\x2acf3c3c6b18ed6530ed0fd161fd0b65f4febe79d1182824d3263e852d29ca03'))[1]) AS name,
@@ -1766,8 +1790,8 @@ CREATE OR REPLACE FUNCTION domain.refresh_goal(ids bytea[]) RETURNS void LANGUAG
   INSERT INTO domain.goal (id, block_number, description, for_, index, index_room, is_disabled, logic_type, name, type, value, id_type, id_holder, is_complete)
   SELECT domain.id32(e.id), max(s.block_number), domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\xfdbdfda9d0933af67d5682f368771753d17c0fef55c57d62a98476dd75090580'))[1]) AS description,
     domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\x0e980fab8730829e1930c8cdc024ae35650d9eec12d20425b19fc4ade883178c'))[1]) AS for_,
-    domain.to_uint((array_agg(s.value) FILTER (WHERE c.id = '\x62adc4221185187a288916c2630b5e1f37e9437c5b68d55bc59b9debc23f19d0'))[1])::bigint AS index,
-    domain.to_uint((array_agg(s.value) FILTER (WHERE c.id = '\x3be9611062b8582cf4b9a4eafe577dbde7dcd7779a1efb46d73e212026c4b0cc'))[1])::bigint AS index_room,
+    domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\x62adc4221185187a288916c2630b5e1f37e9437c5b68d55bc59b9debc23f19d0'))[1]) AS index,
+    domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\x3be9611062b8582cf4b9a4eafe577dbde7dcd7779a1efb46d73e212026c4b0cc'))[1]) AS index_room,
     domain.to_bool((array_agg(s.value) FILTER (WHERE c.id = '\xf5fd86907d4f5647b6d2d75edf01c4ff1a7d5bdf6bccf2d4828e86425b83b256'))[1]) AS is_disabled,
     domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\x787589c9eda599ea35279a6d93e360e8fdc5402255545ca394f5033f5e58ed42'))[1]) AS logic_type,
     domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\x2acf3c3c6b18ed6530ed0fd161fd0b65f4febe79d1182824d3263e852d29ca03'))[1]) AS name,
@@ -1788,11 +1812,11 @@ CREATE OR REPLACE FUNCTION domain.refresh_item(ids bytea[]) RETURNS void LANGUAG
     domain.to_bool((array_agg(s.value) FILTER (WHERE c.id = '\xd426585847552196ce5fddb7f2e37e8aa38f62676728e7518835f8440cf91958'))[1]) AS has_flag,
     domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\x3bfb44d3d96b02f0d98dd5bd3a2e75077ae5d876f198a438658ad9b9098b2989'))[1]) AS id_owns_flag,
     domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\x998873aedc8c829f7e25178374ed9431f396bd26c559d29a5ea6de65722045cc'))[1]) AS id_type,
-    domain.to_uint((array_agg(s.value) FILTER (WHERE c.id = '\xd3da495fedd385ac62763d969054ffb19f1777e687374cceb91f1237ddd6bfb3'))[1])::bigint AS index_item,
+    domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\xd3da495fedd385ac62763d969054ffb19f1777e687374cceb91f1237ddd6bfb3'))[1]) AS index_item,
     domain.to_bool((array_agg(s.value) FILTER (WHERE c.id = '\xf70dee74a99a7bf98a6058c2e93635b82826d8267ec7a3a05d2f12dcbf92534d'))[1]) AS is_registry,
     domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\x4683ab681c8fb08ca17959d67c914890fbdf5a6fce1f72e885b7a2ebe6856afd'))[1]) AS media_uri,
     domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\x2acf3c3c6b18ed6530ed0fd161fd0b65f4febe79d1182824d3263e852d29ca03'))[1]) AS name,
-    domain.to_bigint((array_agg(s.value) FILTER (WHERE c.id = '\x93024875aa0a44d01beef81e003ceec9279e2577bf5f95578dfbb508d780b6c6'))[1]) AS rarity,
+    domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\x93024875aa0a44d01beef81e003ceec9279e2577bf5f95578dfbb508d780b6c6'))[1]) AS rarity,
     domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\x024accd0d273ef6123273b21662f5cc055a7d58adf98cc1b060edd029af93f7f'))[1]) AS type,
     domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\x0e980fab8730829e1930c8cdc024ae35650d9eec12d20425b19fc4ade883178c'))[1]) AS for_,
     domain.to_bool((array_agg(s.value) FILTER (WHERE c.id = '\xf5fd86907d4f5647b6d2d75edf01c4ff1a7d5bdf6bccf2d4828e86425b83b256'))[1]) AS is_disabled,
@@ -1807,10 +1831,10 @@ CREATE OR REPLACE FUNCTION domain.refresh_item(ids bytea[]) RETURNS void LANGUAG
 CREATE OR REPLACE FUNCTION domain.refresh_listing(ids bytea[]) RETURNS void LANGUAGE sql AS $$
   INSERT INTO domain.listing (id, block_number, balance, index_currency, index_item, index_npc, time_start, value, decay, period, rate, scale, type)
   SELECT domain.id32(e.id), max(s.block_number), domain.to_int32((array_agg(s.value) FILTER (WHERE c.id = '\x3be5761f4444019a26faec2991f5bf613add59db9423d5295caf36a8cd971efd'))[1]) AS balance,
-    domain.to_uint((array_agg(s.value) FILTER (WHERE c.id = '\x5309efaaef444315bf70eaa34d6ec17ac1fd39ff436ff46d3210f8efb1b467b4'))[1])::bigint AS index_currency,
-    domain.to_uint((array_agg(s.value) FILTER (WHERE c.id = '\xd3da495fedd385ac62763d969054ffb19f1777e687374cceb91f1237ddd6bfb3'))[1])::bigint AS index_item,
-    domain.to_uint((array_agg(s.value) FILTER (WHERE c.id = '\xb29f21e001e93877c0ca9ea2483697e386afbf8bced0360395102afa8c793eea'))[1])::bigint AS index_npc,
-    domain.to_bigint((array_agg(s.value) FILTER (WHERE c.id = '\x9ee42634d52dbd5a24ad226010389fb7306af59bdaec5e20547162dd896dacad'))[1]) AS time_start,
+    domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\x5309efaaef444315bf70eaa34d6ec17ac1fd39ff436ff46d3210f8efb1b467b4'))[1]) AS index_currency,
+    domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\xd3da495fedd385ac62763d969054ffb19f1777e687374cceb91f1237ddd6bfb3'))[1]) AS index_item,
+    domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\xb29f21e001e93877c0ca9ea2483697e386afbf8bced0360395102afa8c793eea'))[1]) AS index_npc,
+    domain.to_timestamp((array_agg(s.value) FILTER (WHERE c.id = '\x9ee42634d52dbd5a24ad226010389fb7306af59bdaec5e20547162dd896dacad'))[1]) AS time_start,
     domain.to_bigint((array_agg(s.value) FILTER (WHERE c.id = '\xb25ea67b55901db62e4b14311a8c1ab178fec3948b4b493a711970a50aa2a2e1'))[1]) AS value,
     domain.to_int32((array_agg(s.value) FILTER (WHERE c.id = '\xdb0a2c2923f596106d3420f17dba40c6898f9f7ed616487818d18a74165b53b1'))[1]) AS decay,
     domain.to_int32((array_agg(s.value) FILTER (WHERE c.id = '\x16d883d37648798ab8e3fa4bb4d4d4680f890b679b13d715f942321c616cbe43'))[1]) AS period,
@@ -1827,9 +1851,9 @@ CREATE OR REPLACE FUNCTION domain.refresh_node(ids bytea[]) RETURNS void LANGUAG
   INSERT INTO domain.node (id, block_number, affinity, description, index_item, index_node, index_room, name, type)
   SELECT domain.id32(e.id), max(s.block_number), domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\xf3e296372a5e5be810386b4a0416d479397a474fb9d4f37f1eed4c72bf11af6d'))[1]) AS affinity,
     domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\xfdbdfda9d0933af67d5682f368771753d17c0fef55c57d62a98476dd75090580'))[1]) AS description,
-    domain.to_uint((array_agg(s.value) FILTER (WHERE c.id = '\xd3da495fedd385ac62763d969054ffb19f1777e687374cceb91f1237ddd6bfb3'))[1])::bigint AS index_item,
-    domain.to_uint((array_agg(s.value) FILTER (WHERE c.id = '\x076fae2ce684ff843e499be243657d8fb16b0eb71350c7a9da8fa7be44c14f3e'))[1])::bigint AS index_node,
-    domain.to_uint((array_agg(s.value) FILTER (WHERE c.id = '\x3be9611062b8582cf4b9a4eafe577dbde7dcd7779a1efb46d73e212026c4b0cc'))[1])::bigint AS index_room,
+    domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\xd3da495fedd385ac62763d969054ffb19f1777e687374cceb91f1237ddd6bfb3'))[1]) AS index_item,
+    domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\x076fae2ce684ff843e499be243657d8fb16b0eb71350c7a9da8fa7be44c14f3e'))[1]) AS index_node,
+    domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\x3be9611062b8582cf4b9a4eafe577dbde7dcd7779a1efb46d73e212026c4b0cc'))[1]) AS index_room,
     domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\x2acf3c3c6b18ed6530ed0fd161fd0b65f4febe79d1182824d3263e852d29ca03'))[1]) AS name,
     domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\x024accd0d273ef6123273b21662f5cc055a7d58adf98cc1b060edd029af93f7f'))[1]) AS type
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
@@ -1840,8 +1864,8 @@ CREATE OR REPLACE FUNCTION domain.refresh_node(ids bytea[]) RETURNS void LANGUAG
 -- +goose StatementBegin
 CREATE OR REPLACE FUNCTION domain.refresh_npc(ids bytea[]) RETURNS void LANGUAGE sql AS $$
   INSERT INTO domain.npc (id, block_number, index_npc, index_room, name)
-  SELECT domain.id32(e.id), max(s.block_number), domain.to_uint((array_agg(s.value) FILTER (WHERE c.id = '\xb29f21e001e93877c0ca9ea2483697e386afbf8bced0360395102afa8c793eea'))[1])::bigint AS index_npc,
-    domain.to_uint((array_agg(s.value) FILTER (WHERE c.id = '\x3be9611062b8582cf4b9a4eafe577dbde7dcd7779a1efb46d73e212026c4b0cc'))[1])::bigint AS index_room,
+  SELECT domain.id32(e.id), max(s.block_number), domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\xb29f21e001e93877c0ca9ea2483697e386afbf8bced0360395102afa8c793eea'))[1]) AS index_npc,
+    domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\x3be9611062b8582cf4b9a4eafe577dbde7dcd7779a1efb46d73e212026c4b0cc'))[1]) AS index_room,
     domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\x2acf3c3c6b18ed6530ed0fd161fd0b65f4febe79d1182824d3263e852d29ca03'))[1]) AS name
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
@@ -1851,9 +1875,9 @@ CREATE OR REPLACE FUNCTION domain.refresh_npc(ids bytea[]) RETURNS void LANGUAGE
 -- +goose StatementBegin
 CREATE OR REPLACE FUNCTION domain.refresh_pool(ids bytea[]) RETURNS void LANGUAGE sql AS $$
   INSERT INTO domain.pool (id, block_number, keys, rate, time_start, is_disabled, value)
-  SELECT domain.id32(e.id), max(s.block_number), domain.to_uint_array((array_agg(s.value) FILTER (WHERE c.id = '\xc6a29e9d963ddf0ecc32d72ae16fddf22661517259c701d58065adfefd57eb02'))[1])::bigint[] AS keys,
+  SELECT domain.id32(e.id), max(s.block_number), domain.to_uint_array((array_agg(s.value) FILTER (WHERE c.id = '\xc6a29e9d963ddf0ecc32d72ae16fddf22661517259c701d58065adfefd57eb02'))[1])::integer[] AS keys,
     domain.to_bigint((array_agg(s.value) FILTER (WHERE c.id = '\x20ab550b15bc644ed0151f9ebe2d55c859a9e4338085826137f0d33968582488'))[1]) AS rate,
-    domain.to_bigint((array_agg(s.value) FILTER (WHERE c.id = '\x9ee42634d52dbd5a24ad226010389fb7306af59bdaec5e20547162dd896dacad'))[1]) AS time_start,
+    domain.to_timestamp((array_agg(s.value) FILTER (WHERE c.id = '\x9ee42634d52dbd5a24ad226010389fb7306af59bdaec5e20547162dd896dacad'))[1]) AS time_start,
     domain.to_bool((array_agg(s.value) FILTER (WHERE c.id = '\xf5fd86907d4f5647b6d2d75edf01c4ff1a7d5bdf6bccf2d4828e86425b83b256'))[1]) AS is_disabled,
     domain.to_uint((array_agg(s.value) FILTER (WHERE c.id = '\xb25ea67b55901db62e4b14311a8c1ab178fec3948b4b493a711970a50aa2a2e1'))[1]) AS value
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
@@ -1865,9 +1889,9 @@ CREATE OR REPLACE FUNCTION domain.refresh_pool(ids bytea[]) RETURNS void LANGUAG
 CREATE OR REPLACE FUNCTION domain.refresh_recipe(ids bytea[]) RETURNS void LANGUAGE sql AS $$
   INSERT INTO domain.recipe (id, block_number, experience, index_recipe, is_registry, keys, stamina_base, stamina_shift, stamina_boost, stamina_sync, type, values_)
   SELECT domain.id32(e.id), max(s.block_number), domain.to_bigint((array_agg(s.value) FILTER (WHERE c.id = '\xf751b4a95c9cfabe52899e09ae113eac17e41cc0cc2dad670d2789ecc1251add'))[1]) AS experience,
-    domain.to_uint((array_agg(s.value) FILTER (WHERE c.id = '\xc549816d6c3e6a568535a0df56aff099272d447c7526e27e4b6fcbd3cc7df5ab'))[1])::bigint AS index_recipe,
+    domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\xc549816d6c3e6a568535a0df56aff099272d447c7526e27e4b6fcbd3cc7df5ab'))[1]) AS index_recipe,
     domain.to_bool((array_agg(s.value) FILTER (WHERE c.id = '\xf70dee74a99a7bf98a6058c2e93635b82826d8267ec7a3a05d2f12dcbf92534d'))[1]) AS is_registry,
-    domain.to_uint_array((array_agg(s.value) FILTER (WHERE c.id = '\xc6a29e9d963ddf0ecc32d72ae16fddf22661517259c701d58065adfefd57eb02'))[1])::bigint[] AS keys,
+    domain.to_uint_array((array_agg(s.value) FILTER (WHERE c.id = '\xc6a29e9d963ddf0ecc32d72ae16fddf22661517259c701d58065adfefd57eb02'))[1])::integer[] AS keys,
     domain.stat_part((array_agg(s.value) FILTER (WHERE c.id = '\x1229189cff138f94363a6274f6ec5003a4a6372db248c6985d3b3301024eb8ec'))[1], 0) AS stamina_base,
     domain.stat_part((array_agg(s.value) FILTER (WHERE c.id = '\x1229189cff138f94363a6274f6ec5003a4a6372db248c6985d3b3301024eb8ec'))[1], 1) AS stamina_shift,
     domain.stat_part((array_agg(s.value) FILTER (WHERE c.id = '\x1229189cff138f94363a6274f6ec5003a4a6372db248c6985d3b3301024eb8ec'))[1], 2) AS stamina_boost,
@@ -1892,12 +1916,12 @@ CREATE OR REPLACE FUNCTION domain.refresh_reference(ids bytea[]) RETURNS void LA
 CREATE OR REPLACE FUNCTION domain.refresh_room(ids bytea[]) RETURNS void LANGUAGE sql AS $$
   INSERT INTO domain.room (id, block_number, description, index_room, location_x, location_y, location_z, name, exits)
   SELECT domain.id32(e.id), max(s.block_number), domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\xfdbdfda9d0933af67d5682f368771753d17c0fef55c57d62a98476dd75090580'))[1]) AS description,
-    domain.to_uint((array_agg(s.value) FILTER (WHERE c.id = '\x3be9611062b8582cf4b9a4eafe577dbde7dcd7779a1efb46d73e212026c4b0cc'))[1])::bigint AS index_room,
+    domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\x3be9611062b8582cf4b9a4eafe577dbde7dcd7779a1efb46d73e212026c4b0cc'))[1]) AS index_room,
     domain.coord_part((array_agg(s.value) FILTER (WHERE c.id = '\x1d80d8bc36212886f1cd16bb0e8f17892d2237a9ad83cebdcec1f76b3c52d19f'))[1], 0) AS location_x,
     domain.coord_part((array_agg(s.value) FILTER (WHERE c.id = '\x1d80d8bc36212886f1cd16bb0e8f17892d2237a9ad83cebdcec1f76b3c52d19f'))[1], 1) AS location_y,
     domain.coord_part((array_agg(s.value) FILTER (WHERE c.id = '\x1d80d8bc36212886f1cd16bb0e8f17892d2237a9ad83cebdcec1f76b3c52d19f'))[1], 2) AS location_z,
     domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\x2acf3c3c6b18ed6530ed0fd161fd0b65f4febe79d1182824d3263e852d29ca03'))[1]) AS name,
-    domain.to_uint_array((array_agg(s.value) FILTER (WHERE c.id = '\x858f24fb88a0e63a706be19a7ceb37cafdbc2534e73bfd47f2983a24e9e58857'))[1])::bigint[] AS exits
+    domain.to_uint_array((array_agg(s.value) FILTER (WHERE c.id = '\x858f24fb88a0e63a706be19a7ceb37cafdbc2534e73bfd47f2983a24e9e58857'))[1])::integer[] AS exits
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id
@@ -1910,7 +1934,7 @@ CREATE OR REPLACE FUNCTION domain.refresh_room_gate(ids bytea[]) RETURNS void LA
     domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\xa95ad5d9865792db0c7d344e1ab96ff451848e8df32d75b494b0c861955ff49e'))[1]) AS id_from,
     domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\x31ac3bd9ff93491555448947dd00c7535790caec346584c2d495cc80bde8d9f1'))[1]) AS id_to,
     domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\xc81ce03c0ce7d95786aa8f43fb06c16da8357e856cb08b2052b4bf1807cf8ab3'))[1]) AS id_source,
-    domain.to_uint((array_agg(s.value) FILTER (WHERE c.id = '\x62adc4221185187a288916c2630b5e1f37e9437c5b68d55bc59b9debc23f19d0'))[1])::bigint AS index,
+    domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\x62adc4221185187a288916c2630b5e1f37e9437c5b68d55bc59b9debc23f19d0'))[1]) AS index,
     domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\x787589c9eda599ea35279a6d93e360e8fdc5402255545ca394f5033f5e58ed42'))[1]) AS logic_type,
     domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\x024accd0d273ef6123273b21662f5cc055a7d58adf98cc1b060edd029af93f7f'))[1]) AS type,
     domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\xb25ea67b55901db62e4b14311a8c1ab178fec3948b4b493a711970a50aa2a2e1'))[1]) AS value
@@ -1923,7 +1947,7 @@ CREATE OR REPLACE FUNCTION domain.refresh_room_gate(ids bytea[]) RETURNS void LA
 CREATE OR REPLACE FUNCTION domain.refresh_scavenge(ids bytea[]) RETURNS void LANGUAGE sql AS $$
   INSERT INTO domain.scavenge (id, block_number, affinity, index, is_registry, type, value)
   SELECT domain.id32(e.id), max(s.block_number), domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\xf3e296372a5e5be810386b4a0416d479397a474fb9d4f37f1eed4c72bf11af6d'))[1]) AS affinity,
-    domain.to_uint((array_agg(s.value) FILTER (WHERE c.id = '\x62adc4221185187a288916c2630b5e1f37e9437c5b68d55bc59b9debc23f19d0'))[1])::bigint AS index,
+    domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\x62adc4221185187a288916c2630b5e1f37e9437c5b68d55bc59b9debc23f19d0'))[1]) AS index,
     domain.to_bool((array_agg(s.value) FILTER (WHERE c.id = '\xf70dee74a99a7bf98a6058c2e93635b82826d8267ec7a3a05d2f12dcbf92534d'))[1]) AS is_registry,
     domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\x024accd0d273ef6123273b21662f5cc055a7d58adf98cc1b060edd029af93f7f'))[1]) AS type,
     domain.to_bigint((array_agg(s.value) FILTER (WHERE c.id = '\xb25ea67b55901db62e4b14311a8c1ab178fec3948b4b493a711970a50aa2a2e1'))[1]) AS value
@@ -1945,18 +1969,18 @@ CREATE OR REPLACE FUNCTION domain.refresh_trait(ids bytea[]) RETURNS void LANGUA
     domain.stat_part((array_agg(s.value) FILTER (WHERE c.id = '\x7f11100822994501b15df98b1bd24b3eb0d73863f512da0bf8f165b0150c537d'))[1], 2) AS health_boost,
     domain.stat_part((array_agg(s.value) FILTER (WHERE c.id = '\x7f11100822994501b15df98b1bd24b3eb0d73863f512da0bf8f165b0150c537d'))[1], 3) AS health_sync,
     domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\xb045c5017717023376f3cca4fc00dc4ee26e151a86d28f1db156cf5222daccd1'))[1]) AS id_anchor,
-    domain.to_uint((array_agg(s.value) FILTER (WHERE c.id = '\x7e27420aa87c5cbb18c784ab6d5674344bec224f17946d4670418a9ad61a8fa5'))[1])::bigint AS index_background,
-    domain.to_uint((array_agg(s.value) FILTER (WHERE c.id = '\xb67326ca4d9276389479ad92732df89fdb51a6722bcc762224a361d37e6a44cf'))[1])::bigint AS index_body,
-    domain.to_uint((array_agg(s.value) FILTER (WHERE c.id = '\x9ec7fdb312cfd917b9499405d9619afea82cbe7bc994a6d9b97aa4a29d95cba4'))[1])::bigint AS index_color,
-    domain.to_uint((array_agg(s.value) FILTER (WHERE c.id = '\x3bcf9f91d55a1da72cd97d60b22f351bd7b605705fcb526dbf324094ea34be3c'))[1])::bigint AS index_face,
-    domain.to_uint((array_agg(s.value) FILTER (WHERE c.id = '\xfc3224e0c88a32d827dec77db300ba465decc407b22c4ff1e3dd50db23a15bb6'))[1])::bigint AS index_hand,
+    domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\x7e27420aa87c5cbb18c784ab6d5674344bec224f17946d4670418a9ad61a8fa5'))[1]) AS index_background,
+    domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\xb67326ca4d9276389479ad92732df89fdb51a6722bcc762224a361d37e6a44cf'))[1]) AS index_body,
+    domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\x9ec7fdb312cfd917b9499405d9619afea82cbe7bc994a6d9b97aa4a29d95cba4'))[1]) AS index_color,
+    domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\x3bcf9f91d55a1da72cd97d60b22f351bd7b605705fcb526dbf324094ea34be3c'))[1]) AS index_face,
+    domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\xfc3224e0c88a32d827dec77db300ba465decc407b22c4ff1e3dd50db23a15bb6'))[1]) AS index_hand,
     domain.to_bool((array_agg(s.value) FILTER (WHERE c.id = '\xf70dee74a99a7bf98a6058c2e93635b82826d8267ec7a3a05d2f12dcbf92534d'))[1]) AS is_registry,
     domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\x2acf3c3c6b18ed6530ed0fd161fd0b65f4febe79d1182824d3263e852d29ca03'))[1]) AS name,
     domain.stat_part((array_agg(s.value) FILTER (WHERE c.id = '\x036642765aca64d0dc0aa7a1a5b293901589aec219fb89c7c5e7c042e927386c'))[1], 0) AS power_base,
     domain.stat_part((array_agg(s.value) FILTER (WHERE c.id = '\x036642765aca64d0dc0aa7a1a5b293901589aec219fb89c7c5e7c042e927386c'))[1], 1) AS power_shift,
     domain.stat_part((array_agg(s.value) FILTER (WHERE c.id = '\x036642765aca64d0dc0aa7a1a5b293901589aec219fb89c7c5e7c042e927386c'))[1], 2) AS power_boost,
     domain.stat_part((array_agg(s.value) FILTER (WHERE c.id = '\x036642765aca64d0dc0aa7a1a5b293901589aec219fb89c7c5e7c042e927386c'))[1], 3) AS power_sync,
-    domain.to_bigint((array_agg(s.value) FILTER (WHERE c.id = '\x93024875aa0a44d01beef81e003ceec9279e2577bf5f95578dfbb508d780b6c6'))[1]) AS rarity,
+    domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\x93024875aa0a44d01beef81e003ceec9279e2577bf5f95578dfbb508d780b6c6'))[1]) AS rarity,
     domain.stat_part((array_agg(s.value) FILTER (WHERE c.id = '\x3e4a46df40b228c2d9f3b8ddde72a1c29045de822f058698341c5adb1d02f17d'))[1], 0) AS slots_base,
     domain.stat_part((array_agg(s.value) FILTER (WHERE c.id = '\x3e4a46df40b228c2d9f3b8ddde72a1c29045de822f058698341c5adb1d02f17d'))[1], 1) AS slots_shift,
     domain.stat_part((array_agg(s.value) FILTER (WHERE c.id = '\x3e4a46df40b228c2d9f3b8ddde72a1c29045de822f058698341c5adb1d02f17d'))[1], 2) AS slots_boost,
@@ -2063,7 +2087,7 @@ CREATE OR REPLACE FUNCTION domain.refresh_rec_bonus_type(ids bytea[]) RETURNS vo
 -- +goose StatementBegin
 CREATE OR REPLACE FUNCTION domain.refresh_rec_trade_buy(ids bytea[]) RETURNS void LANGUAGE sql AS $$
   UPDATE domain.rec_trade_buy r SET block_number = x.block_number, keys = x.keys, values_ = x.values_
-  FROM (SELECT domain.id32(e.id) AS id, max(s.block_number) AS block_number, domain.to_uint_array((array_agg(s.value) FILTER (WHERE c.id = '\xc6a29e9d963ddf0ecc32d72ae16fddf22661517259c701d58065adfefd57eb02'))[1])::bigint[] AS keys, domain.to_uint_array((array_agg(s.value) FILTER (WHERE c.id = '\xfb08db6d59480b008d636f90eaab4796d6e70486db57ea5b6d38235c97e3a3ec'))[1]) AS values_
+  FROM (SELECT domain.id32(e.id) AS id, max(s.block_number) AS block_number, domain.to_uint_array((array_agg(s.value) FILTER (WHERE c.id = '\xc6a29e9d963ddf0ecc32d72ae16fddf22661517259c701d58065adfefd57eb02'))[1])::integer[] AS keys, domain.to_uint_array((array_agg(s.value) FILTER (WHERE c.id = '\xfb08db6d59480b008d636f90eaab4796d6e70486db57ea5b6d38235c97e3a3ec'))[1]) AS values_
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id) x
@@ -2072,7 +2096,7 @@ CREATE OR REPLACE FUNCTION domain.refresh_rec_trade_buy(ids bytea[]) RETURNS voi
 -- +goose StatementBegin
 CREATE OR REPLACE FUNCTION domain.refresh_rec_trade_sell(ids bytea[]) RETURNS void LANGUAGE sql AS $$
   UPDATE domain.rec_trade_sell r SET block_number = x.block_number, keys = x.keys, values_ = x.values_
-  FROM (SELECT domain.id32(e.id) AS id, max(s.block_number) AS block_number, domain.to_uint_array((array_agg(s.value) FILTER (WHERE c.id = '\xc6a29e9d963ddf0ecc32d72ae16fddf22661517259c701d58065adfefd57eb02'))[1])::bigint[] AS keys, domain.to_uint_array((array_agg(s.value) FILTER (WHERE c.id = '\xfb08db6d59480b008d636f90eaab4796d6e70486db57ea5b6d38235c97e3a3ec'))[1]) AS values_
+  FROM (SELECT domain.id32(e.id) AS id, max(s.block_number) AS block_number, domain.to_uint_array((array_agg(s.value) FILTER (WHERE c.id = '\xc6a29e9d963ddf0ecc32d72ae16fddf22661517259c701d58065adfefd57eb02'))[1])::integer[] AS keys, domain.to_uint_array((array_agg(s.value) FILTER (WHERE c.id = '\xfb08db6d59480b008d636f90eaab4796d6e70486db57ea5b6d38235c97e3a3ec'))[1]) AS values_
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id) x
@@ -2153,7 +2177,7 @@ CREATE OR REPLACE FUNCTION domain.refresh_rec_auction_requirement(ids bytea[]) R
 -- +goose StatementBegin
 CREATE OR REPLACE FUNCTION domain.refresh_rec_goal_objective(ids bytea[]) RETURNS void LANGUAGE sql AS $$
   UPDATE domain.rec_goal_objective r SET block_number = x.block_number, for_ = x.for_, id_anchor = x.id_anchor, index = x.index, logic_type = x.logic_type, type = x.type, value = x.value
-  FROM (SELECT domain.id32(e.id) AS id, max(s.block_number) AS block_number, domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\x0e980fab8730829e1930c8cdc024ae35650d9eec12d20425b19fc4ade883178c'))[1]) AS for_, domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\xb045c5017717023376f3cca4fc00dc4ee26e151a86d28f1db156cf5222daccd1'))[1]) AS id_anchor, domain.to_uint((array_agg(s.value) FILTER (WHERE c.id = '\x62adc4221185187a288916c2630b5e1f37e9437c5b68d55bc59b9debc23f19d0'))[1])::bigint AS index, domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\x787589c9eda599ea35279a6d93e360e8fdc5402255545ca394f5033f5e58ed42'))[1]) AS logic_type, domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\x024accd0d273ef6123273b21662f5cc055a7d58adf98cc1b060edd029af93f7f'))[1]) AS type, domain.to_bigint((array_agg(s.value) FILTER (WHERE c.id = '\xb25ea67b55901db62e4b14311a8c1ab178fec3948b4b493a711970a50aa2a2e1'))[1]) AS value
+  FROM (SELECT domain.id32(e.id) AS id, max(s.block_number) AS block_number, domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\x0e980fab8730829e1930c8cdc024ae35650d9eec12d20425b19fc4ade883178c'))[1]) AS for_, domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\xb045c5017717023376f3cca4fc00dc4ee26e151a86d28f1db156cf5222daccd1'))[1]) AS id_anchor, domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\x62adc4221185187a288916c2630b5e1f37e9437c5b68d55bc59b9debc23f19d0'))[1]) AS index, domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\x787589c9eda599ea35279a6d93e360e8fdc5402255545ca394f5033f5e58ed42'))[1]) AS logic_type, domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\x024accd0d273ef6123273b21662f5cc055a7d58adf98cc1b060edd029af93f7f'))[1]) AS type, domain.to_bigint((array_agg(s.value) FILTER (WHERE c.id = '\xb25ea67b55901db62e4b14311a8c1ab178fec3948b4b493a711970a50aa2a2e1'))[1]) AS value
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id) x
@@ -2261,7 +2285,7 @@ CREATE OR REPLACE FUNCTION domain.refresh_rec_node_requirement(ids bytea[]) RETU
 -- +goose StatementBegin
 CREATE OR REPLACE FUNCTION domain.refresh_rec_recipe_input(ids bytea[]) RETURNS void LANGUAGE sql AS $$
   UPDATE domain.rec_recipe_input r SET block_number = x.block_number, keys = x.keys, values_ = x.values_
-  FROM (SELECT domain.id32(e.id) AS id, max(s.block_number) AS block_number, domain.to_uint_array((array_agg(s.value) FILTER (WHERE c.id = '\xc6a29e9d963ddf0ecc32d72ae16fddf22661517259c701d58065adfefd57eb02'))[1])::bigint[] AS keys, domain.to_uint_array((array_agg(s.value) FILTER (WHERE c.id = '\xfb08db6d59480b008d636f90eaab4796d6e70486db57ea5b6d38235c97e3a3ec'))[1]) AS values_
+  FROM (SELECT domain.id32(e.id) AS id, max(s.block_number) AS block_number, domain.to_uint_array((array_agg(s.value) FILTER (WHERE c.id = '\xc6a29e9d963ddf0ecc32d72ae16fddf22661517259c701d58065adfefd57eb02'))[1])::integer[] AS keys, domain.to_uint_array((array_agg(s.value) FILTER (WHERE c.id = '\xfb08db6d59480b008d636f90eaab4796d6e70486db57ea5b6d38235c97e3a3ec'))[1]) AS values_
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id) x
@@ -2270,7 +2294,7 @@ CREATE OR REPLACE FUNCTION domain.refresh_rec_recipe_input(ids bytea[]) RETURNS 
 -- +goose StatementBegin
 CREATE OR REPLACE FUNCTION domain.refresh_rec_recipe_output(ids bytea[]) RETURNS void LANGUAGE sql AS $$
   UPDATE domain.rec_recipe_output r SET block_number = x.block_number, keys = x.keys, values_ = x.values_
-  FROM (SELECT domain.id32(e.id) AS id, max(s.block_number) AS block_number, domain.to_uint_array((array_agg(s.value) FILTER (WHERE c.id = '\xc6a29e9d963ddf0ecc32d72ae16fddf22661517259c701d58065adfefd57eb02'))[1])::bigint[] AS keys, domain.to_uint_array((array_agg(s.value) FILTER (WHERE c.id = '\xfb08db6d59480b008d636f90eaab4796d6e70486db57ea5b6d38235c97e3a3ec'))[1]) AS values_
+  FROM (SELECT domain.id32(e.id) AS id, max(s.block_number) AS block_number, domain.to_uint_array((array_agg(s.value) FILTER (WHERE c.id = '\xc6a29e9d963ddf0ecc32d72ae16fddf22661517259c701d58065adfefd57eb02'))[1])::integer[] AS keys, domain.to_uint_array((array_agg(s.value) FILTER (WHERE c.id = '\xfb08db6d59480b008d636f90eaab4796d6e70486db57ea5b6d38235c97e3a3ec'))[1]) AS values_
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id) x
@@ -2315,7 +2339,7 @@ CREATE OR REPLACE FUNCTION domain.refresh_rec_bonus_ending_type(ids bytea[]) RET
 -- +goose StatementBegin
 CREATE OR REPLACE FUNCTION domain.refresh_rec_bonus_instance(ids bytea[]) RETURNS void LANGUAGE sql AS $$
   UPDATE domain.rec_bonus_instance r SET block_number = x.block_number, id_anchor = x.id_anchor, id_type = x.id_type, id_source = x.id_source, time = x.time
-  FROM (SELECT domain.id32(e.id) AS id, max(s.block_number) AS block_number, domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\xb045c5017717023376f3cca4fc00dc4ee26e151a86d28f1db156cf5222daccd1'))[1]) AS id_anchor, domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\x998873aedc8c829f7e25178374ed9431f396bd26c559d29a5ea6de65722045cc'))[1]) AS id_type, domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\xc81ce03c0ce7d95786aa8f43fb06c16da8357e856cb08b2052b4bf1807cf8ab3'))[1]) AS id_source, domain.to_bigint((array_agg(s.value) FILTER (WHERE c.id = '\x040fc38fe5717491c84059f73f7686f4157d14971215773d341a2ede964d65ac'))[1]) AS time
+  FROM (SELECT domain.id32(e.id) AS id, max(s.block_number) AS block_number, domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\xb045c5017717023376f3cca4fc00dc4ee26e151a86d28f1db156cf5222daccd1'))[1]) AS id_anchor, domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\x998873aedc8c829f7e25178374ed9431f396bd26c559d29a5ea6de65722045cc'))[1]) AS id_type, domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\xc81ce03c0ce7d95786aa8f43fb06c16da8357e856cb08b2052b4bf1807cf8ab3'))[1]) AS id_source, domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\x040fc38fe5717491c84059f73f7686f4157d14971215773d341a2ede964d65ac'))[1]) AS time
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id) x
@@ -2324,7 +2348,7 @@ CREATE OR REPLACE FUNCTION domain.refresh_rec_bonus_instance(ids bytea[]) RETURN
 -- +goose StatementBegin
 CREATE OR REPLACE FUNCTION domain.refresh_rec_droptable_item_log(ids bytea[]) RETURNS void LANGUAGE sql AS $$
   UPDATE domain.rec_droptable_item_log r SET block_number = x.block_number, time = x.time, values_ = x.values_
-  FROM (SELECT domain.id32(e.id) AS id, max(s.block_number) AS block_number, domain.to_bigint((array_agg(s.value) FILTER (WHERE c.id = '\x040fc38fe5717491c84059f73f7686f4157d14971215773d341a2ede964d65ac'))[1]) AS time, domain.to_uint_array((array_agg(s.value) FILTER (WHERE c.id = '\xfb08db6d59480b008d636f90eaab4796d6e70486db57ea5b6d38235c97e3a3ec'))[1]) AS values_
+  FROM (SELECT domain.id32(e.id) AS id, max(s.block_number) AS block_number, domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\x040fc38fe5717491c84059f73f7686f4157d14971215773d341a2ede964d65ac'))[1]) AS time, domain.to_uint_array((array_agg(s.value) FILTER (WHERE c.id = '\xfb08db6d59480b008d636f90eaab4796d6e70486db57ea5b6d38235c97e3a3ec'))[1]) AS values_
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id) x
@@ -2378,7 +2402,7 @@ CREATE OR REPLACE FUNCTION domain.refresh_rec_room_gate_to(ids bytea[]) RETURNS 
 -- +goose StatementBegin
 CREATE OR REPLACE FUNCTION domain.refresh_rec_sacrifice_log(ids bytea[]) RETURNS void LANGUAGE sql AS $$
   UPDATE domain.rec_sacrifice_log r SET block_number = x.block_number, time = x.time, values_ = x.values_
-  FROM (SELECT domain.id32(e.id) AS id, max(s.block_number) AS block_number, domain.to_bigint((array_agg(s.value) FILTER (WHERE c.id = '\x040fc38fe5717491c84059f73f7686f4157d14971215773d341a2ede964d65ac'))[1]) AS time, domain.to_uint_array((array_agg(s.value) FILTER (WHERE c.id = '\xfb08db6d59480b008d636f90eaab4796d6e70486db57ea5b6d38235c97e3a3ec'))[1]) AS values_
+  FROM (SELECT domain.id32(e.id) AS id, max(s.block_number) AS block_number, domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\x040fc38fe5717491c84059f73f7686f4157d14971215773d341a2ede964d65ac'))[1]) AS time, domain.to_uint_array((array_agg(s.value) FILTER (WHERE c.id = '\xfb08db6d59480b008d636f90eaab4796d6e70486db57ea5b6d38235c97e3a3ec'))[1]) AS values_
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id) x

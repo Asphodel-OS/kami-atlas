@@ -1780,6 +1780,8 @@ def main():
     write(os.path.join(GEN, 'domain-model.yaml'), src_note, model)
     with open(os.path.join(GEN, 'domain-model.json'), 'w') as f_: json.dump(model, f_, indent=1)
     spec = write_spec(ix, model, ents, comps, systems, id_ns, src_note)
+    import schema   # the domain schema for Kamigaze is a function of the spec, so it is written in the same run
+    schema.generate(os.path.join(GEN, 'recognition.json'), os.path.join(GEN, 'domain_schema.sql'))
 
     # data for the visualizer (viz/): the model, a compact per-system summary, and the notes as written
     if OUT_DIR: return   # an older version's output: generated/ elsewhere, the atlas keeps showing main

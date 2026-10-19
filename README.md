@@ -27,6 +27,7 @@ dev.py                       local dev server for the atlas, with live reload
 config.py                    reads live config values from Yominet
 grants.py                    asks the chain whether the flagged deploy grants are really missing
 recognize.py                 applies the recognition spec to a dump of indexed state and reports what every entity is
+schema.py                    generates Kamigaze's domain schema (one goose migration) from the recognition spec
 .cache/                      compiler output with syntax trees (about 90 MB; safe to delete)
 ```
 
@@ -137,6 +138,10 @@ The contracts are compiled with `--ast`, and calls are resolved by the compiler,
 `recognize.py` is the reference consumer: given a dump of ECS state (and optionally the transactions that wrote each entity, and each entity's creating system) it applies the rules below and reports what it could and could not place. It was built against the first 28k blocks after the World's deployment, indexed locally with Kamigaze. Records are found by recomputing their ids, never by their components: the spec carries each namespace's `encoding`, `key_order`, `key_types` and, for string keys, `key_values` (the literals the code passes), so `has.flag(id, "NOT_NAMEABLE")` or `listing.buy(regID)` can be hashed from a candidate parent and compared. Candidate parents come from the same transaction (what it wrote, what those point at, the singletons), which is how a live indexer sees them; a removed value still counts as context, since a droptable commit is deleted in the reveal that writes the log keyed by it. With a fast keccak available it also brute-forces records with no context, the ones a snapshot system imported from an earlier world.
 
 How a consumer would use it, per transaction: the system id names the system; an EntityType write classifies the entity; a write of a known entity's component lands in that type's column; a write set matching an untyped shape's `signature` from one of its `created_by` systems creates that shape; a record is recognised by its namespace and keys. The spec says what the code does; it does not say what the chain has done, so an indexer still has to handle entities created before it started reading (bootstrap from current state).
+
+## Domain schema
+
+`schema.py` turns the recognition spec into one goose migration for Kamigaze (`generated/domain_schema.sql`, copied into `kamigaze/sql/migrations/`). Everything lands in a `domain` schema: `domain.component` (components by on-chain id, so nothing depends on the hand-maintained `ecs.components.key`), `domain.kind` (every entity type, record kind and untyped shape with its table), `domain.entity` (what each entity is, its parent, how it was recognised, first and last block), one table per entity type with a typed column per component (creation columns and the later ones; a `Stat` becomes four integer columns, a `Coord` three, a pointer stays a 32-byte id for joins, reserved words get a trailing underscore: `for_`), one table per record kind with its keys and fields, and `domain.outbox`, the per-block list of what changed for subscriptions. Decoding is done by self-contained `domain.*` functions for the ABI encodings the components use. `domain.bootstrap()` fills the entity-type tables from `ecs.state`; the record tables are filled by the per-transaction populator, which has the context their keys need. The migration is a pure function of the spec and its header names the contracts commit.
 
 ## Reproducibility
 

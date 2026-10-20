@@ -2,7 +2,7 @@
 
 The Kamigotchi domain manifest: what every component, system, function and entity type in the Kamigotchi contracts does and means, as YAML that people and agents can read without tracing the Solidity, plus a live config reader and an interactive map (the Kami Domain Atlas).
 
-Lives next to the game checkout: `Asphodel-OS/kami/kami-atlas/` reads `Asphodel-OS/kami/kamigotchi/`. Repository: https://github.com/Asphodel-OS/kami-atlas (private; keep it out of any public mirror, since notes hold design intent).
+Lives next to the game checkout: `Asphodel-OS/kami/kami-atlas/` reads `Asphodel-OS/kami/kamigotchi/`. Repository: https://github.com/Asphodel-OS/kami-atlas (public; see Licence below).
 
 ```
 generated/                   rebuilt from the code on every run; never edit
@@ -119,6 +119,21 @@ so `HARVEST_TIME_*` lists its three phases), the holder (an account, the world a
 and a drilldown per family, a "Data logs held" section on the holder entities and "Data logs written" on each system,
 and an optional map layer (Settings → "Data logs on the map", off by default) that draws each family beside its
 holders. In the indexer they are the `domain.rec_is_data` table.
+
+## Licence
+
+- **Code** (`generate.py`, `schema.py`, `recognize.py`, `config.py`, `dev.py`, `grants.py`, `viz/`, the CI
+  configuration): [MIT](LICENSE).
+- **Generated model and notes** (`generated/`, `notes/`, and the copies under `viz/data/`):
+  [Creative Commons Attribution 4.0 International](LICENSE-CC-BY-4.0) (CC BY 4.0). Copy, adapt and
+  redistribute them with attribution; a line such as "Kami Atlas by Asphodel Studios,
+  https://github.com/Asphodel-OS/kami-atlas, generated from kamigotchi at <commit>" is enough, and
+  `generated/*.yaml` carry that commit in their first line.
+- **Provenance.** The generated files describe the Kamigotchi contracts
+  ([kamigotchi-open](https://github.com/Asphodel-OS/kamigotchi-open), AGPL-3.0) and quote names, comments,
+  revert messages and formula expressions from them. Asphodel Studios owns both and releases the atlas's
+  description of the contracts under CC BY 4.0; the contracts themselves stay under the AGPL, and copying
+  contract source beyond what the atlas quotes is governed by that licence, not this one.
 
 ## Live config values
 

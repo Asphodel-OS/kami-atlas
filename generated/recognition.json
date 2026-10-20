@@ -4562,6 +4562,7 @@
     "IDAnchor",
     "Index",
     "LogicType",
+    "Name",
     "Type",
     "Value"
    ],
@@ -4632,6 +4633,7 @@
      "IDAnchor",
      "Index",
      "LogicType",
+     "Name",
      "Type",
      "Value"
     ],
@@ -5900,8 +5902,12 @@
   "droptable.item.log": {
    "id": "droptable.item.log(holderID, dtID)",
    "keys": {
-    "holderID": null,
-    "dtID": null
+    "holderID": [
+     "ACCOUNT"
+    ],
+    "dtID": [
+     "ALLOCATION"
+    ]
    },
    "kind": "record",
    "fields": [
@@ -6101,7 +6107,9 @@
   "sacrifice.log": {
    "id": "sacrifice.log(holderID, dtID)",
    "keys": {
-    "holderID": null,
+    "holderID": [
+     "ACCOUNT"
+    ],
     "dtID": null
    },
    "kind": "record",

@@ -1838,8 +1838,8 @@ shared_sub_entities:
   droptable.item.log:
     id: "droptable.item.log(holderID, dtID)"
     keys:
-      holderID: null
-      dtID: null
+      holderID: [ACCOUNT]
+      dtID: [ALLOCATION]
     parent_from: "no single parent"
     relation:
       type: keyed
@@ -1851,6 +1851,7 @@ shared_sub_entities:
     fields: [Time, Values]
     held_by: [ACCOUNT]
     held_by_from_notes: true
+    keys_from_notes: true
   flag.type:
     id: "flag.type(parentType, flagType)"
     keys:
@@ -1938,7 +1939,7 @@ shared_sub_entities:
   sacrifice.log:
     id: "sacrifice.log(holderID, dtID)"
     keys:
-      holderID: null
+      holderID: [ACCOUNT]
       dtID: null
     parent_from: "no single parent"
     relation:
@@ -1951,6 +1952,7 @@ shared_sub_entities:
     fields: [Time, Values]
     held_by: [ACCOUNT]
     held_by_from_notes: true
+    keys_from_notes: true
   score.total:
     id: "score.total(typeID)"
     keys:

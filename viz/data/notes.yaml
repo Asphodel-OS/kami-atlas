@@ -43,7 +43,7 @@ entities:
   BONUS: {what: "A bonus a skill, item or node can grant."}
   ALLOCATION: {what: "A reward or grant attached to a quest, goal, item or node."}
   REFERENCE: {what: "A lookup pointer attached to an anchor."}
-  CONDITION: {what: "A requirement or objective (type, logic, index, value) attached to whatever requires it: harvesting a node, using an item, accepting or completing a quest, buying a listing, upgrading a skill, crafting. The game's universal condition record; it has no EntityType."}
+  CONDITION: {what: "A requirement or objective (type, logic, index, value) attached to whatever requires it: harvesting a node, using an item, accepting or completing a quest, buying a listing, upgrading a skill, crafting. The game's universal condition record; it has no EntityType.", also_fields: Name}   # quest objectives get a Name right after LibConditional.createFor (LibQuestRegistry.createObjective); 200 named objectives on the prod copy matched no shape without it
   ROOM_GATE: {what: "A condition guarding movement into a room, optionally only when coming from a specific room. No EntityType."}
   COMMIT: {what: "A pending random roll (commit-reveal) that resolves at a future block: gacha mints and rerolls, sacrifices, droptable rewards from items, quests, goals and scavenging. No EntityType; removed once revealed.", also_fields: IdSource|Value|Reroll}   # LibDroptable.commit adds the droptable id and the roll count after LibCommit.commit; LibGacha sets Reroll on reroll commits
 
@@ -67,8 +67,8 @@ sub_entities:   # descriptions; the parent comes from the generated model unless
   goal.contribution: {what: "what an account has put into a goal"}
   friendship.ptr: {what: "per-account counters by friendship state"}
   sacrifice.pity: {what: "pity counter for kami sacrifice rolls"}
-  sacrifice.log: {what: "latest sacrifice result per account per droptable; overwritten on each reveal so the client can show the last roll", held_by: "ACCOUNT"}
-  droptable.item.log: {what: "latest droptable result per account per droptable; overwritten on each reveal so the client can show the last roll", held_by: "ACCOUNT"}
+  sacrifice.log: {what: "latest sacrifice result per account per droptable; overwritten on each reveal so the client can show the last roll", held_by: "ACCOUNT", also_keys: "holderID: ACCOUNT"}   # dtID is one of the three sacrifice droptable singletons (LibSacrifice SACRIFICE_DT_*); the code passes both keys through LibDroptable, so the tracer sees no parent
+  droptable.item.log: {what: "latest droptable result per account per droptable; overwritten on each reveal so the client can show the last roll", held_by: "ACCOUNT", also_keys: "holderID: ACCOUNT, dtID: ALLOCATION"}   # dtID is the ITEM_DROPTABLE allocation the item use case or reward points at (LibItem / LibAllo -> LibDroptable.commit); 13k logs on the prod copy stayed pending with both keys parentless
   scavenge.instance: {what: "a holder's scavenge points on a node"}
   bonus.instance: {what: "an active bonus on a holder (account or kami). Permanent instances (anchored to a skill instance, duration 0) carry Level, set through LevelComponent.set(instanceIDs, levels) in LibBonus.assignTemporary/incBy, which the tracer cannot follow; temporary ones carry Time", also_fields: Level}
   bonus.type: {what: "a holder's running total for one bonus type"}

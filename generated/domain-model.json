@@ -3295,8 +3295,12 @@
   "droptable.item.log": {
    "id": "droptable.item.log(holderID, dtID)",
    "keys": {
-    "holderID": null,
-    "dtID": null
+    "holderID": [
+     "ACCOUNT"
+    ],
+    "dtID": [
+     "ALLOCATION"
+    ]
    },
    "parent_from": "no single parent",
    "relation": {
@@ -3315,7 +3319,8 @@
    "held_by": [
     "ACCOUNT"
    ],
-   "held_by_from_notes": true
+   "held_by_from_notes": true,
+   "keys_from_notes": true
   },
   "flag.type": {
    "id": "flag.type(parentType, flagType)",
@@ -3458,7 +3463,9 @@
   "sacrifice.log": {
    "id": "sacrifice.log(holderID, dtID)",
    "keys": {
-    "holderID": null,
+    "holderID": [
+     "ACCOUNT"
+    ],
     "dtID": null
    },
    "parent_from": "no single parent",
@@ -3478,7 +3485,8 @@
    "held_by": [
     "ACCOUNT"
    ],
-   "held_by_from_notes": true
+   "held_by_from_notes": true,
+   "keys_from_notes": true
   },
   "score.total": {
    "id": "score.total(typeID)",

@@ -400,7 +400,7 @@ INSERT INTO domain.kind (name, kind, table_name, entity_type, layer, parent_type
   ('registry.trait.type', 'record', 'rec_registry_trait_type', NULL, NULL, ARRAY['TRAIT']::text[], 'registry.trait.type'),
   ('bonus.ending.type', 'record', 'rec_bonus_ending_type', NULL, NULL, ARRAY['ACCOUNT', 'KAMI']::text[], 'bonus.ending.type'),
   ('bonus.instance', 'record', 'rec_bonus_instance', NULL, NULL, ARRAY['ACCOUNT', 'BONUS', 'KAMI']::text[], 'bonus.instance'),
-  ('droptable.item.log', 'record', 'rec_droptable_item_log', NULL, NULL, ARRAY['ACCOUNT']::text[], 'droptable.item.log'),
+  ('droptable.item.log', 'record', 'rec_droptable_item_log', NULL, NULL, ARRAY['ACCOUNT', 'ALLOCATION']::text[], 'droptable.item.log'),
   ('flag.type', 'record', 'rec_flag_type', NULL, NULL, NULL, 'flag.type'),
   ('has.flag', 'record', 'rec_has_flag', NULL, NULL, ARRAY['ACCOUNT', 'ITEM', 'KAMI', 'QUEST', 'ROOM']::text[], 'has.flag'),
   ('is.config', 'record', 'rec_is_config', NULL, NULL, NULL, 'is.config'),
@@ -463,20 +463,20 @@ INSERT INTO domain.record_spec (ns, table_name, parent_type, encoding, key_order
   ('registry.trait.type', 'rec_registry_trait_type', 'TRAIT', 'packed', ARRAY['_type']::text[], ARRAY['string']::text[], ARRAY['key__type']::text[], '{"_type": ["TRAIT"]}'::jsonb, '{"_type": ["BACKGROUND", "BODY", "COLOR", "FACE", "HAND"]}'::jsonb, '{}'::jsonb, '{}'::text[]),
   ('bonus.ending.type', 'rec_bonus_ending_type', NULL, 'packed', ARRAY['type_', 'holderID']::text[], ARRAY['string', 'uint256']::text[], ARRAY['key_type', 'key_holder_id']::text[], '{"holderID": ["ACCOUNT", "KAMI"], "type_": []}'::jsonb, '{"type_": []}'::jsonb, '{}'::jsonb, '{}'::text[]),
   ('bonus.instance', 'rec_bonus_instance', NULL, 'packed', ARRAY['regID', 'holderID', 'duration']::text[], ARRAY['uint256', 'uint256', 'uint256']::text[], ARRAY['key_reg_id', 'key_holder_id', 'key_duration']::text[], '{"duration": [], "holderID": ["ACCOUNT", "KAMI"], "regID": ["BONUS"]}'::jsonb, '{}'::jsonb, '{}'::jsonb, ARRAY['IDAnchor', 'IDType', 'IdSource', 'Level', 'Time']::text[]),
-  ('droptable.item.log', 'rec_droptable_item_log', NULL, 'packed', ARRAY['holderID', 'dtID']::text[], ARRAY['uint256', 'uint256']::text[], ARRAY['key_holder_id', 'key_dt_id']::text[], '{"dtID": [], "holderID": []}'::jsonb, '{}'::jsonb, '{}'::jsonb, ARRAY['Time', 'Values']::text[]),
+  ('droptable.item.log', 'rec_droptable_item_log', NULL, 'packed', ARRAY['holderID', 'dtID']::text[], ARRAY['uint256', 'uint256']::text[], ARRAY['key_holder_id', 'key_dt_id']::text[], '{"dtID": ["ALLOCATION"], "holderID": ["ACCOUNT"]}'::jsonb, '{}'::jsonb, '{}'::jsonb, ARRAY['Time', 'Values']::text[]),
   ('flag.type', 'rec_flag_type', NULL, 'packed', ARRAY['parentType', 'flagType']::text[], ARRAY['string', 'string']::text[], ARRAY['key_parent_type', 'key_flag_type']::text[], '{"flagType": [], "parentType": []}'::jsonb, '{"flagType": ["REPEATABLE"], "parentType": ["AUTH", "ITEM", "QUEST", "ROOM"]}'::jsonb, '{}'::jsonb, '{}'::text[]),
   ('has.flag', 'rec_has_flag', NULL, 'packed', ARRAY['id', 'flagType']::text[], ARRAY['uint256', 'string']::text[], ARRAY['key_id', 'key_flag_type']::text[], '{"flagType": [], "id": ["ACCOUNT", "ITEM", "QUEST", "ROOM"]}'::jsonb, '{"flagType": ["BYPASS_BONUS_RESET", "CAN_RESET_SKILLS", "ITEM_UNBURNABLE", "MINT_WHITELISTED", "NEWBIE_VENDOR_PURCHASED", "NOT_NAMEABLE", "NOT_TRADABLE", "PORTAL_TO_OPERATOR", "REPEATABLE", "WORLD_WHITELIST"]}'::jsonb, '{}'::jsonb, ARRAY['HasFlag', 'IDOwnsFlag', 'IDType', 'Type']::text[]),
   ('is.config', 'rec_is_config', NULL, 'packed', ARRAY['name']::text[], ARRAY['string']::text[], ARRAY['key_name']::text[], '{"name": []}'::jsonb, '{"name": ["BASE_KAMI_NAME", "FRIENDS_REQUEST_LIMIT", "GACHA_REROLL_PRICE", "KAMI_MARKET_ENABLED", "KAMI_MARKET_FEE_RATE", "KAMI_MARKET_FEE_RECIPIENT", "KAMI_MARKET_PURCHASE_COOLDOWN", "KAMI_MARKET_VAULT", "MINT_PRICE_PUBLIC", "MINT_START_PUBLIC", "MINT_START_WL", "NEWBIE_VENDOR_ADDRESS", "NEWBIE_VENDOR_CYCLE", "NEWBIE_VENDOR_ENABLED", "NEWBIE_VENDOR_MIN_PRICE", "NEWBIE_VENDOR_TWAP_WINDOW", "ONYX_ADDRESS", "PORTAL_TOKEN_EXPORT_DELAY", "SCORE_EPOCH", "VIP_SCORE_ADDRESS", "WORLD_PRIVATE"]}'::jsonb, '{}'::jsonb, ARRAY['Value']::text[]),
   ('room.gate.from', 'rec_room_gate_from', NULL, 'packed', ARRAY['index']::text[], ARRAY['uint32']::text[], ARRAY['key_index']::text[], '{"index": []}'::jsonb, '{}'::jsonb, '{}'::jsonb, '{}'::text[]),
   ('room.gate.to', 'rec_room_gate_to', NULL, 'packed', ARRAY['index']::text[], ARRAY['uint32']::text[], ARRAY['key_index']::text[], '{"index": ["ROOM"]}'::jsonb, '{}'::jsonb, '{}'::jsonb, '{}'::text[]),
-  ('sacrifice.log', 'rec_sacrifice_log', NULL, 'packed', ARRAY['holderID', 'dtID']::text[], ARRAY['uint256', 'uint256']::text[], ARRAY['key_holder_id', 'key_dt_id']::text[], '{"dtID": [], "holderID": []}'::jsonb, '{}'::jsonb, '{}'::jsonb, ARRAY['Time', 'Values']::text[]),
+  ('sacrifice.log', 'rec_sacrifice_log', NULL, 'packed', ARRAY['holderID', 'dtID']::text[], ARRAY['uint256', 'uint256']::text[], ARRAY['key_holder_id', 'key_dt_id']::text[], '{"dtID": [], "holderID": ["ACCOUNT"]}'::jsonb, '{}'::jsonb, '{}'::jsonb, ARRAY['Time', 'Values']::text[]),
   ('score.total', 'rec_score_total', NULL, 'packed', ARRAY['typeID']::text[], ARRAY['uint256']::text[], ARRAY['key_type_id']::text[], '{"typeID": ["FACTION", "GOAL"]}'::jsonb, '{}'::jsonb, '{}'::jsonb, ARRAY['Value']::text[]),
   ('score.type', 'rec_score_type', NULL, 'packed', ARRAY['epoch', 'index', 'scoreType']::text[], ARRAY['uint256', 'uint32', 'string']::text[], ARRAY['key_epoch', 'key_index', 'key_score_type']::text[], '{"epoch": [], "index": ["ITEM"], "scoreType": []}'::jsonb, '{"scoreType": ["COLLECT", "LIQUIDATE", "TOTAL_SPENT", "VIP_SCORE"]}'::jsonb, '{}'::jsonb, '{}'::text[])
 ON CONFLICT (ns) DO UPDATE SET table_name = EXCLUDED.table_name, parent_type = EXCLUDED.parent_type, encoding = EXCLUDED.encoding, key_order = EXCLUDED.key_order, key_types = EXCLUDED.key_types, key_columns = EXCLUDED.key_columns, key_parents = EXCLUDED.key_parents, key_values = EXCLUDED.key_values, key_patterns = EXCLUDED.key_patterns, fields = EXCLUDED.fields;
 CREATE TABLE IF NOT EXISTS domain.shape_spec (name text PRIMARY KEY REFERENCES domain.kind(name), signature text[] NOT NULL, created_by text[] NOT NULL);
 INSERT INTO domain.shape_spec (name, signature, created_by) VALUES
   ('COMMIT', ARRAY['BlockReveal', 'IdHolder', 'IdSource', 'Reroll', 'Type', 'Value']::text[], ARRAY['AccountUseItem', 'GoalClaim', 'KamiCastItem', 'KamiGachaMint', 'KamiGachaReroll', 'KamiSacrificeCommit', 'KamiUseItem', 'QuestComplete', 'ScavengeClaim', 'SkillRespec']::text[]),
-  ('CONDITION', ARRAY['For', 'IDAnchor', 'Index', 'LogicType', 'Type', 'Value']::text[], ARRAY['Chat', '_AuctionRegistry', '_GoalRegistry', '_ItemRegistry', '_ListingRegistry', '_NodeRegistry', '_QuestRegistry', '_RecipeRegistry', '_SkillRegistry']::text[]),
+  ('CONDITION', ARRAY['For', 'IDAnchor', 'Index', 'LogicType', 'Name', 'Type', 'Value']::text[], ARRAY['Chat', '_AuctionRegistry', '_GoalRegistry', '_ItemRegistry', '_ListingRegistry', '_NodeRegistry', '_QuestRegistry', '_RecipeRegistry', '_SkillRegistry']::text[]),
   ('ROOM_GATE', ARRAY['For', 'IDFrom', 'IDTo', 'IdSource', 'Index', 'LogicType', 'Type', 'Value']::text[], ARRAY['_RoomRegistry']::text[])
 ON CONFLICT (name) DO UPDATE SET signature = EXCLUDED.signature, created_by = EXCLUDED.created_by;
 CREATE TABLE IF NOT EXISTS domain.singleton (name text PRIMARY KEY, id bytea NOT NULL);
@@ -815,6 +815,7 @@ CREATE TABLE IF NOT EXISTS domain.condition (
   id_anchor bytea,
   index integer,
   logic_type text,
+  name text,
   type text,
   value numeric
 );
@@ -1806,17 +1807,18 @@ END $$;
 -- +goose StatementBegin
 CREATE OR REPLACE FUNCTION domain.refresh_condition(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
 BEGIN
-  INSERT INTO domain.condition (id, block_number, for_, id_anchor, index, logic_type, type, value)
+  INSERT INTO domain.condition (id, block_number, for_, id_anchor, index, logic_type, name, type, value)
   SELECT domain.id32(e.id), max(s.block_number), domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\x0e980fab8730829e1930c8cdc024ae35650d9eec12d20425b19fc4ade883178c'))[1]) AS for_,
     domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\xb045c5017717023376f3cca4fc00dc4ee26e151a86d28f1db156cf5222daccd1'))[1]) AS id_anchor,
     domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\x62adc4221185187a288916c2630b5e1f37e9437c5b68d55bc59b9debc23f19d0'))[1]) AS index,
     domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\x787589c9eda599ea35279a6d93e360e8fdc5402255545ca394f5033f5e58ed42'))[1]) AS logic_type,
+    domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\x2acf3c3c6b18ed6530ed0fd161fd0b65f4febe79d1182824d3263e852d29ca03'))[1]) AS name,
     domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\x024accd0d273ef6123273b21662f5cc055a7d58adf98cc1b060edd029af93f7f'))[1]) AS type,
     domain.to_uint((array_agg(s.value) FILTER (WHERE c.id = '\xb25ea67b55901db62e4b14311a8c1ab178fec3948b4b493a711970a50aa2a2e1'))[1]) AS value
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id
-  ON CONFLICT (id) DO UPDATE SET block_number = EXCLUDED.block_number, for_ = EXCLUDED.for_, id_anchor = EXCLUDED.id_anchor, index = EXCLUDED.index, logic_type = EXCLUDED.logic_type, type = EXCLUDED.type, value = EXCLUDED.value;
+  ON CONFLICT (id) DO UPDATE SET block_number = EXCLUDED.block_number, for_ = EXCLUDED.for_, id_anchor = EXCLUDED.id_anchor, index = EXCLUDED.index, logic_type = EXCLUDED.logic_type, name = EXCLUDED.name, type = EXCLUDED.type, value = EXCLUDED.value;
 END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin

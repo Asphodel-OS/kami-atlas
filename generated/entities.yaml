@@ -52,13 +52,14 @@ entity_types:
     components_from_notes: true
   CONDITION:
     created_in: [LibConditional.createFor]
-    components_at_creation: [For, IDAnchor, Index, LogicType, Type, Value]
+    components_at_creation: [For, IDAnchor, Index, LogicType, Name, Type, Value]
     checked_in: []
     made_by: "admin/registry setup"
     created_by_systems: [Chat, _AuctionRegistry, _GoalRegistry, _ItemRegistry, _ListingRegistry, _NodeRegistry, _QuestRegistry, _RecipeRegistry, _SkillRegistry]
     created_by_players: []
     links_set_at_creation:
       IDAnchor: ["pointerID  (in LibConditional.createFor)"]
+    components_from_notes: true
   EQUIPMENT:
     created_in: [LibEquipment.createInstance]
     components_at_creation: [EntityType, For, IDOwnsEquipment, IndexItem]

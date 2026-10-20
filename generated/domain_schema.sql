@@ -364,7 +364,7 @@ INSERT INTO domain.kind (name, kind, table_name, entity_type, layer, parent_type
   ('faction.reputation', 'record', 'rec_faction_reputation', NULL, NULL, ARRAY['ACCOUNT', 'FACTION']::text[], 'faction.reputation'),
   ('friendship.ptr', 'record', 'rec_friendship_ptr', NULL, NULL, ARRAY['ACCOUNT']::text[], 'friendship.ptr'),
   ('goal.contribution', 'record', 'rec_goal_contribution', NULL, NULL, ARRAY['ACCOUNT', 'GOAL']::text[], 'goal.contribution'),
-  ('is.data', 'record', 'rec_is_data', NULL, NULL, ARRAY['ACCOUNT', 'FACTION', 'ITEM', 'RECIPE']::text[], 'is.data'),
+  ('is.data', 'record', 'rec_is_data', NULL, NULL, ARRAY['ACCOUNT', 'FACTION', 'ITEM', 'NODE', 'RECIPE']::text[], 'is.data'),
   ('is.score', 'record', 'rec_is_score', NULL, NULL, ARRAY['ACCOUNT', 'ITEM']::text[], 'is.score'),
   ('sacrifice.pity', 'record', 'rec_sacrifice_pity', NULL, NULL, ARRAY['ACCOUNT']::text[], 'sacrifice.pity'),
   ('scavenge.instance', 'record', 'rec_scavenge_instance', NULL, NULL, ARRAY['ACCOUNT', 'NODE']::text[], 'scavenge.instance'),
@@ -414,7 +414,7 @@ CREATE TABLE IF NOT EXISTS domain.record_spec (
   ns text PRIMARY KEY REFERENCES domain.kind(name),
   table_name text NOT NULL,
   parent_type text,
-  encoding text NOT NULL,               -- packed | abi | address
+  encoding text NOT NULL,               -- packed | abi | address | abi_ns_last (the literal after the keys; not recomputed yet)
   key_order text[] NOT NULL,
   key_types text[] NOT NULL,
   key_columns text[] NOT NULL,
@@ -427,12 +427,12 @@ INSERT INTO domain.record_spec (ns, table_name, parent_type, encoding, key_order
   ('faction.reputation', 'rec_faction_reputation', 'ACCOUNT', 'packed', ARRAY['holderID', 'index']::text[], ARRAY['uint256', 'uint32']::text[], ARRAY['key_holder_id', 'key_index']::text[], '{"holderID": ["ACCOUNT"], "index": ["FACTION"]}'::jsonb, '{}'::jsonb, '{}'::jsonb, ARRAY['IDType', 'IdHolder', 'Value']::text[]),
   ('friendship.ptr', 'rec_friendship_ptr', 'ACCOUNT', 'packed', ARRAY['accID', 'state']::text[], ARRAY['uint256', 'string']::text[], ARRAY['key_acc_id', 'key_state']::text[], '{"accID": ["ACCOUNT"], "state": []}'::jsonb, '{"state": ["FRIEND", "REQUEST"]}'::jsonb, '{}'::jsonb, '{}'::text[]),
   ('goal.contribution', 'rec_goal_contribution', 'ACCOUNT', 'packed', ARRAY['goalID', 'accID']::text[], ARRAY['uint256', 'uint256']::text[], ARRAY['key_goal_id', 'key_acc_id']::text[], '{"accID": ["ACCOUNT"], "goalID": ["GOAL"]}'::jsonb, '{}'::jsonb, '{}'::jsonb, ARRAY['IDType', 'IdHolder', 'IsComplete', 'Value']::text[]),
-  ('is.data', 'rec_is_data', 'ACCOUNT', 'packed', ARRAY['holderID', 'index', 'type_']::text[], ARRAY['uint256', 'uint32', 'string']::text[], ARRAY['key_holder_id', 'key_index', 'key_type']::text[], '{"holderID": ["ACCOUNT"], "index": ["ACCOUNT", "FACTION", "ITEM", "RECIPE"], "type_": ["ITEM"]}'::jsonb, '{"type_": ["CRAFT_ITEM", "CRAFT_TOTAL", "DROPTABLE_ITEM_TOTAL", "GACHA_COMMITS_PENDING", "GOAL_CONTRIBUTION", "HARVEST_AT_NODE", "HARVEST_TIME", "ITEM_AUCTION_BUY", "ITEM_AUCTION_SPEND", "ITEM_BURN", "ITEM_COUNT", "ITEM_REVENUE", "ITEM_SPEND", "ITEM_TOTAL", "ITEM_USE", "KAMI721_UNSTAKE", "KAMI_GACHA_MINT", "KAMI_GACHA_REROLL", "KAMI_LEVELS_TOTAL", "KAMI_MARKET_ACCEPT", "KAMI_MARKET_BUY", "KAMI_MARKET_CANCEL", "KAMI_MARKET_LIST", "KAMI_MARKET_OFFER", "KAMI_NAME", "KAMI_SACRIFICE", "KAMI_SACRIFICE_TOTAL", "KAMI_SEND", "KAMI_STAKE", "KILL_BOUNTIES", "LIQUIDATED_VICTIM", "LIQUIDATE_AT_NODE", "LIQUIDATE_TOTAL", "LIQ_TARGET_ACC", "LISTING_BUY", "LISTING_BUY_TOTAL", "LISTING_SELL", "LISTING_SELL_TOTAL", "MESSAGES", "MINT_NUM_PUBLIC", "MINT_NUM_TOTAL", "MINT_NUM_WL", "MOVE", "POOL_SWAP_TOTAL", "POOL_VOLUME", "PORTAL_ITEM_CANCEL_TOTAL", "PORTAL_ITEM_CLAIM_TOTAL", "PORTAL_ITEM_DEPOSIT_TOTAL", "PORTAL_ITEM_TAX_TOTAL", "PORTAL_ITEM_WITHDRAW_TOTAL", "PORTAL_TOKEN_CANCEL_TOTAL", "PORTAL_TOKEN_CLAIM_TOTAL", "PORTAL_TOKEN_DEPOSIT_TOTAL", "PORTAL_TOKEN_WITHDRAW_TOTAL", "QUEST_COMPLETE", "QUEST_REPEATABLE_COMPLETE", "SACRIFICE_ITEM_TOTAL", "SACRIFICE_RARE_PITY", "SACRIFICE_RARE_PITY_TOTAL", "SACRIFICE_UNCOMMON_PITY", "SACRIFICE_UNCOMMON_PITY_TOTAL", "SKILL_POINTS_USE", "TOKEN_SPEND", "TOKEN_SPEND_RENAME", "TOKEN_SPEND_RESPEC", "TOKEN_SPEND_REVIVE", "TOTAL_NUM_ACCOUNTS", "TRADE_CANCEL", "TRADE_COMPLETE", "TRADE_CREATE", "TRADE_EXECUTE", "TRADE_RECEIVE", "TRADE_SPEND", "TRADE_TAX"]}'::jsonb, '{"type_": ["**", "*_ITEM_USE", "HARVEST_AFFINITY_*", "HARVEST_TIME_*", "HARVEST_WHEN_*", "LIQ_WHEN_*"]}'::jsonb, ARRAY['Value']::text[]),
+  ('is.data', 'rec_is_data', 'ACCOUNT', 'packed', ARRAY['holderID', 'index', 'type_']::text[], ARRAY['uint256', 'uint32', 'string']::text[], ARRAY['key_holder_id', 'key_index', 'key_type']::text[], '{"holderID": ["ACCOUNT"], "index": ["ACCOUNT", "FACTION", "ITEM", "NODE", "RECIPE"], "type_": ["ITEM"]}'::jsonb, '{"type_": ["ACCOUNT_ITEM_USE", "CRAFT_ITEM", "CRAFT_TOTAL", "DROPTABLE_ITEM_TOTAL", "ENEMY_KAMI_ITEM_USE", "GACHA_COMMITS_PENDING", "GOAL_CONTRIBUTION", "HARVEST_AFFINITY_EERIE", "HARVEST_AFFINITY_EERIE-INSECT", "HARVEST_AFFINITY_EERIE-SCRAP", "HARVEST_AFFINITY_INSECT", "HARVEST_AFFINITY_INSECT-EERIE", "HARVEST_AFFINITY_INSECT-SCRAP", "HARVEST_AFFINITY_NORMAL", "HARVEST_AFFINITY_SCRAP", "HARVEST_AFFINITY_SCRAP-INSECT", "HARVEST_AT_NODE", "HARVEST_TIME", "HARVEST_TIME_DAYLIGHT", "HARVEST_TIME_EVENFALL", "HARVEST_TIME_MOONSIDE", "HARVEST_WHEN_DAYLIGHT", "HARVEST_WHEN_EVENFALL", "HARVEST_WHEN_MOONSIDE", "ITEM_AUCTION_BUY", "ITEM_AUCTION_SPEND", "ITEM_BURN", "ITEM_COUNT", "ITEM_REVENUE", "ITEM_SPEND", "ITEM_TOTAL", "ITEM_USE", "KAMI721_UNSTAKE", "KAMI_GACHA_MINT", "KAMI_GACHA_REROLL", "KAMI_ITEM_USE", "KAMI_LEVELS_TOTAL", "KAMI_MARKET_ACCEPT", "KAMI_MARKET_BUY", "KAMI_MARKET_CANCEL", "KAMI_MARKET_LIST", "KAMI_MARKET_OFFER", "KAMI_NAME", "KAMI_SACRIFICE", "KAMI_SACRIFICE_TOTAL", "KAMI_SEND", "KAMI_STAKE", "KILL_BOUNTIES", "LIQUIDATED_VICTIM", "LIQUIDATE_AT_NODE", "LIQUIDATE_TOTAL", "LIQ_TARGET_ACC", "LIQ_WHEN_DAYLIGHT", "LIQ_WHEN_EVENFALL", "LIQ_WHEN_MOONSIDE", "LISTING_BUY", "LISTING_BUY_TOTAL", "LISTING_SELL", "LISTING_SELL_TOTAL", "MESSAGES", "MINT_NUM_PUBLIC", "MINT_NUM_TOTAL", "MINT_NUM_WL", "MOVE", "POOL_SWAP_TOTAL", "POOL_VOLUME", "PORTAL_ITEM_CANCEL_TOTAL", "PORTAL_ITEM_CLAIM_TOTAL", "PORTAL_ITEM_DEPOSIT_TOTAL", "PORTAL_ITEM_TAX_TOTAL", "PORTAL_ITEM_WITHDRAW_TOTAL", "PORTAL_TOKEN_CANCEL_TOTAL", "PORTAL_TOKEN_CLAIM_TOTAL", "PORTAL_TOKEN_DEPOSIT_TOTAL", "PORTAL_TOKEN_WITHDRAW_TOTAL", "QUEST_COMPLETE", "QUEST_REPEATABLE_COMPLETE", "SACRIFICE_ITEM_TOTAL", "SACRIFICE_RARE_PITY", "SACRIFICE_RARE_PITY_TOTAL", "SACRIFICE_UNCOMMON_PITY", "SACRIFICE_UNCOMMON_PITY_TOTAL", "SCAV_CLAIM_AFFINITY_EERIE", "SCAV_CLAIM_AFFINITY_EERIE-INSECT", "SCAV_CLAIM_AFFINITY_EERIE-SCRAP", "SCAV_CLAIM_AFFINITY_INSECT", "SCAV_CLAIM_AFFINITY_INSECT-EERIE", "SCAV_CLAIM_AFFINITY_INSECT-SCRAP", "SCAV_CLAIM_AFFINITY_NORMAL", "SCAV_CLAIM_AFFINITY_SCRAP", "SCAV_CLAIM_AFFINITY_SCRAP-INSECT", "SCAV_CLAIM_NODE", "SKILL_POINTS_USE", "TOKEN_SPEND", "TOKEN_SPEND_RENAME", "TOKEN_SPEND_RESPEC", "TOKEN_SPEND_REVIVE", "TOTAL_NUM_ACCOUNTS", "TRADE_CANCEL", "TRADE_COMPLETE", "TRADE_CREATE", "TRADE_EXECUTE", "TRADE_RECEIVE", "TRADE_SPEND", "TRADE_TAX"]}'::jsonb, '{"type_": ["*_ITEM_USE", "HARVEST_AFFINITY_*", "HARVEST_TIME_*", "HARVEST_WHEN_*", "LIQ_WHEN_*", "SCAV_CLAIM_*", "SCAV_CLAIM_AFFINITY_*"]}'::jsonb, ARRAY['Value']::text[]),
   ('is.score', 'rec_is_score', 'ACCOUNT', 'packed', ARRAY['holderID', 'epoch', 'index', 'type_']::text[], ARRAY['uint256', 'uint256', 'uint32', 'string']::text[], ARRAY['key_holder_id', 'key_epoch', 'key_index', 'key_type']::text[], '{"epoch": [], "holderID": ["ACCOUNT"], "index": ["ITEM"], "type_": []}'::jsonb, '{"type_": ["COLLECT", "LIQUIDATE", "TOTAL_SPENT", "VIP_SCORE"]}'::jsonb, '{}'::jsonb, ARRAY['IDType', 'IdHolder', 'Value']::text[]),
   ('sacrifice.pity', 'rec_sacrifice_pity', 'ACCOUNT', 'packed', ARRAY['accID']::text[], ARRAY['uint256']::text[], ARRAY['key_acc_id']::text[], '{"accID": ["ACCOUNT"]}'::jsonb, '{}'::jsonb, '{}'::jsonb, ARRAY['Value']::text[]),
   ('scavenge.instance', 'rec_scavenge_instance', 'ACCOUNT', 'packed', ARRAY['field', 'index', 'holderID']::text[], ARRAY['string', 'uint32', 'uint256']::text[], ARRAY['key_field', 'key_index', 'key_holder_id']::text[], '{"field": [], "holderID": ["ACCOUNT"], "index": ["NODE"]}'::jsonb, '{"field": ["NODE"]}'::jsonb, '{}'::jsonb, ARRAY['Value']::text[]),
   ('operator.cache', 'rec_operator_cache', 'ACCOUNT', 'address', ARRAY['addr']::text[], ARRAY['']::text[], ARRAY['key_addr']::text[], '{"addr": []}'::jsonb, '{}'::jsonb, '{}'::jsonb, ARRAY['CacheOperator']::text[]),
-  ('SOULBOUND', 'rec_soulbound', 'KAMI', 'abi', ARRAY['kamiID']::text[], ARRAY['uint256']::text[], ARRAY['key_kami_id']::text[], '{"kamiID": ["KAMI"]}'::jsonb, '{}'::jsonb, '{}'::jsonb, ARRAY['Value']::text[]),
+  ('SOULBOUND', 'rec_soulbound', 'KAMI', 'abi_ns_last', ARRAY['kamiID']::text[], ARRAY['uint256']::text[], ARRAY['key_kami_id']::text[], '{"kamiID": ["KAMI"]}'::jsonb, '{}'::jsonb, '{}'::jsonb, ARRAY['Value']::text[]),
   ('bonus.type', 'rec_bonus_type', 'KAMI', 'packed', ARRAY['type_', 'holderID']::text[], ARRAY['string', 'uint256']::text[], ARRAY['key_type', 'key_holder_id']::text[], '{"holderID": ["KAMI"], "type_": []}'::jsonb, '{"type_": []}'::jsonb, '{}'::jsonb, '{}'::text[]),
   ('trade.buy', 'rec_trade_buy', 'TRADE', 'packed', ARRAY['tradeID']::text[], ARRAY['uint256']::text[], ARRAY['key_trade_id']::text[], '{"tradeID": ["TRADE"]}'::jsonb, '{}'::jsonb, '{}'::jsonb, ARRAY['Keys', 'Values']::text[]),
   ('trade.sell', 'rec_trade_sell', 'TRADE', 'packed', ARRAY['tradeID']::text[], ARRAY['uint256']::text[], ARRAY['key_trade_id']::text[], '{"tradeID": ["TRADE"]}'::jsonb, '{}'::jsonb, '{}'::jsonb, ARRAY['Keys', 'Values']::text[]),
@@ -475,7 +475,7 @@ INSERT INTO domain.record_spec (ns, table_name, parent_type, encoding, key_order
 ON CONFLICT (ns) DO UPDATE SET table_name = EXCLUDED.table_name, parent_type = EXCLUDED.parent_type, encoding = EXCLUDED.encoding, key_order = EXCLUDED.key_order, key_types = EXCLUDED.key_types, key_columns = EXCLUDED.key_columns, key_parents = EXCLUDED.key_parents, key_values = EXCLUDED.key_values, key_patterns = EXCLUDED.key_patterns, fields = EXCLUDED.fields;
 CREATE TABLE IF NOT EXISTS domain.shape_spec (name text PRIMARY KEY REFERENCES domain.kind(name), signature text[] NOT NULL, created_by text[] NOT NULL);
 INSERT INTO domain.shape_spec (name, signature, created_by) VALUES
-  ('COMMIT', ARRAY['BlockReveal', 'IdHolder', 'IdSource', 'Type', 'Value']::text[], ARRAY['AccountUseItem', 'GoalClaim', 'KamiCastItem', 'KamiGachaMint', 'KamiGachaReroll', 'KamiSacrificeCommit', 'KamiUseItem', 'QuestComplete', 'ScavengeClaim', 'SkillRespec']::text[]),
+  ('COMMIT', ARRAY['BlockReveal', 'IdHolder', 'IdSource', 'Reroll', 'Type', 'Value']::text[], ARRAY['AccountUseItem', 'GoalClaim', 'KamiCastItem', 'KamiGachaMint', 'KamiGachaReroll', 'KamiSacrificeCommit', 'KamiUseItem', 'QuestComplete', 'ScavengeClaim', 'SkillRespec']::text[]),
   ('CONDITION', ARRAY['For', 'IDAnchor', 'Index', 'LogicType', 'Type', 'Value']::text[], ARRAY['Chat', '_AuctionRegistry', '_GoalRegistry', '_ItemRegistry', '_ListingRegistry', '_NodeRegistry', '_QuestRegistry', '_RecipeRegistry', '_SkillRegistry']::text[]),
   ('ROOM_GATE', ARRAY['For', 'IDFrom', 'IDTo', 'IdSource', 'Index', 'LogicType', 'Type', 'Value']::text[], ARRAY['_RoomRegistry']::text[])
 ON CONFLICT (name) DO UPDATE SET signature = EXCLUDED.signature, created_by = EXCLUDED.created_by;
@@ -540,6 +540,7 @@ CREATE TABLE IF NOT EXISTS domain.commit (
   block_reveal integer,
   id_holder bytea,
   id_source bytea,
+  reroll integer,
   type text,
   value bigint
 );
@@ -1450,16 +1451,17 @@ END $$;
 -- +goose StatementBegin
 CREATE OR REPLACE FUNCTION domain.refresh_commit(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
 BEGIN
-  INSERT INTO domain.commit (id, block_number, block_reveal, id_holder, id_source, type, value)
+  INSERT INTO domain.commit (id, block_number, block_reveal, id_holder, id_source, reroll, type, value)
   SELECT domain.id32(e.id), max(s.block_number), domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\xeb96d6a560bda13fa9b1f5e6458550803932abff9fe730fa1f8c3a6ddcb67e6b'))[1]) AS block_reveal,
     domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\x5bc28889d745caef68975e56a733199d93efb3f5ae8e4606262ab97c83f72648'))[1]) AS id_holder,
     domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\xc81ce03c0ce7d95786aa8f43fb06c16da8357e856cb08b2052b4bf1807cf8ab3'))[1]) AS id_source,
+    domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\xd3d6110f8c07a5a54442b3c3ae6c6c55da5e123d17d83305858b216fc0078e83'))[1]) AS reroll,
     domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\x024accd0d273ef6123273b21662f5cc055a7d58adf98cc1b060edd029af93f7f'))[1]) AS type,
     domain.to_bigint((array_agg(s.value) FILTER (WHERE c.id = '\xb25ea67b55901db62e4b14311a8c1ab178fec3948b4b493a711970a50aa2a2e1'))[1]) AS value
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id
-  ON CONFLICT (id) DO UPDATE SET block_number = EXCLUDED.block_number, block_reveal = EXCLUDED.block_reveal, id_holder = EXCLUDED.id_holder, id_source = EXCLUDED.id_source, type = EXCLUDED.type, value = EXCLUDED.value;
+  ON CONFLICT (id) DO UPDATE SET block_number = EXCLUDED.block_number, block_reveal = EXCLUDED.block_reveal, id_holder = EXCLUDED.id_holder, id_source = EXCLUDED.id_source, reroll = EXCLUDED.reroll, type = EXCLUDED.type, value = EXCLUDED.value;
 END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin

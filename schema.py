@@ -302,7 +302,7 @@ def generate(spec_path, out_path):
   ns text PRIMARY KEY REFERENCES domain.kind(name),
   table_name text NOT NULL,
   parent_type text,
-  encoding text NOT NULL,               -- packed | abi | address
+  encoding text NOT NULL,               -- packed | abi | address | abi_ns_last (the literal after the keys; not recomputed yet)
   key_order text[] NOT NULL,
   key_types text[] NOT NULL,
   key_columns text[] NOT NULL,
@@ -318,6 +318,7 @@ def generate(spec_path, out_path):
         kcols = [key_column(k, ktypes.get(k), r['keys'].get(k))[0] for k in keys]
         seen = set(); kcols = [kc for kc in kcols if not (kc in seen or seen.add(kc))]
         if str(r.get('id', '')).startswith('address('): enc = 'address'
+        elif 'keys…, ns' in r.get('encoding', ''): enc = 'abi_ns_last'   # SOULBOUND: keccak256(abi.encode(kamiID, "SOULBOUND")); the populator skips it
         elif 'Packed' in r.get('encoding', 'Packed'): enc = 'packed'
         else: enc = 'abi'
         parents = {k: ([p for p in (v if isinstance(v, list) else [v]) if p in ents] if v else []) for k, v in r['keys'].items()}

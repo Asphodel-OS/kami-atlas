@@ -2718,6 +2718,7 @@
        "ACCOUNT",
        "FACTION",
        "ITEM",
+       "NODE",
        "RECIPE"
       ],
       "type_": "ITEM"
@@ -2739,23 +2740,41 @@
      },
      "key_patterns": {
       "type_": [
-       "**",
        "*_ITEM_USE",
        "HARVEST_AFFINITY_*",
        "HARVEST_TIME_*",
        "HARVEST_WHEN_*",
-       "LIQ_WHEN_*"
+       "LIQ_WHEN_*",
+       "SCAV_CLAIM_*",
+       "SCAV_CLAIM_AFFINITY_*"
       ]
      },
      "key_values": {
       "type_": [
+       "ACCOUNT_ITEM_USE",
        "CRAFT_ITEM",
        "CRAFT_TOTAL",
        "DROPTABLE_ITEM_TOTAL",
+       "ENEMY_KAMI_ITEM_USE",
        "GACHA_COMMITS_PENDING",
        "GOAL_CONTRIBUTION",
+       "HARVEST_AFFINITY_EERIE",
+       "HARVEST_AFFINITY_EERIE-INSECT",
+       "HARVEST_AFFINITY_EERIE-SCRAP",
+       "HARVEST_AFFINITY_INSECT",
+       "HARVEST_AFFINITY_INSECT-EERIE",
+       "HARVEST_AFFINITY_INSECT-SCRAP",
+       "HARVEST_AFFINITY_NORMAL",
+       "HARVEST_AFFINITY_SCRAP",
+       "HARVEST_AFFINITY_SCRAP-INSECT",
        "HARVEST_AT_NODE",
        "HARVEST_TIME",
+       "HARVEST_TIME_DAYLIGHT",
+       "HARVEST_TIME_EVENFALL",
+       "HARVEST_TIME_MOONSIDE",
+       "HARVEST_WHEN_DAYLIGHT",
+       "HARVEST_WHEN_EVENFALL",
+       "HARVEST_WHEN_MOONSIDE",
        "ITEM_AUCTION_BUY",
        "ITEM_AUCTION_SPEND",
        "ITEM_BURN",
@@ -2767,6 +2786,7 @@
        "KAMI721_UNSTAKE",
        "KAMI_GACHA_MINT",
        "KAMI_GACHA_REROLL",
+       "KAMI_ITEM_USE",
        "KAMI_LEVELS_TOTAL",
        "KAMI_MARKET_ACCEPT",
        "KAMI_MARKET_BUY",
@@ -2783,6 +2803,9 @@
        "LIQUIDATE_AT_NODE",
        "LIQUIDATE_TOTAL",
        "LIQ_TARGET_ACC",
+       "LIQ_WHEN_DAYLIGHT",
+       "LIQ_WHEN_EVENFALL",
+       "LIQ_WHEN_MOONSIDE",
        "LISTING_BUY",
        "LISTING_BUY_TOTAL",
        "LISTING_SELL",
@@ -2810,6 +2833,16 @@
        "SACRIFICE_RARE_PITY_TOTAL",
        "SACRIFICE_UNCOMMON_PITY",
        "SACRIFICE_UNCOMMON_PITY_TOTAL",
+       "SCAV_CLAIM_AFFINITY_EERIE",
+       "SCAV_CLAIM_AFFINITY_EERIE-INSECT",
+       "SCAV_CLAIM_AFFINITY_EERIE-SCRAP",
+       "SCAV_CLAIM_AFFINITY_INSECT",
+       "SCAV_CLAIM_AFFINITY_INSECT-EERIE",
+       "SCAV_CLAIM_AFFINITY_INSECT-SCRAP",
+       "SCAV_CLAIM_AFFINITY_NORMAL",
+       "SCAV_CLAIM_AFFINITY_SCRAP",
+       "SCAV_CLAIM_AFFINITY_SCRAP-INSECT",
+       "SCAV_CLAIM_NODE",
        "SKILL_POINTS_USE",
        "TOKEN_SPEND",
        "TOKEN_SPEND_RENAME",
@@ -2948,6 +2981,7 @@
     "BlockReveal",
     "IdHolder",
     "IdSource",
+    "Reroll",
     "Type",
     "Value"
    ],
@@ -2999,6 +3033,7 @@
      "BlockReveal",
      "IdHolder",
      "IdSource",
+     "Reroll",
      "Type",
      "Value"
     ],
@@ -3441,7 +3476,7 @@
      "fields": [
       "Value"
      ],
-     "encoding": "keccak256(abi.encode(ns, keys\u2026))",
+     "encoding": "keccak256(abi.encode(keys\u2026, ns))",
      "key_order": [
       "kamiID"
      ],
@@ -4270,7 +4305,7 @@
      },
      "key_patterns": {
       "type_": [
-       "**"
+       "DISPLAY_ONLY_*"
       ]
      },
      "key_values": {

@@ -16,6 +16,7 @@ is fetched by its ID (getAddrByID / getCompByID) and a method is called on it; s
 fetched by name ("HEALTH", ...) are resolved at the call site that passes the literal.
 """
 import fcntl, json, os, re, subprocess, sys
+import itertools
 from collections import defaultdict
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -525,18 +526,54 @@ def write_spec(ix, model, ents, comps, systems, id_ns, src_note):
     for z in ix.fn:
         for st in flat_events(ix.events(z)):
             if st[0] == 'call' and st[1] in ix.fn: callers_of[st[1]].append((z, st[4] if len(st) > 4 else []))
-    def concat_pattern(text):
-        """A key built by concatenation, as a pattern with * for the part that is not a literal:
-        targetShape.concat("_ITEM_USE") -> *_ITEM_USE; LibString.concat("HARVEST_", affinity) -> HARVEST_*."""
+    fid_by_key = {f_: ix.key(f_) for f_ in ix.fn}
+    key_to_fid = {v: k for k, v in fid_by_key.items()}
+    vocab = {k: [x.strip() for x in str(v.get('values', '')).split('|') if x.strip()]
+             for k, v in read_note_section(os.path.join(NOTES, 'domain-model.yaml'), 'vocabularies').items()}
+    def string_returns(fid, depth=0):
+        """String literals a function returns, following a returned call once or twice
+        (LibPhase.getName -> _getName -> "DAYLIGHT" | "EVENFALL" | "MOONSIDE")."""
+        out = set()
+        if fid not in ix.fn or depth > 2: return out
+        for n in walk(ix.fn[fid][1].get('body') or {}):
+            if n.get('nodeType') != 'Return' or not n.get('expression'): continue
+            e = n['expression']
+            if e.get('nodeType') == 'Literal' and e.get('kind') == 'string' and e.get('value'): out.add(e['value'])
+            elif e.get('nodeType') == 'FunctionCall' and e.get('expression', {}).get('referencedDeclaration') in ix.fn:
+                out |= string_returns(e['expression']['referencedDeclaration'], depth + 1)
+        return out
+    def part_values(part, fid):
+        """What the dynamic part of a concatenation can be: the literals a called function returns, the literals the
+        callers pass for a parameter, or a vocabulary from the notes (registry data the code only names). None if unknown."""
+        m = re.match(r'(\w+)\.(\w+)\(', part)
+        if m and '%s.%s' % m.groups() in key_to_fid:
+            v = string_returns(key_to_fid['%s.%s' % m.groups()])
+            if v: return v
+        if fid in ix.fn and re.fullmatch(r'\w+', part):
+            ps = [x['name'] for x in ix.fn[fid][1]['parameters']['parameters']]
+            if part in ps:
+                v = {x for x in key_literals(fid, ps.index(part)) if '*' not in x}
+                if v: return v
+        base = re.split(r'[.\[]', part)[-1] if '(' not in part else None
+        if base in vocab: return set(vocab[base])
+        return None
+    def concat_pattern(text, fid=None):
+        """Keys built by concatenation: the literal strings they can form when every part is known
+        (LibString.concat("HARVEST_TIME_", LibPhase.getName(ts)) -> HARVEST_TIME_DAYLIGHT, …), and always the shape
+        with * for the part that is not a literal (*_ITEM_USE, HARVEST_AFFINITY_*), so a consumer can fill it."""
         m = re.match(r'(?:LibString|string)\.concat\((.*)\)$', text) or re.match(r'(.+?)\.concat\((.*)\)$', text)
-        if not m: return None
+        if not m: return set()
         parts = list(m.groups()) if len(m.groups()) == 2 else split_args_text(m.group(1))
-        out = ''
+        alts, shape = [], ''
         for part in parts:
             part = part.strip()
-            lit = re.fullmatch(r'"([^"]*)"', part)
-            out += lit.group(1) if lit else (ix.str_consts.get(part) if False else '*')
-        return out if '*' in out else out
+            lit = re.fullmatch(r'"([^"]*)"', part) or re.fullmatch(r'string\("([^"]*)"\)', part)
+            if lit: alts.append([lit.group(1)]); shape += lit.group(1); continue
+            v = part_values(part, fid)
+            alts.append(sorted(v) if v else ['*']); shape += '*'
+        out = {''.join(c) for c in itertools.product(*alts)} if '*' in shape else set()
+        out.add(shape)
+        return out
     def split_args_text(t):
         depth, cur, out = 0, [], []
         for ch in t:
@@ -555,8 +592,7 @@ def write_spec(ix, model, ents, comps, systems, id_ns, src_note):
             lit = re.fullmatch(r'"([^"]*)"', rhs)
             if lit: out.add(lit.group(1)); continue
             if rhs in ix.str_consts.values(): out.add(rhs); continue
-            pat = concat_pattern(rhs)
-            if pat: out.add(pat)
+            out |= concat_pattern(rhs, caller)
         return out
     def key_literals(fid, pi, depth=0, seen=()):
         """Strings that reach parameter pi of fid from its callers, up to three calls away: literals, string constants,
@@ -579,15 +615,15 @@ def write_spec(ix, model, ents, comps, systems, id_ns, src_note):
                     if m_.group(1) in ps: out |= key_literals(caller, ps.index(m_.group(1)), depth + 1, seen + ((fid, pi),))
                     else: out |= local_strings(caller, m_.group(1))
                     continue
-                pat = concat_pattern(a_[2])
-                if pat: out.add(pat)
+                out |= concat_pattern(a_[2], caller)
         return out
     def id_meta(ns):
         """How the id for namespace ns is hashed: encoding and the type of each key, from the first occurrence that
         has an owner function (they all hash the same way, or the model would have split them)."""
         for occ in NS_META.get(ns, []):
             if occ['fid'] is None and len(NS_META[ns]) > 1: continue
-            meta = {'encoding': 'keccak256(abi.encodePacked(ns, keys…))' if occ['packed'] else 'keccak256(abi.encode(ns, keys…))',
+            order = 'keys…, ns' if occ.get('ns_last') else 'ns, keys…'   # SOULBOUND hashes the key first, then the literal
+            meta = {'encoding': 'keccak256(abi.encodePacked(%s))' % order if occ['packed'] else 'keccak256(abi.encode(%s))' % order,
                     'key_order': occ['keys'], 'key_types': {k: key_type(occ['fid'], k) for k in occ['keys']}}
             vals = {}
             if occ['fid'] in ix.fn:
@@ -1707,7 +1743,7 @@ def main():
             namespaces[ns].add('%s(%s)  in %s' % (ns, ', '.join(keys), owner or os.path.basename(path)[:-4]))
             ofid = next((fid for fid, (c_, f_, p_) in ix.fn.items() if p_ == path and int(f_['src'].split(':')[0]) <= m.start() < sum(map(int, f_['src'].split(':')[:2]))), None)
             ns_struct[ns].append((ofid, keys))
-            NS_META[ns].append({'fid': ofid, 'keys': keys, 'packed': b'Packed' in m.group(0)})
+            NS_META[ns].append({'fid': ofid, 'keys': keys, 'packed': b'Packed' in m.group(0), 'ns_last': args.index(lits[0]) > 0})
     id_ns = {k: sorted(v) for k, v in sorted(namespaces.items())}
     ns_kind, gen_ns = classify_namespaces(ix, ns_struct)
 
@@ -1779,6 +1815,14 @@ def main():
         if o.get('held_by') and ns_ in model.get('shared_sub_entities', {}):
             model['shared_sub_entities'][ns_]['held_by'] = [h.strip() for h in str(o['held_by']).split('|') if h.strip()]
             model['shared_sub_entities'][ns_]['held_by_from_notes'] = True
+        if o.get('also_keys'):  # key parents the tracer misses (an index passed through a local array: nodeIndex -> indices[1] -> LibData.inc)
+            sub_ = model.get('shared_sub_entities', {}).get(ns_) or next((e_['sub_entities'][ns_] for e_ in model['entities'].values() if ns_ in (e_.get('sub_entities') or {})), None)
+            if sub_ is not None:
+                ak = o['also_keys'] if isinstance(o['also_keys'], dict) else dict(x.split(':', 1) for x in str(o['also_keys']).strip('{} ').split(',') if ':' in x)
+                for k_, v_ in ((k.strip(), v) for k, v in ak.items()):
+                    cur = sub_['keys'].get(k_); cur = [] if cur is None else (cur if isinstance(cur, list) else [cur])
+                    sub_['keys'][k_] = sorted(set(cur) | {x.strip() for x in str(v_).split('|') if x.strip()})
+                sub_['keys_from_notes'] = True
         if o.get('also_fields') and ns_ in model.get('shared_sub_entities', {}):  # fields the tracer misses (set through an array variable, or in another function)
             sub_ = model['shared_sub_entities'][ns_]
             sub_['fields'] = sorted(set(sub_.get('fields') or []) | {f.strip() for f in str(o['also_fields']).split('|') if f.strip()})

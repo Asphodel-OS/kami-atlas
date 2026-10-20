@@ -42,7 +42,7 @@ entity_types:
       IdSource: ["sourceID  (in LibBonus.regCreate)"]
   COMMIT:
     created_in: [LibCommit.commit]
-    components_at_creation: [BlockReveal, IdHolder, IdSource, Type, Value]
+    components_at_creation: [BlockReveal, IdHolder, IdSource, Reroll, Type, Value]
     checked_in: []
     made_by: "player actions"
     created_by_systems: [AccountUseItem, GoalClaim, KamiCastItem, KamiGachaMint, KamiGachaReroll, KamiSacrificeCommit, KamiUseItem, QuestComplete, ScavengeClaim, SkillRespec]

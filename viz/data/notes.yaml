@@ -45,7 +45,7 @@ entities:
   REFERENCE: {what: "A lookup pointer attached to an anchor."}
   CONDITION: {what: "A requirement or objective (type, logic, index, value) attached to whatever requires it: harvesting a node, using an item, accepting or completing a quest, buying a listing, upgrading a skill, crafting. The game's universal condition record; it has no EntityType."}
   ROOM_GATE: {what: "A condition guarding movement into a room, optionally only when coming from a specific room. No EntityType."}
-  COMMIT: {what: "A pending random roll (commit-reveal) that resolves at a future block: gacha mints and rerolls, sacrifices, droptable rewards from items, quests, goals and scavenging. No EntityType; removed once revealed.", also_fields: IdSource|Value}   # LibDroptable.commit adds the droptable id and the roll count after LibCommit.commit
+  COMMIT: {what: "A pending random roll (commit-reveal) that resolves at a future block: gacha mints and rerolls, sacrifices, droptable rewards from items, quests, goals and scavenging. No EntityType; removed once revealed.", also_fields: IdSource|Value|Reroll}   # LibDroptable.commit adds the droptable id and the roll count after LibCommit.commit; LibGacha sets Reroll on reroll commits
 
 links:   # for links the generator left unresolved (to: null)
   FRIENDSHIP.IdTarget: {to: ACCOUNT, note: "the other account"}
@@ -74,7 +74,7 @@ sub_entities:   # descriptions; the parent comes from the generated model unless
   bonus.type: {what: "a holder's running total for one bonus type"}
   bonus.ending.type: {what: "a holder's bonuses that end on the same trigger (UPON_HARVEST_ACTION, ...)"}
   quest.objective.snapshot: {what: "progress baseline taken when a quest is accepted"}
-  is.data: {what: "stat counters, any holder"}
+  is.data: {what: "stat counters, any holder", also_keys: "index: NODE"}   # harvest, liquidation and scavenge counters pass nodeIndex through a local uint32[] into LibData.inc, which the tracer cannot follow
   is.score: {what: "leaderboard score per epoch, any holder"}
   has.flag: {what: "a boolean flag on an entity: NOT_NAMEABLE on a kami, CAN_RESET_SKILLS on a kami or account, REPEATABLE on a quest, admin flags on items and rooms; WORLD_WHITELIST is set on a raw wallet address, not an entity", held_by: "ACCOUNT | KAMI | ITEM | QUEST | ROOM"}
   is.config: {what: "a global config value (see config.py)"}
@@ -114,6 +114,10 @@ sub_entities:   # descriptions; the parent comes from the generated model unless
   listing.sell: {what: "sell-side pricing: rate, decay, period, scale"}
   goal.tier: {what: "a goal's reward tiers"}
   goal.reward: {what: "the rewards of one tier"}
+
+vocabularies:   # what a concatenated key's dynamic part can be when it is registry data the code only names (the generator expands HARVEST_AFFINITY_* etc. with these); phases come from LibPhase itself
+  affinity: {values: "NORMAL|SCRAP|EERIE|INSECT|SCRAP-INSECT|INSECT-SCRAP|INSECT-EERIE|EERIE-INSECT|EERIE-SCRAP"}   # node affinities on yominet as of 2026-10-20 (domain.node.affinity); add new ones here
+  field: {values: NODE}   # scavenge bar fields (LibScavenge: "field (e.g. node)"); only NODE exists so far
 
 open_questions: []
 

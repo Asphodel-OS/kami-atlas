@@ -175,7 +175,7 @@ entities:
         id: "is.data(holderID, index, type_)"
         keys:
           holderID: ACCOUNT
-          index: [ACCOUNT, FACTION, ITEM, RECIPE]
+          index: [ACCOUNT, FACTION, ITEM, NODE, RECIPE]
           type_: ITEM
         parent_from: "holder key"
         relation:
@@ -186,6 +186,7 @@ entities:
             up: "from the key values"
         kind: record
         fields: [Value]
+        keys_from_notes: true
       is.score:
         id: "is.score(holderID, epoch, index, type_)"
         keys:

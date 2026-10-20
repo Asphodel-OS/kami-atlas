@@ -175,7 +175,7 @@ CREATE OR REPLACE FUNCTION domain.to_int32(v bytea) RETURNS integer LANGUAGE sql
 -- +goose StatementEnd
 -- +goose StatementBegin
 CREATE OR REPLACE FUNCTION domain.to_bool(v bytea) RETURNS boolean LANGUAGE sql IMMUTABLE STRICT AS $$
-  SELECT domain.to_uint(v) <> 0 $$;
+  SELECT domain.id32(v) <> '\x0000000000000000000000000000000000000000000000000000000000000000'::bytea $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
 CREATE OR REPLACE FUNCTION domain.to_address(v bytea) RETURNS bytea LANGUAGE sql IMMUTABLE STRICT AS $$
@@ -186,8 +186,8 @@ CREATE OR REPLACE FUNCTION domain.to_address(v bytea) RETURNS bytea LANGUAGE sql
 CREATE OR REPLACE FUNCTION domain.to_string(v bytea) RETURNS text LANGUAGE plpgsql IMMUTABLE STRICT AS $$
 DECLARE n int;
 BEGIN
-  IF length(v) >= 64 AND domain.to_uint(substring(v from 1 for 32)) = 32 THEN
-    n := domain.to_uint(substring(v from 33 for 32))::int;
+  IF length(v) >= 64 AND substring(v from 1 for 32) = '\x0000000000000000000000000000000000000000000000000000000000000020'::bytea THEN
+    n := domain.to_integer(substring(v from 33 for 32));
     RETURN convert_from(substring(v from 65 for n), 'UTF8');
   END IF;
   RETURN convert_from(v, 'UTF8');
@@ -210,7 +210,7 @@ CREATE OR REPLACE FUNCTION domain.to_uint_array(v bytea) RETURNS numeric[] LANGU
 DECLARE n int; i int; out numeric[] := '{}';
 BEGIN
   IF length(v) < 64 THEN RETURN out; END IF;
-  n := domain.to_uint(substring(v from 33 for 32))::int;
+  n := domain.to_integer(substring(v from 33 for 32));
   FOR i IN 0..n - 1 LOOP out := out || domain.to_uint(substring(v from 65 + i * 32 for 32)); END LOOP;
   RETURN out;
 END $$;
@@ -220,10 +220,10 @@ CREATE OR REPLACE FUNCTION domain.to_string_array(v bytea) RETURNS text[] LANGUA
 DECLARE n int; i int; off int; len int; out text[] := '{}';
 BEGIN
   IF length(v) < 64 THEN RETURN out; END IF;
-  n := domain.to_uint(substring(v from 33 for 32))::int;
+  n := domain.to_integer(substring(v from 33 for 32));
   FOR i IN 0..n - 1 LOOP
-    off := domain.to_uint(substring(v from 65 + i * 32 for 32))::int;   -- relative to the array's data start (byte 33)
-    len := domain.to_uint(substring(v from 33 + off + 1 for 32))::int;
+    off := domain.to_integer(substring(v from 65 + i * 32 for 32));   -- relative to the array's data start (byte 33)
+    len := domain.to_integer(substring(v from 33 + off + 1 for 32));
     out := out || convert_from(substring(v from 33 + off + 33 for len), 'UTF8');
   END LOOP;
   RETURN out;
@@ -406,29 +406,35 @@ CREATE INDEX IF NOT EXISTS idx_domain_outbox_kind_id ON domain.outbox(kind, id);
         tn = table_name(t, False)
         w('-- +goose StatementBegin')
         if cols:
-            w('''CREATE OR REPLACE FUNCTION domain.refresh_%s(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+            w('''CREATE OR REPLACE FUNCTION domain.refresh_%s(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   INSERT INTO domain.%s (id, block_number, %s)
   SELECT domain.id32(e.id), max(s.block_number), %s
   %s
-  ON CONFLICT (id) DO UPDATE SET block_number = EXCLUDED.block_number, %s $$;''' % (
+  ON CONFLICT (id) DO UPDATE SET block_number = EXCLUDED.block_number, %s;
+END $$;''' % (
                 tn, tn, ', '.join(col for col, _, _, _ in cols), ',\n    '.join(picks(cols)), from_state,
                 ', '.join('%s = EXCLUDED.%s' % (col, col) for col, _, _, _ in cols)))
         else:
-            w('''CREATE OR REPLACE FUNCTION domain.refresh_%s(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+            w('''CREATE OR REPLACE FUNCTION domain.refresh_%s(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   INSERT INTO domain.%s (id, block_number)
   SELECT domain.id32(e.id), max(s.block_number)
   %s
-  ON CONFLICT (id) DO UPDATE SET block_number = EXCLUDED.block_number $$;''' % (tn, tn, from_state))
+  ON CONFLICT (id) DO UPDATE SET block_number = EXCLUDED.block_number;
+END $$;''' % (tn, tn, from_state))
         w('-- +goose StatementEnd')
     for ns, r in records.items():
         tn = table_name(ns, True); fcols = rec_cols[ns]
         w('-- +goose StatementBegin')
         # a record row is created by the populator with its keys; refresh only brings its fields up to date
-        w('''CREATE OR REPLACE FUNCTION domain.refresh_%s(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+        w('''CREATE OR REPLACE FUNCTION domain.refresh_%s(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   UPDATE domain.%s r SET block_number = x.block_number%s
   FROM (SELECT domain.id32(e.id) AS id, max(s.block_number) AS block_number%s
   %s) x
-  WHERE r.id = x.id $$;''' % (
+  WHERE r.id = x.id;
+END $$;''' % (
             tn, tn, ''.join(', %s = x.%s' % (col, col) for col, _, _, _ in fcols), (', ' + ', '.join(picks(fcols))) if fcols else '', from_state))
         w('-- +goose StatementEnd')
     # bootstrap: entity-type tables from current state

@@ -74,7 +74,7 @@ CREATE OR REPLACE FUNCTION domain.to_int32(v bytea) RETURNS integer LANGUAGE sql
 -- +goose StatementEnd
 -- +goose StatementBegin
 CREATE OR REPLACE FUNCTION domain.to_bool(v bytea) RETURNS boolean LANGUAGE sql IMMUTABLE STRICT AS $$
-  SELECT domain.to_uint(v) <> 0 $$;
+  SELECT domain.id32(v) <> '\x0000000000000000000000000000000000000000000000000000000000000000'::bytea $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
 CREATE OR REPLACE FUNCTION domain.to_address(v bytea) RETURNS bytea LANGUAGE sql IMMUTABLE STRICT AS $$
@@ -85,8 +85,8 @@ CREATE OR REPLACE FUNCTION domain.to_address(v bytea) RETURNS bytea LANGUAGE sql
 CREATE OR REPLACE FUNCTION domain.to_string(v bytea) RETURNS text LANGUAGE plpgsql IMMUTABLE STRICT AS $$
 DECLARE n int;
 BEGIN
-  IF length(v) >= 64 AND domain.to_uint(substring(v from 1 for 32)) = 32 THEN
-    n := domain.to_uint(substring(v from 33 for 32))::int;
+  IF length(v) >= 64 AND substring(v from 1 for 32) = '\x0000000000000000000000000000000000000000000000000000000000000020'::bytea THEN
+    n := domain.to_integer(substring(v from 33 for 32));
     RETURN convert_from(substring(v from 65 for n), 'UTF8');
   END IF;
   RETURN convert_from(v, 'UTF8');
@@ -109,7 +109,7 @@ CREATE OR REPLACE FUNCTION domain.to_uint_array(v bytea) RETURNS numeric[] LANGU
 DECLARE n int; i int; out numeric[] := '{}';
 BEGIN
   IF length(v) < 64 THEN RETURN out; END IF;
-  n := domain.to_uint(substring(v from 33 for 32))::int;
+  n := domain.to_integer(substring(v from 33 for 32));
   FOR i IN 0..n - 1 LOOP out := out || domain.to_uint(substring(v from 65 + i * 32 for 32)); END LOOP;
   RETURN out;
 END $$;
@@ -119,10 +119,10 @@ CREATE OR REPLACE FUNCTION domain.to_string_array(v bytea) RETURNS text[] LANGUA
 DECLARE n int; i int; off int; len int; out text[] := '{}';
 BEGIN
   IF length(v) < 64 THEN RETURN out; END IF;
-  n := domain.to_uint(substring(v from 33 for 32))::int;
+  n := domain.to_integer(substring(v from 33 for 32));
   FOR i IN 0..n - 1 LOOP
-    off := domain.to_uint(substring(v from 65 + i * 32 for 32))::int;   -- relative to the array's data start (byte 33)
-    len := domain.to_uint(substring(v from 33 + off + 1 for 32))::int;
+    off := domain.to_integer(substring(v from 65 + i * 32 for 32));   -- relative to the array's data start (byte 33)
+    len := domain.to_integer(substring(v from 33 + off + 1 for 32));
     out := out || convert_from(substring(v from 33 + off + 33 for len), 'UTF8');
   END LOOP;
   RETURN out;
@@ -1416,7 +1416,8 @@ CREATE TABLE IF NOT EXISTS domain.rec_score_type (
 );
 CREATE INDEX IF NOT EXISTS idx_domain_rec_score_type_parent ON domain.rec_score_type(parent);
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_account(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_account(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   INSERT INTO domain.account (id, block_number, address_operator, address_owner, cache_operator, index_account, index_room, stamina_base, stamina_shift, stamina_boost, stamina_sync, time_last, time_last_action, time_start, value, description, experience, name, state, time_next)
   SELECT domain.id32(e.id), max(s.block_number), domain.to_address((array_agg(s.value) FILTER (WHERE c.id = '\x8a1264e7094de803414cccf0c32d2bd50f25c909fa2415b38f065f320e4eabe6'))[1]) AS address_operator,
     domain.to_address((array_agg(s.value) FILTER (WHERE c.id = '\x6caa0553213b46b61cbf982ee3246d8a2a4e5b4936a7594770d391463046f22e'))[1]) AS address_owner,
@@ -1439,10 +1440,12 @@ CREATE OR REPLACE FUNCTION domain.refresh_account(ids bytea[]) RETURNS void LANG
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id
-  ON CONFLICT (id) DO UPDATE SET block_number = EXCLUDED.block_number, address_operator = EXCLUDED.address_operator, address_owner = EXCLUDED.address_owner, cache_operator = EXCLUDED.cache_operator, index_account = EXCLUDED.index_account, index_room = EXCLUDED.index_room, stamina_base = EXCLUDED.stamina_base, stamina_shift = EXCLUDED.stamina_shift, stamina_boost = EXCLUDED.stamina_boost, stamina_sync = EXCLUDED.stamina_sync, time_last = EXCLUDED.time_last, time_last_action = EXCLUDED.time_last_action, time_start = EXCLUDED.time_start, value = EXCLUDED.value, description = EXCLUDED.description, experience = EXCLUDED.experience, name = EXCLUDED.name, state = EXCLUDED.state, time_next = EXCLUDED.time_next $$;
+  ON CONFLICT (id) DO UPDATE SET block_number = EXCLUDED.block_number, address_operator = EXCLUDED.address_operator, address_owner = EXCLUDED.address_owner, cache_operator = EXCLUDED.cache_operator, index_account = EXCLUDED.index_account, index_room = EXCLUDED.index_room, stamina_base = EXCLUDED.stamina_base, stamina_shift = EXCLUDED.stamina_shift, stamina_boost = EXCLUDED.stamina_boost, stamina_sync = EXCLUDED.stamina_sync, time_last = EXCLUDED.time_last, time_last_action = EXCLUDED.time_last_action, time_start = EXCLUDED.time_start, value = EXCLUDED.value, description = EXCLUDED.description, experience = EXCLUDED.experience, name = EXCLUDED.name, state = EXCLUDED.state, time_next = EXCLUDED.time_next;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_commit(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_commit(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   INSERT INTO domain.commit (id, block_number, block_reveal, id_holder, type)
   SELECT domain.id32(e.id), max(s.block_number), domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\xeb96d6a560bda13fa9b1f5e6458550803932abff9fe730fa1f8c3a6ddcb67e6b'))[1]) AS block_reveal,
     domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\x5bc28889d745caef68975e56a733199d93efb3f5ae8e4606262ab97c83f72648'))[1]) AS id_holder,
@@ -1450,10 +1453,12 @@ CREATE OR REPLACE FUNCTION domain.refresh_commit(ids bytea[]) RETURNS void LANGU
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id
-  ON CONFLICT (id) DO UPDATE SET block_number = EXCLUDED.block_number, block_reveal = EXCLUDED.block_reveal, id_holder = EXCLUDED.id_holder, type = EXCLUDED.type $$;
+  ON CONFLICT (id) DO UPDATE SET block_number = EXCLUDED.block_number, block_reveal = EXCLUDED.block_reveal, id_holder = EXCLUDED.id_holder, type = EXCLUDED.type;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_equipment(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_equipment(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   INSERT INTO domain.equipment (id, block_number, for_, id_owns_equipment, index_item)
   SELECT domain.id32(e.id), max(s.block_number), domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\x0e980fab8730829e1930c8cdc024ae35650d9eec12d20425b19fc4ade883178c'))[1]) AS for_,
     domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\xdae45b6433b7ad9982276bf2ad80e49f631fb4705c2475cf1795cfe45b6568ab'))[1]) AS id_owns_equipment,
@@ -1461,10 +1466,12 @@ CREATE OR REPLACE FUNCTION domain.refresh_equipment(ids bytea[]) RETURNS void LA
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id
-  ON CONFLICT (id) DO UPDATE SET block_number = EXCLUDED.block_number, for_ = EXCLUDED.for_, id_owns_equipment = EXCLUDED.id_owns_equipment, index_item = EXCLUDED.index_item $$;
+  ON CONFLICT (id) DO UPDATE SET block_number = EXCLUDED.block_number, for_ = EXCLUDED.for_, id_owns_equipment = EXCLUDED.id_owns_equipment, index_item = EXCLUDED.index_item;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_friendship(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_friendship(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   INSERT INTO domain.friendship (id, block_number, id_anchor, id_source, id_target, state)
   SELECT domain.id32(e.id), max(s.block_number), domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\xb045c5017717023376f3cca4fc00dc4ee26e151a86d28f1db156cf5222daccd1'))[1]) AS id_anchor,
     domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\xc81ce03c0ce7d95786aa8f43fb06c16da8357e856cb08b2052b4bf1807cf8ab3'))[1]) AS id_source,
@@ -1473,10 +1480,12 @@ CREATE OR REPLACE FUNCTION domain.refresh_friendship(ids bytea[]) RETURNS void L
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id
-  ON CONFLICT (id) DO UPDATE SET block_number = EXCLUDED.block_number, id_anchor = EXCLUDED.id_anchor, id_source = EXCLUDED.id_source, id_target = EXCLUDED.id_target, state = EXCLUDED.state $$;
+  ON CONFLICT (id) DO UPDATE SET block_number = EXCLUDED.block_number, id_anchor = EXCLUDED.id_anchor, id_source = EXCLUDED.id_source, id_target = EXCLUDED.id_target, state = EXCLUDED.state;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_harvest(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_harvest(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   INSERT INTO domain.harvest (id, block_number, id_holder, id_source, state, time_last, time_reset, time_start, value)
   SELECT domain.id32(e.id), max(s.block_number), domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\x5bc28889d745caef68975e56a733199d93efb3f5ae8e4606262ab97c83f72648'))[1]) AS id_holder,
     domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\xc81ce03c0ce7d95786aa8f43fb06c16da8357e856cb08b2052b4bf1807cf8ab3'))[1]) AS id_source,
@@ -1488,10 +1497,12 @@ CREATE OR REPLACE FUNCTION domain.refresh_harvest(ids bytea[]) RETURNS void LANG
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id
-  ON CONFLICT (id) DO UPDATE SET block_number = EXCLUDED.block_number, id_holder = EXCLUDED.id_holder, id_source = EXCLUDED.id_source, state = EXCLUDED.state, time_last = EXCLUDED.time_last, time_reset = EXCLUDED.time_reset, time_start = EXCLUDED.time_start, value = EXCLUDED.value $$;
+  ON CONFLICT (id) DO UPDATE SET block_number = EXCLUDED.block_number, id_holder = EXCLUDED.id_holder, id_source = EXCLUDED.id_source, state = EXCLUDED.state, time_last = EXCLUDED.time_last, time_reset = EXCLUDED.time_reset, time_start = EXCLUDED.time_start, value = EXCLUDED.value;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_inventory(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_inventory(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   INSERT INTO domain.inventory (id, block_number, id_owns_inventory, index_item, value)
   SELECT domain.id32(e.id), max(s.block_number), domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\x1ee9964c9c16bbb74f9e401f1ab450f99b2343a602036525f23f0da350bc74d0'))[1]) AS id_owns_inventory,
     domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\xd3da495fedd385ac62763d969054ffb19f1777e687374cceb91f1237ddd6bfb3'))[1]) AS index_item,
@@ -1499,10 +1510,12 @@ CREATE OR REPLACE FUNCTION domain.refresh_inventory(ids bytea[]) RETURNS void LA
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id
-  ON CONFLICT (id) DO UPDATE SET block_number = EXCLUDED.block_number, id_owns_inventory = EXCLUDED.id_owns_inventory, index_item = EXCLUDED.index_item, value = EXCLUDED.value $$;
+  ON CONFLICT (id) DO UPDATE SET block_number = EXCLUDED.block_number, id_owns_inventory = EXCLUDED.id_owns_inventory, index_item = EXCLUDED.index_item, value = EXCLUDED.value;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_kami(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_kami(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   INSERT INTO domain.kami (id, block_number, experience, harmony_base, harmony_shift, harmony_boost, harmony_sync, health_base, health_shift, health_boost, health_sync, id_owns_kami, index_background, index_body, index_color, index_face, index_hand, index_kami, level, media_uri, name, power_base, power_shift, power_boost, power_sync, skill_point, slots_base, slots_shift, slots_boost, slots_sync, state, violence_base, violence_shift, violence_boost, violence_sync, index_room, reroll, time_last, time_next)
   SELECT domain.id32(e.id), max(s.block_number), domain.to_bigint((array_agg(s.value) FILTER (WHERE c.id = '\xf751b4a95c9cfabe52899e09ae113eac17e41cc0cc2dad670d2789ecc1251add'))[1]) AS experience,
     domain.stat_part((array_agg(s.value) FILTER (WHERE c.id = '\x5b5054d7f0fe411d96cb1c9605f65b42805d28ce5bb4ce216455e888cdc5373c'))[1], 0) AS harmony_base,
@@ -1544,10 +1557,12 @@ CREATE OR REPLACE FUNCTION domain.refresh_kami(ids bytea[]) RETURNS void LANGUAG
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id
-  ON CONFLICT (id) DO UPDATE SET block_number = EXCLUDED.block_number, experience = EXCLUDED.experience, harmony_base = EXCLUDED.harmony_base, harmony_shift = EXCLUDED.harmony_shift, harmony_boost = EXCLUDED.harmony_boost, harmony_sync = EXCLUDED.harmony_sync, health_base = EXCLUDED.health_base, health_shift = EXCLUDED.health_shift, health_boost = EXCLUDED.health_boost, health_sync = EXCLUDED.health_sync, id_owns_kami = EXCLUDED.id_owns_kami, index_background = EXCLUDED.index_background, index_body = EXCLUDED.index_body, index_color = EXCLUDED.index_color, index_face = EXCLUDED.index_face, index_hand = EXCLUDED.index_hand, index_kami = EXCLUDED.index_kami, level = EXCLUDED.level, media_uri = EXCLUDED.media_uri, name = EXCLUDED.name, power_base = EXCLUDED.power_base, power_shift = EXCLUDED.power_shift, power_boost = EXCLUDED.power_boost, power_sync = EXCLUDED.power_sync, skill_point = EXCLUDED.skill_point, slots_base = EXCLUDED.slots_base, slots_shift = EXCLUDED.slots_shift, slots_boost = EXCLUDED.slots_boost, slots_sync = EXCLUDED.slots_sync, state = EXCLUDED.state, violence_base = EXCLUDED.violence_base, violence_shift = EXCLUDED.violence_shift, violence_boost = EXCLUDED.violence_boost, violence_sync = EXCLUDED.violence_sync, index_room = EXCLUDED.index_room, reroll = EXCLUDED.reroll, time_last = EXCLUDED.time_last, time_next = EXCLUDED.time_next $$;
+  ON CONFLICT (id) DO UPDATE SET block_number = EXCLUDED.block_number, experience = EXCLUDED.experience, harmony_base = EXCLUDED.harmony_base, harmony_shift = EXCLUDED.harmony_shift, harmony_boost = EXCLUDED.harmony_boost, harmony_sync = EXCLUDED.harmony_sync, health_base = EXCLUDED.health_base, health_shift = EXCLUDED.health_shift, health_boost = EXCLUDED.health_boost, health_sync = EXCLUDED.health_sync, id_owns_kami = EXCLUDED.id_owns_kami, index_background = EXCLUDED.index_background, index_body = EXCLUDED.index_body, index_color = EXCLUDED.index_color, index_face = EXCLUDED.index_face, index_hand = EXCLUDED.index_hand, index_kami = EXCLUDED.index_kami, level = EXCLUDED.level, media_uri = EXCLUDED.media_uri, name = EXCLUDED.name, power_base = EXCLUDED.power_base, power_shift = EXCLUDED.power_shift, power_boost = EXCLUDED.power_boost, power_sync = EXCLUDED.power_sync, skill_point = EXCLUDED.skill_point, slots_base = EXCLUDED.slots_base, slots_shift = EXCLUDED.slots_shift, slots_boost = EXCLUDED.slots_boost, slots_sync = EXCLUDED.slots_sync, state = EXCLUDED.state, violence_base = EXCLUDED.violence_base, violence_shift = EXCLUDED.violence_shift, violence_boost = EXCLUDED.violence_boost, violence_sync = EXCLUDED.violence_sync, index_room = EXCLUDED.index_room, reroll = EXCLUDED.reroll, time_last = EXCLUDED.time_last, time_next = EXCLUDED.time_next;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_kami_collection_offer(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_kami_collection_offer(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   INSERT INTO domain.kami_collection_offer (id, block_number, balance, id_owns_kami_order, max, state, time_end, time_start, value)
   SELECT domain.id32(e.id), max(s.block_number), domain.to_int32((array_agg(s.value) FILTER (WHERE c.id = '\x3be5761f4444019a26faec2991f5bf613add59db9423d5295caf36a8cd971efd'))[1]) AS balance,
     domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\xe71badbf78da4d89e78fdcc5cab0a0bbdc0172feed5567d2bcfd4c351a8d67b6'))[1]) AS id_owns_kami_order,
@@ -1559,10 +1574,12 @@ CREATE OR REPLACE FUNCTION domain.refresh_kami_collection_offer(ids bytea[]) RET
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id
-  ON CONFLICT (id) DO UPDATE SET block_number = EXCLUDED.block_number, balance = EXCLUDED.balance, id_owns_kami_order = EXCLUDED.id_owns_kami_order, max = EXCLUDED.max, state = EXCLUDED.state, time_end = EXCLUDED.time_end, time_start = EXCLUDED.time_start, value = EXCLUDED.value $$;
+  ON CONFLICT (id) DO UPDATE SET block_number = EXCLUDED.block_number, balance = EXCLUDED.balance, id_owns_kami_order = EXCLUDED.id_owns_kami_order, max = EXCLUDED.max, state = EXCLUDED.state, time_end = EXCLUDED.time_end, time_start = EXCLUDED.time_start, value = EXCLUDED.value;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_kami_listing(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_kami_listing(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   INSERT INTO domain.kami_listing (id, block_number, id_owns_kami_order, index_kami_listing, state, time_end, time_start, value, values_)
   SELECT domain.id32(e.id), max(s.block_number), domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\xe71badbf78da4d89e78fdcc5cab0a0bbdc0172feed5567d2bcfd4c351a8d67b6'))[1]) AS id_owns_kami_order,
     domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\xbb85cb86df63178180cd5cbe5ea0b70a78003460a2729aaac0ec4c2627bb48c6'))[1]) AS index_kami_listing,
@@ -1574,10 +1591,12 @@ CREATE OR REPLACE FUNCTION domain.refresh_kami_listing(ids bytea[]) RETURNS void
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id
-  ON CONFLICT (id) DO UPDATE SET block_number = EXCLUDED.block_number, id_owns_kami_order = EXCLUDED.id_owns_kami_order, index_kami_listing = EXCLUDED.index_kami_listing, state = EXCLUDED.state, time_end = EXCLUDED.time_end, time_start = EXCLUDED.time_start, value = EXCLUDED.value, values_ = EXCLUDED.values_ $$;
+  ON CONFLICT (id) DO UPDATE SET block_number = EXCLUDED.block_number, id_owns_kami_order = EXCLUDED.id_owns_kami_order, index_kami_listing = EXCLUDED.index_kami_listing, state = EXCLUDED.state, time_end = EXCLUDED.time_end, time_start = EXCLUDED.time_start, value = EXCLUDED.value, values_ = EXCLUDED.values_;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_kami_offer(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_kami_offer(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   INSERT INTO domain.kami_offer (id, block_number, id_owns_kami_order, index_kami, state, time_end, time_start, value)
   SELECT domain.id32(e.id), max(s.block_number), domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\xe71badbf78da4d89e78fdcc5cab0a0bbdc0172feed5567d2bcfd4c351a8d67b6'))[1]) AS id_owns_kami_order,
     domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\xcd6257c5a7fd5523bf675476a783746b8e1aed9c92992221af0f776ac5562b34'))[1]) AS index_kami,
@@ -1588,10 +1607,12 @@ CREATE OR REPLACE FUNCTION domain.refresh_kami_offer(ids bytea[]) RETURNS void L
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id
-  ON CONFLICT (id) DO UPDATE SET block_number = EXCLUDED.block_number, id_owns_kami_order = EXCLUDED.id_owns_kami_order, index_kami = EXCLUDED.index_kami, state = EXCLUDED.state, time_end = EXCLUDED.time_end, time_start = EXCLUDED.time_start, value = EXCLUDED.value $$;
+  ON CONFLICT (id) DO UPDATE SET block_number = EXCLUDED.block_number, id_owns_kami_order = EXCLUDED.id_owns_kami_order, index_kami = EXCLUDED.index_kami, state = EXCLUDED.state, time_end = EXCLUDED.time_end, time_start = EXCLUDED.time_start, value = EXCLUDED.value;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_pool_share(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_pool_share(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   INSERT INTO domain.pool_share (id, block_number, id_type, id_holder, value)
   SELECT domain.id32(e.id), max(s.block_number), domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\x998873aedc8c829f7e25178374ed9431f396bd26c559d29a5ea6de65722045cc'))[1]) AS id_type,
     domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\x5bc28889d745caef68975e56a733199d93efb3f5ae8e4606262ab97c83f72648'))[1]) AS id_holder,
@@ -1599,10 +1620,12 @@ CREATE OR REPLACE FUNCTION domain.refresh_pool_share(ids bytea[]) RETURNS void L
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id
-  ON CONFLICT (id) DO UPDATE SET block_number = EXCLUDED.block_number, id_type = EXCLUDED.id_type, id_holder = EXCLUDED.id_holder, value = EXCLUDED.value $$;
+  ON CONFLICT (id) DO UPDATE SET block_number = EXCLUDED.block_number, id_type = EXCLUDED.id_type, id_holder = EXCLUDED.id_holder, value = EXCLUDED.value;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_tax(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_tax(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   INSERT INTO domain.tax (id, block_number, id_owns_tax, id_target, value)
   SELECT domain.id32(e.id), max(s.block_number), domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\xada9efea9b60db2f3de8535bcf056d66fc7d5ab3def1fb1dd3efe8117c4b4607'))[1]) AS id_owns_tax,
     domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\x62e5c3a731a312a02bd0a6e08720624c014a22c9f60c82fede06a9606c505815'))[1]) AS id_target,
@@ -1610,10 +1633,12 @@ CREATE OR REPLACE FUNCTION domain.refresh_tax(ids bytea[]) RETURNS void LANGUAGE
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id
-  ON CONFLICT (id) DO UPDATE SET block_number = EXCLUDED.block_number, id_owns_tax = EXCLUDED.id_owns_tax, id_target = EXCLUDED.id_target, value = EXCLUDED.value $$;
+  ON CONFLICT (id) DO UPDATE SET block_number = EXCLUDED.block_number, id_owns_tax = EXCLUDED.id_owns_tax, id_target = EXCLUDED.id_target, value = EXCLUDED.value;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_token_receipt(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_token_receipt(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   INSERT INTO domain.token_receipt (id, block_number, id_owns_withdrawal, index_item, tax, time_end, time_start, token_address, value)
   SELECT domain.id32(e.id), max(s.block_number), domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\xe93a8d0227b54356d8f8d432c8475f3fc3d46c46d271f0346ed9e6436c10d894'))[1]) AS id_owns_withdrawal,
     domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\xd3da495fedd385ac62763d969054ffb19f1777e687374cceb91f1237ddd6bfb3'))[1]) AS index_item,
@@ -1625,10 +1650,12 @@ CREATE OR REPLACE FUNCTION domain.refresh_token_receipt(ids bytea[]) RETURNS voi
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id
-  ON CONFLICT (id) DO UPDATE SET block_number = EXCLUDED.block_number, id_owns_withdrawal = EXCLUDED.id_owns_withdrawal, index_item = EXCLUDED.index_item, tax = EXCLUDED.tax, time_end = EXCLUDED.time_end, time_start = EXCLUDED.time_start, token_address = EXCLUDED.token_address, value = EXCLUDED.value $$;
+  ON CONFLICT (id) DO UPDATE SET block_number = EXCLUDED.block_number, id_owns_withdrawal = EXCLUDED.id_owns_withdrawal, index_item = EXCLUDED.index_item, tax = EXCLUDED.tax, time_end = EXCLUDED.time_end, time_start = EXCLUDED.time_start, token_address = EXCLUDED.token_address, value = EXCLUDED.value;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_trade(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_trade(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   INSERT INTO domain.trade (id, block_number, id_owns_inventory, id_owns_trade, id_target, index_item, keys, state, value, values_)
   SELECT domain.id32(e.id), max(s.block_number), domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\x1ee9964c9c16bbb74f9e401f1ab450f99b2343a602036525f23f0da350bc74d0'))[1]) AS id_owns_inventory,
     domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\x4570b4c20b1780474e20c57e9886741763e9fd018b544cf42ed3c228b98e9045'))[1]) AS id_owns_trade,
@@ -1641,10 +1668,12 @@ CREATE OR REPLACE FUNCTION domain.refresh_trade(ids bytea[]) RETURNS void LANGUA
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id
-  ON CONFLICT (id) DO UPDATE SET block_number = EXCLUDED.block_number, id_owns_inventory = EXCLUDED.id_owns_inventory, id_owns_trade = EXCLUDED.id_owns_trade, id_target = EXCLUDED.id_target, index_item = EXCLUDED.index_item, keys = EXCLUDED.keys, state = EXCLUDED.state, value = EXCLUDED.value, values_ = EXCLUDED.values_ $$;
+  ON CONFLICT (id) DO UPDATE SET block_number = EXCLUDED.block_number, id_owns_inventory = EXCLUDED.id_owns_inventory, id_owns_trade = EXCLUDED.id_owns_trade, id_target = EXCLUDED.id_target, index_item = EXCLUDED.index_item, keys = EXCLUDED.keys, state = EXCLUDED.state, value = EXCLUDED.value, values_ = EXCLUDED.values_;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_quest(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_quest(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   INSERT INTO domain.quest (id, block_number, description, description_alt, id_anchor, id_owns_quest, index_quest, is_disabled, is_registry, name, subtype, time_start, type, value, is_complete, time, time_last)
   SELECT domain.id32(e.id), max(s.block_number), domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\xfdbdfda9d0933af67d5682f368771753d17c0fef55c57d62a98476dd75090580'))[1]) AS description,
     domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\xcbf298920e1169006fb9156cfc43d4e04c712f32632465329f52522a9d323c35'))[1]) AS description_alt,
@@ -1664,10 +1693,12 @@ CREATE OR REPLACE FUNCTION domain.refresh_quest(ids bytea[]) RETURNS void LANGUA
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id
-  ON CONFLICT (id) DO UPDATE SET block_number = EXCLUDED.block_number, description = EXCLUDED.description, description_alt = EXCLUDED.description_alt, id_anchor = EXCLUDED.id_anchor, id_owns_quest = EXCLUDED.id_owns_quest, index_quest = EXCLUDED.index_quest, is_disabled = EXCLUDED.is_disabled, is_registry = EXCLUDED.is_registry, name = EXCLUDED.name, subtype = EXCLUDED.subtype, time_start = EXCLUDED.time_start, type = EXCLUDED.type, value = EXCLUDED.value, is_complete = EXCLUDED.is_complete, time = EXCLUDED.time, time_last = EXCLUDED.time_last $$;
+  ON CONFLICT (id) DO UPDATE SET block_number = EXCLUDED.block_number, description = EXCLUDED.description, description_alt = EXCLUDED.description_alt, id_anchor = EXCLUDED.id_anchor, id_owns_quest = EXCLUDED.id_owns_quest, index_quest = EXCLUDED.index_quest, is_disabled = EXCLUDED.is_disabled, is_registry = EXCLUDED.is_registry, name = EXCLUDED.name, subtype = EXCLUDED.subtype, time_start = EXCLUDED.time_start, type = EXCLUDED.type, value = EXCLUDED.value, is_complete = EXCLUDED.is_complete, time = EXCLUDED.time, time_last = EXCLUDED.time_last;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_relationship(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_relationship(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   INSERT INTO domain.relationship (id, block_number, id_owns_relationship, index_npc, index_relationship, is_registry, blacklist, name, whitelist)
   SELECT domain.id32(e.id), max(s.block_number), domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\x8a00a3fe170d893759489495eac7080679e507af83a4195e641912c579f56158'))[1]) AS id_owns_relationship,
     domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\xb29f21e001e93877c0ca9ea2483697e386afbf8bced0360395102afa8c793eea'))[1]) AS index_npc,
@@ -1679,10 +1710,12 @@ CREATE OR REPLACE FUNCTION domain.refresh_relationship(ids bytea[]) RETURNS void
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id
-  ON CONFLICT (id) DO UPDATE SET block_number = EXCLUDED.block_number, id_owns_relationship = EXCLUDED.id_owns_relationship, index_npc = EXCLUDED.index_npc, index_relationship = EXCLUDED.index_relationship, is_registry = EXCLUDED.is_registry, blacklist = EXCLUDED.blacklist, name = EXCLUDED.name, whitelist = EXCLUDED.whitelist $$;
+  ON CONFLICT (id) DO UPDATE SET block_number = EXCLUDED.block_number, id_owns_relationship = EXCLUDED.id_owns_relationship, index_npc = EXCLUDED.index_npc, index_relationship = EXCLUDED.index_relationship, is_registry = EXCLUDED.is_registry, blacklist = EXCLUDED.blacklist, name = EXCLUDED.name, whitelist = EXCLUDED.whitelist;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_skill(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_skill(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   INSERT INTO domain.skill (id, block_number, cost, description, for_, id_anchor, id_owns_skill, id_type, id_source, index_skill, is_registry, level, max, media_uri, name, skill_point, subtype, time, type, value)
   SELECT domain.id32(e.id), max(s.block_number), domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\x90dcbc5e087c3256549b6c7bca0f1c5c346b54cf5623c913b88198ba64d2cdbe'))[1]) AS cost,
     domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\xfdbdfda9d0933af67d5682f368771753d17c0fef55c57d62a98476dd75090580'))[1]) AS description,
@@ -1705,10 +1738,12 @@ CREATE OR REPLACE FUNCTION domain.refresh_skill(ids bytea[]) RETURNS void LANGUA
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id
-  ON CONFLICT (id) DO UPDATE SET block_number = EXCLUDED.block_number, cost = EXCLUDED.cost, description = EXCLUDED.description, for_ = EXCLUDED.for_, id_anchor = EXCLUDED.id_anchor, id_owns_skill = EXCLUDED.id_owns_skill, id_type = EXCLUDED.id_type, id_source = EXCLUDED.id_source, index_skill = EXCLUDED.index_skill, is_registry = EXCLUDED.is_registry, level = EXCLUDED.level, max = EXCLUDED.max, media_uri = EXCLUDED.media_uri, name = EXCLUDED.name, skill_point = EXCLUDED.skill_point, subtype = EXCLUDED.subtype, time = EXCLUDED.time, type = EXCLUDED.type, value = EXCLUDED.value $$;
+  ON CONFLICT (id) DO UPDATE SET block_number = EXCLUDED.block_number, cost = EXCLUDED.cost, description = EXCLUDED.description, for_ = EXCLUDED.for_, id_anchor = EXCLUDED.id_anchor, id_owns_skill = EXCLUDED.id_owns_skill, id_type = EXCLUDED.id_type, id_source = EXCLUDED.id_source, index_skill = EXCLUDED.index_skill, is_registry = EXCLUDED.is_registry, level = EXCLUDED.level, max = EXCLUDED.max, media_uri = EXCLUDED.media_uri, name = EXCLUDED.name, skill_point = EXCLUDED.skill_point, subtype = EXCLUDED.subtype, time = EXCLUDED.time, type = EXCLUDED.type, value = EXCLUDED.value;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_allocation(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_allocation(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   INSERT INTO domain.allocation (id, block_number, id_anchor, id_source, index, type, keys, value, weights)
   SELECT domain.id32(e.id), max(s.block_number), domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\xb045c5017717023376f3cca4fc00dc4ee26e151a86d28f1db156cf5222daccd1'))[1]) AS id_anchor,
     domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\xc81ce03c0ce7d95786aa8f43fb06c16da8357e856cb08b2052b4bf1807cf8ab3'))[1]) AS id_source,
@@ -1720,10 +1755,12 @@ CREATE OR REPLACE FUNCTION domain.refresh_allocation(ids bytea[]) RETURNS void L
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id
-  ON CONFLICT (id) DO UPDATE SET block_number = EXCLUDED.block_number, id_anchor = EXCLUDED.id_anchor, id_source = EXCLUDED.id_source, index = EXCLUDED.index, type = EXCLUDED.type, keys = EXCLUDED.keys, value = EXCLUDED.value, weights = EXCLUDED.weights $$;
+  ON CONFLICT (id) DO UPDATE SET block_number = EXCLUDED.block_number, id_anchor = EXCLUDED.id_anchor, id_source = EXCLUDED.id_source, index = EXCLUDED.index, type = EXCLUDED.type, keys = EXCLUDED.keys, value = EXCLUDED.value, weights = EXCLUDED.weights;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_auction(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_auction(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   INSERT INTO domain.auction (id, block_number, balance, decay, index_currency, index_item, max, period, rate, time_start, value)
   SELECT domain.id32(e.id), max(s.block_number), domain.to_int32((array_agg(s.value) FILTER (WHERE c.id = '\x3be5761f4444019a26faec2991f5bf613add59db9423d5295caf36a8cd971efd'))[1]) AS balance,
     domain.to_int32((array_agg(s.value) FILTER (WHERE c.id = '\xdb0a2c2923f596106d3420f17dba40c6898f9f7ed616487818d18a74165b53b1'))[1]) AS decay,
@@ -1737,10 +1774,12 @@ CREATE OR REPLACE FUNCTION domain.refresh_auction(ids bytea[]) RETURNS void LANG
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id
-  ON CONFLICT (id) DO UPDATE SET block_number = EXCLUDED.block_number, balance = EXCLUDED.balance, decay = EXCLUDED.decay, index_currency = EXCLUDED.index_currency, index_item = EXCLUDED.index_item, max = EXCLUDED.max, period = EXCLUDED.period, rate = EXCLUDED.rate, time_start = EXCLUDED.time_start, value = EXCLUDED.value $$;
+  ON CONFLICT (id) DO UPDATE SET block_number = EXCLUDED.block_number, balance = EXCLUDED.balance, decay = EXCLUDED.decay, index_currency = EXCLUDED.index_currency, index_item = EXCLUDED.index_item, max = EXCLUDED.max, period = EXCLUDED.period, rate = EXCLUDED.rate, time_start = EXCLUDED.time_start, value = EXCLUDED.value;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_bonus(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_bonus(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   INSERT INTO domain.bonus (id, block_number, id_anchor, id_source, is_registry, subtype, time, type, value, id_type)
   SELECT domain.id32(e.id), max(s.block_number), domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\xb045c5017717023376f3cca4fc00dc4ee26e151a86d28f1db156cf5222daccd1'))[1]) AS id_anchor,
     domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\xc81ce03c0ce7d95786aa8f43fb06c16da8357e856cb08b2052b4bf1807cf8ab3'))[1]) AS id_source,
@@ -1753,10 +1792,12 @@ CREATE OR REPLACE FUNCTION domain.refresh_bonus(ids bytea[]) RETURNS void LANGUA
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id
-  ON CONFLICT (id) DO UPDATE SET block_number = EXCLUDED.block_number, id_anchor = EXCLUDED.id_anchor, id_source = EXCLUDED.id_source, is_registry = EXCLUDED.is_registry, subtype = EXCLUDED.subtype, time = EXCLUDED.time, type = EXCLUDED.type, value = EXCLUDED.value, id_type = EXCLUDED.id_type $$;
+  ON CONFLICT (id) DO UPDATE SET block_number = EXCLUDED.block_number, id_anchor = EXCLUDED.id_anchor, id_source = EXCLUDED.id_source, is_registry = EXCLUDED.is_registry, subtype = EXCLUDED.subtype, time = EXCLUDED.time, type = EXCLUDED.type, value = EXCLUDED.value, id_type = EXCLUDED.id_type;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_condition(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_condition(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   INSERT INTO domain.condition (id, block_number, for_, id_anchor, index, logic_type, type, value)
   SELECT domain.id32(e.id), max(s.block_number), domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\x0e980fab8730829e1930c8cdc024ae35650d9eec12d20425b19fc4ade883178c'))[1]) AS for_,
     domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\xb045c5017717023376f3cca4fc00dc4ee26e151a86d28f1db156cf5222daccd1'))[1]) AS id_anchor,
@@ -1767,10 +1808,12 @@ CREATE OR REPLACE FUNCTION domain.refresh_condition(ids bytea[]) RETURNS void LA
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id
-  ON CONFLICT (id) DO UPDATE SET block_number = EXCLUDED.block_number, for_ = EXCLUDED.for_, id_anchor = EXCLUDED.id_anchor, index = EXCLUDED.index, logic_type = EXCLUDED.logic_type, type = EXCLUDED.type, value = EXCLUDED.value $$;
+  ON CONFLICT (id) DO UPDATE SET block_number = EXCLUDED.block_number, for_ = EXCLUDED.for_, id_anchor = EXCLUDED.id_anchor, index = EXCLUDED.index, logic_type = EXCLUDED.logic_type, type = EXCLUDED.type, value = EXCLUDED.value;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_faction(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_faction(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   INSERT INTO domain.faction (id, block_number, description, index_faction, is_registry, media_uri, name, id_type, id_holder, value)
   SELECT domain.id32(e.id), max(s.block_number), domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\xfdbdfda9d0933af67d5682f368771753d17c0fef55c57d62a98476dd75090580'))[1]) AS description,
     domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\x723814baf2dfd4398a4349555ce8bbb88a846ac918eb9b1a3ec2dbeaa37ab23e'))[1]) AS index_faction,
@@ -1783,10 +1826,12 @@ CREATE OR REPLACE FUNCTION domain.refresh_faction(ids bytea[]) RETURNS void LANG
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id
-  ON CONFLICT (id) DO UPDATE SET block_number = EXCLUDED.block_number, description = EXCLUDED.description, index_faction = EXCLUDED.index_faction, is_registry = EXCLUDED.is_registry, media_uri = EXCLUDED.media_uri, name = EXCLUDED.name, id_type = EXCLUDED.id_type, id_holder = EXCLUDED.id_holder, value = EXCLUDED.value $$;
+  ON CONFLICT (id) DO UPDATE SET block_number = EXCLUDED.block_number, description = EXCLUDED.description, index_faction = EXCLUDED.index_faction, is_registry = EXCLUDED.is_registry, media_uri = EXCLUDED.media_uri, name = EXCLUDED.name, id_type = EXCLUDED.id_type, id_holder = EXCLUDED.id_holder, value = EXCLUDED.value;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_goal(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_goal(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   INSERT INTO domain.goal (id, block_number, description, for_, index, index_room, is_disabled, logic_type, name, type, value, id_type, id_holder, is_complete)
   SELECT domain.id32(e.id), max(s.block_number), domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\xfdbdfda9d0933af67d5682f368771753d17c0fef55c57d62a98476dd75090580'))[1]) AS description,
     domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\x0e980fab8730829e1930c8cdc024ae35650d9eec12d20425b19fc4ade883178c'))[1]) AS for_,
@@ -1803,10 +1848,12 @@ CREATE OR REPLACE FUNCTION domain.refresh_goal(ids bytea[]) RETURNS void LANGUAG
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id
-  ON CONFLICT (id) DO UPDATE SET block_number = EXCLUDED.block_number, description = EXCLUDED.description, for_ = EXCLUDED.for_, index = EXCLUDED.index, index_room = EXCLUDED.index_room, is_disabled = EXCLUDED.is_disabled, logic_type = EXCLUDED.logic_type, name = EXCLUDED.name, type = EXCLUDED.type, value = EXCLUDED.value, id_type = EXCLUDED.id_type, id_holder = EXCLUDED.id_holder, is_complete = EXCLUDED.is_complete $$;
+  ON CONFLICT (id) DO UPDATE SET block_number = EXCLUDED.block_number, description = EXCLUDED.description, for_ = EXCLUDED.for_, index = EXCLUDED.index, index_room = EXCLUDED.index_room, is_disabled = EXCLUDED.is_disabled, logic_type = EXCLUDED.logic_type, name = EXCLUDED.name, type = EXCLUDED.type, value = EXCLUDED.value, id_type = EXCLUDED.id_type, id_holder = EXCLUDED.id_holder, is_complete = EXCLUDED.is_complete;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_item(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_item(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   INSERT INTO domain.item (id, block_number, description, has_flag, id_owns_flag, id_type, index_item, is_registry, media_uri, name, rarity, type, for_, is_disabled, scale, token_address)
   SELECT domain.id32(e.id), max(s.block_number), domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\xfdbdfda9d0933af67d5682f368771753d17c0fef55c57d62a98476dd75090580'))[1]) AS description,
     domain.to_bool((array_agg(s.value) FILTER (WHERE c.id = '\xd426585847552196ce5fddb7f2e37e8aa38f62676728e7518835f8440cf91958'))[1]) AS has_flag,
@@ -1825,10 +1872,12 @@ CREATE OR REPLACE FUNCTION domain.refresh_item(ids bytea[]) RETURNS void LANGUAG
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id
-  ON CONFLICT (id) DO UPDATE SET block_number = EXCLUDED.block_number, description = EXCLUDED.description, has_flag = EXCLUDED.has_flag, id_owns_flag = EXCLUDED.id_owns_flag, id_type = EXCLUDED.id_type, index_item = EXCLUDED.index_item, is_registry = EXCLUDED.is_registry, media_uri = EXCLUDED.media_uri, name = EXCLUDED.name, rarity = EXCLUDED.rarity, type = EXCLUDED.type, for_ = EXCLUDED.for_, is_disabled = EXCLUDED.is_disabled, scale = EXCLUDED.scale, token_address = EXCLUDED.token_address $$;
+  ON CONFLICT (id) DO UPDATE SET block_number = EXCLUDED.block_number, description = EXCLUDED.description, has_flag = EXCLUDED.has_flag, id_owns_flag = EXCLUDED.id_owns_flag, id_type = EXCLUDED.id_type, index_item = EXCLUDED.index_item, is_registry = EXCLUDED.is_registry, media_uri = EXCLUDED.media_uri, name = EXCLUDED.name, rarity = EXCLUDED.rarity, type = EXCLUDED.type, for_ = EXCLUDED.for_, is_disabled = EXCLUDED.is_disabled, scale = EXCLUDED.scale, token_address = EXCLUDED.token_address;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_listing(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_listing(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   INSERT INTO domain.listing (id, block_number, balance, index_currency, index_item, index_npc, time_start, value, decay, period, rate, scale, type)
   SELECT domain.id32(e.id), max(s.block_number), domain.to_int32((array_agg(s.value) FILTER (WHERE c.id = '\x3be5761f4444019a26faec2991f5bf613add59db9423d5295caf36a8cd971efd'))[1]) AS balance,
     domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\x5309efaaef444315bf70eaa34d6ec17ac1fd39ff436ff46d3210f8efb1b467b4'))[1]) AS index_currency,
@@ -1844,10 +1893,12 @@ CREATE OR REPLACE FUNCTION domain.refresh_listing(ids bytea[]) RETURNS void LANG
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id
-  ON CONFLICT (id) DO UPDATE SET block_number = EXCLUDED.block_number, balance = EXCLUDED.balance, index_currency = EXCLUDED.index_currency, index_item = EXCLUDED.index_item, index_npc = EXCLUDED.index_npc, time_start = EXCLUDED.time_start, value = EXCLUDED.value, decay = EXCLUDED.decay, period = EXCLUDED.period, rate = EXCLUDED.rate, scale = EXCLUDED.scale, type = EXCLUDED.type $$;
+  ON CONFLICT (id) DO UPDATE SET block_number = EXCLUDED.block_number, balance = EXCLUDED.balance, index_currency = EXCLUDED.index_currency, index_item = EXCLUDED.index_item, index_npc = EXCLUDED.index_npc, time_start = EXCLUDED.time_start, value = EXCLUDED.value, decay = EXCLUDED.decay, period = EXCLUDED.period, rate = EXCLUDED.rate, scale = EXCLUDED.scale, type = EXCLUDED.type;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_node(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_node(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   INSERT INTO domain.node (id, block_number, affinity, description, index_item, index_node, index_room, name, type)
   SELECT domain.id32(e.id), max(s.block_number), domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\xf3e296372a5e5be810386b4a0416d479397a474fb9d4f37f1eed4c72bf11af6d'))[1]) AS affinity,
     domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\xfdbdfda9d0933af67d5682f368771753d17c0fef55c57d62a98476dd75090580'))[1]) AS description,
@@ -1859,10 +1910,12 @@ CREATE OR REPLACE FUNCTION domain.refresh_node(ids bytea[]) RETURNS void LANGUAG
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id
-  ON CONFLICT (id) DO UPDATE SET block_number = EXCLUDED.block_number, affinity = EXCLUDED.affinity, description = EXCLUDED.description, index_item = EXCLUDED.index_item, index_node = EXCLUDED.index_node, index_room = EXCLUDED.index_room, name = EXCLUDED.name, type = EXCLUDED.type $$;
+  ON CONFLICT (id) DO UPDATE SET block_number = EXCLUDED.block_number, affinity = EXCLUDED.affinity, description = EXCLUDED.description, index_item = EXCLUDED.index_item, index_node = EXCLUDED.index_node, index_room = EXCLUDED.index_room, name = EXCLUDED.name, type = EXCLUDED.type;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_npc(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_npc(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   INSERT INTO domain.npc (id, block_number, index_npc, index_room, name)
   SELECT domain.id32(e.id), max(s.block_number), domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\xb29f21e001e93877c0ca9ea2483697e386afbf8bced0360395102afa8c793eea'))[1]) AS index_npc,
     domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\x3be9611062b8582cf4b9a4eafe577dbde7dcd7779a1efb46d73e212026c4b0cc'))[1]) AS index_room,
@@ -1870,10 +1923,12 @@ CREATE OR REPLACE FUNCTION domain.refresh_npc(ids bytea[]) RETURNS void LANGUAGE
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id
-  ON CONFLICT (id) DO UPDATE SET block_number = EXCLUDED.block_number, index_npc = EXCLUDED.index_npc, index_room = EXCLUDED.index_room, name = EXCLUDED.name $$;
+  ON CONFLICT (id) DO UPDATE SET block_number = EXCLUDED.block_number, index_npc = EXCLUDED.index_npc, index_room = EXCLUDED.index_room, name = EXCLUDED.name;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_pool(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_pool(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   INSERT INTO domain.pool (id, block_number, keys, rate, time_start, is_disabled, value)
   SELECT domain.id32(e.id), max(s.block_number), domain.to_uint_array((array_agg(s.value) FILTER (WHERE c.id = '\xc6a29e9d963ddf0ecc32d72ae16fddf22661517259c701d58065adfefd57eb02'))[1])::integer[] AS keys,
     domain.to_bigint((array_agg(s.value) FILTER (WHERE c.id = '\x20ab550b15bc644ed0151f9ebe2d55c859a9e4338085826137f0d33968582488'))[1]) AS rate,
@@ -1883,10 +1938,12 @@ CREATE OR REPLACE FUNCTION domain.refresh_pool(ids bytea[]) RETURNS void LANGUAG
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id
-  ON CONFLICT (id) DO UPDATE SET block_number = EXCLUDED.block_number, keys = EXCLUDED.keys, rate = EXCLUDED.rate, time_start = EXCLUDED.time_start, is_disabled = EXCLUDED.is_disabled, value = EXCLUDED.value $$;
+  ON CONFLICT (id) DO UPDATE SET block_number = EXCLUDED.block_number, keys = EXCLUDED.keys, rate = EXCLUDED.rate, time_start = EXCLUDED.time_start, is_disabled = EXCLUDED.is_disabled, value = EXCLUDED.value;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_recipe(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_recipe(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   INSERT INTO domain.recipe (id, block_number, experience, index_recipe, is_registry, keys, stamina_base, stamina_shift, stamina_boost, stamina_sync, type, values_)
   SELECT domain.id32(e.id), max(s.block_number), domain.to_bigint((array_agg(s.value) FILTER (WHERE c.id = '\xf751b4a95c9cfabe52899e09ae113eac17e41cc0cc2dad670d2789ecc1251add'))[1]) AS experience,
     domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\xc549816d6c3e6a568535a0df56aff099272d447c7526e27e4b6fcbd3cc7df5ab'))[1]) AS index_recipe,
@@ -1901,19 +1958,23 @@ CREATE OR REPLACE FUNCTION domain.refresh_recipe(ids bytea[]) RETURNS void LANGU
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id
-  ON CONFLICT (id) DO UPDATE SET block_number = EXCLUDED.block_number, experience = EXCLUDED.experience, index_recipe = EXCLUDED.index_recipe, is_registry = EXCLUDED.is_registry, keys = EXCLUDED.keys, stamina_base = EXCLUDED.stamina_base, stamina_shift = EXCLUDED.stamina_shift, stamina_boost = EXCLUDED.stamina_boost, stamina_sync = EXCLUDED.stamina_sync, type = EXCLUDED.type, values_ = EXCLUDED.values_ $$;
+  ON CONFLICT (id) DO UPDATE SET block_number = EXCLUDED.block_number, experience = EXCLUDED.experience, index_recipe = EXCLUDED.index_recipe, is_registry = EXCLUDED.is_registry, keys = EXCLUDED.keys, stamina_base = EXCLUDED.stamina_base, stamina_shift = EXCLUDED.stamina_shift, stamina_boost = EXCLUDED.stamina_boost, stamina_sync = EXCLUDED.stamina_sync, type = EXCLUDED.type, values_ = EXCLUDED.values_;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_reference(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_reference(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   INSERT INTO domain.reference (id, block_number, id_anchor)
   SELECT domain.id32(e.id), max(s.block_number), domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\xb045c5017717023376f3cca4fc00dc4ee26e151a86d28f1db156cf5222daccd1'))[1]) AS id_anchor
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id
-  ON CONFLICT (id) DO UPDATE SET block_number = EXCLUDED.block_number, id_anchor = EXCLUDED.id_anchor $$;
+  ON CONFLICT (id) DO UPDATE SET block_number = EXCLUDED.block_number, id_anchor = EXCLUDED.id_anchor;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_room(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_room(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   INSERT INTO domain.room (id, block_number, description, index_room, location_x, location_y, location_z, name, exits)
   SELECT domain.id32(e.id), max(s.block_number), domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\xfdbdfda9d0933af67d5682f368771753d17c0fef55c57d62a98476dd75090580'))[1]) AS description,
     domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\x3be9611062b8582cf4b9a4eafe577dbde7dcd7779a1efb46d73e212026c4b0cc'))[1]) AS index_room,
@@ -1925,10 +1986,12 @@ CREATE OR REPLACE FUNCTION domain.refresh_room(ids bytea[]) RETURNS void LANGUAG
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id
-  ON CONFLICT (id) DO UPDATE SET block_number = EXCLUDED.block_number, description = EXCLUDED.description, index_room = EXCLUDED.index_room, location_x = EXCLUDED.location_x, location_y = EXCLUDED.location_y, location_z = EXCLUDED.location_z, name = EXCLUDED.name, exits = EXCLUDED.exits $$;
+  ON CONFLICT (id) DO UPDATE SET block_number = EXCLUDED.block_number, description = EXCLUDED.description, index_room = EXCLUDED.index_room, location_x = EXCLUDED.location_x, location_y = EXCLUDED.location_y, location_z = EXCLUDED.location_z, name = EXCLUDED.name, exits = EXCLUDED.exits;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_room_gate(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_room_gate(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   INSERT INTO domain.room_gate (id, block_number, for_, id_from, id_to, id_source, index, logic_type, type, value)
   SELECT domain.id32(e.id), max(s.block_number), domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\x0e980fab8730829e1930c8cdc024ae35650d9eec12d20425b19fc4ade883178c'))[1]) AS for_,
     domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\xa95ad5d9865792db0c7d344e1ab96ff451848e8df32d75b494b0c861955ff49e'))[1]) AS id_from,
@@ -1941,10 +2004,12 @@ CREATE OR REPLACE FUNCTION domain.refresh_room_gate(ids bytea[]) RETURNS void LA
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id
-  ON CONFLICT (id) DO UPDATE SET block_number = EXCLUDED.block_number, for_ = EXCLUDED.for_, id_from = EXCLUDED.id_from, id_to = EXCLUDED.id_to, id_source = EXCLUDED.id_source, index = EXCLUDED.index, logic_type = EXCLUDED.logic_type, type = EXCLUDED.type, value = EXCLUDED.value $$;
+  ON CONFLICT (id) DO UPDATE SET block_number = EXCLUDED.block_number, for_ = EXCLUDED.for_, id_from = EXCLUDED.id_from, id_to = EXCLUDED.id_to, id_source = EXCLUDED.id_source, index = EXCLUDED.index, logic_type = EXCLUDED.logic_type, type = EXCLUDED.type, value = EXCLUDED.value;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_scavenge(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_scavenge(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   INSERT INTO domain.scavenge (id, block_number, affinity, index, is_registry, type, value)
   SELECT domain.id32(e.id), max(s.block_number), domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\xf3e296372a5e5be810386b4a0416d479397a474fb9d4f37f1eed4c72bf11af6d'))[1]) AS affinity,
     domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\x62adc4221185187a288916c2630b5e1f37e9437c5b68d55bc59b9debc23f19d0'))[1]) AS index,
@@ -1954,10 +2019,12 @@ CREATE OR REPLACE FUNCTION domain.refresh_scavenge(ids bytea[]) RETURNS void LAN
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id
-  ON CONFLICT (id) DO UPDATE SET block_number = EXCLUDED.block_number, affinity = EXCLUDED.affinity, index = EXCLUDED.index, is_registry = EXCLUDED.is_registry, type = EXCLUDED.type, value = EXCLUDED.value $$;
+  ON CONFLICT (id) DO UPDATE SET block_number = EXCLUDED.block_number, affinity = EXCLUDED.affinity, index = EXCLUDED.index, is_registry = EXCLUDED.is_registry, type = EXCLUDED.type, value = EXCLUDED.value;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_trait(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_trait(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   INSERT INTO domain.trait (id, block_number, affinity, harmony_base, harmony_shift, harmony_boost, harmony_sync, health_base, health_shift, health_boost, health_sync, id_anchor, index_background, index_body, index_color, index_face, index_hand, is_registry, name, power_base, power_shift, power_boost, power_sync, rarity, slots_base, slots_shift, slots_boost, slots_sync, violence_base, violence_shift, violence_boost, violence_sync)
   SELECT domain.id32(e.id), max(s.block_number), domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\xf3e296372a5e5be810386b4a0416d479397a474fb9d4f37f1eed4c72bf11af6d'))[1]) AS affinity,
     domain.stat_part((array_agg(s.value) FILTER (WHERE c.id = '\x5b5054d7f0fe411d96cb1c9605f65b42805d28ce5bb4ce216455e888cdc5373c'))[1], 0) AS harmony_base,
@@ -1992,439 +2059,536 @@ CREATE OR REPLACE FUNCTION domain.refresh_trait(ids bytea[]) RETURNS void LANGUA
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id
-  ON CONFLICT (id) DO UPDATE SET block_number = EXCLUDED.block_number, affinity = EXCLUDED.affinity, harmony_base = EXCLUDED.harmony_base, harmony_shift = EXCLUDED.harmony_shift, harmony_boost = EXCLUDED.harmony_boost, harmony_sync = EXCLUDED.harmony_sync, health_base = EXCLUDED.health_base, health_shift = EXCLUDED.health_shift, health_boost = EXCLUDED.health_boost, health_sync = EXCLUDED.health_sync, id_anchor = EXCLUDED.id_anchor, index_background = EXCLUDED.index_background, index_body = EXCLUDED.index_body, index_color = EXCLUDED.index_color, index_face = EXCLUDED.index_face, index_hand = EXCLUDED.index_hand, is_registry = EXCLUDED.is_registry, name = EXCLUDED.name, power_base = EXCLUDED.power_base, power_shift = EXCLUDED.power_shift, power_boost = EXCLUDED.power_boost, power_sync = EXCLUDED.power_sync, rarity = EXCLUDED.rarity, slots_base = EXCLUDED.slots_base, slots_shift = EXCLUDED.slots_shift, slots_boost = EXCLUDED.slots_boost, slots_sync = EXCLUDED.slots_sync, violence_base = EXCLUDED.violence_base, violence_shift = EXCLUDED.violence_shift, violence_boost = EXCLUDED.violence_boost, violence_sync = EXCLUDED.violence_sync $$;
+  ON CONFLICT (id) DO UPDATE SET block_number = EXCLUDED.block_number, affinity = EXCLUDED.affinity, harmony_base = EXCLUDED.harmony_base, harmony_shift = EXCLUDED.harmony_shift, harmony_boost = EXCLUDED.harmony_boost, harmony_sync = EXCLUDED.harmony_sync, health_base = EXCLUDED.health_base, health_shift = EXCLUDED.health_shift, health_boost = EXCLUDED.health_boost, health_sync = EXCLUDED.health_sync, id_anchor = EXCLUDED.id_anchor, index_background = EXCLUDED.index_background, index_body = EXCLUDED.index_body, index_color = EXCLUDED.index_color, index_face = EXCLUDED.index_face, index_hand = EXCLUDED.index_hand, is_registry = EXCLUDED.is_registry, name = EXCLUDED.name, power_base = EXCLUDED.power_base, power_shift = EXCLUDED.power_shift, power_boost = EXCLUDED.power_boost, power_sync = EXCLUDED.power_sync, rarity = EXCLUDED.rarity, slots_base = EXCLUDED.slots_base, slots_shift = EXCLUDED.slots_shift, slots_boost = EXCLUDED.slots_boost, slots_sync = EXCLUDED.slots_sync, violence_base = EXCLUDED.violence_base, violence_shift = EXCLUDED.violence_shift, violence_boost = EXCLUDED.violence_boost, violence_sync = EXCLUDED.violence_sync;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_rec_faction_reputation(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_rec_faction_reputation(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   UPDATE domain.rec_faction_reputation r SET block_number = x.block_number, id_type = x.id_type, id_holder = x.id_holder, value = x.value
   FROM (SELECT domain.id32(e.id) AS id, max(s.block_number) AS block_number, domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\x998873aedc8c829f7e25178374ed9431f396bd26c559d29a5ea6de65722045cc'))[1]) AS id_type, domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\x5bc28889d745caef68975e56a733199d93efb3f5ae8e4606262ab97c83f72648'))[1]) AS id_holder, domain.to_bigint((array_agg(s.value) FILTER (WHERE c.id = '\xb25ea67b55901db62e4b14311a8c1ab178fec3948b4b493a711970a50aa2a2e1'))[1]) AS value
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id) x
-  WHERE r.id = x.id $$;
+  WHERE r.id = x.id;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_rec_friendship_ptr(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_rec_friendship_ptr(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   UPDATE domain.rec_friendship_ptr r SET block_number = x.block_number
   FROM (SELECT domain.id32(e.id) AS id, max(s.block_number) AS block_number
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id) x
-  WHERE r.id = x.id $$;
+  WHERE r.id = x.id;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_rec_goal_contribution(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_rec_goal_contribution(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   UPDATE domain.rec_goal_contribution r SET block_number = x.block_number, id_type = x.id_type, id_holder = x.id_holder, is_complete = x.is_complete, value = x.value
   FROM (SELECT domain.id32(e.id) AS id, max(s.block_number) AS block_number, domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\x998873aedc8c829f7e25178374ed9431f396bd26c559d29a5ea6de65722045cc'))[1]) AS id_type, domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\x5bc28889d745caef68975e56a733199d93efb3f5ae8e4606262ab97c83f72648'))[1]) AS id_holder, domain.to_bool((array_agg(s.value) FILTER (WHERE c.id = '\x9522897410526014691d8a863fac7bd2e048ab08176b6e3c6fa8a1f5195164bb'))[1]) AS is_complete, domain.to_bigint((array_agg(s.value) FILTER (WHERE c.id = '\xb25ea67b55901db62e4b14311a8c1ab178fec3948b4b493a711970a50aa2a2e1'))[1]) AS value
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id) x
-  WHERE r.id = x.id $$;
+  WHERE r.id = x.id;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_rec_is_data(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_rec_is_data(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   UPDATE domain.rec_is_data r SET block_number = x.block_number, value = x.value
   FROM (SELECT domain.id32(e.id) AS id, max(s.block_number) AS block_number, domain.to_bigint((array_agg(s.value) FILTER (WHERE c.id = '\xb25ea67b55901db62e4b14311a8c1ab178fec3948b4b493a711970a50aa2a2e1'))[1]) AS value
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id) x
-  WHERE r.id = x.id $$;
+  WHERE r.id = x.id;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_rec_is_score(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_rec_is_score(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   UPDATE domain.rec_is_score r SET block_number = x.block_number, id_type = x.id_type, id_holder = x.id_holder, value = x.value
   FROM (SELECT domain.id32(e.id) AS id, max(s.block_number) AS block_number, domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\x998873aedc8c829f7e25178374ed9431f396bd26c559d29a5ea6de65722045cc'))[1]) AS id_type, domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\x5bc28889d745caef68975e56a733199d93efb3f5ae8e4606262ab97c83f72648'))[1]) AS id_holder, domain.to_bigint((array_agg(s.value) FILTER (WHERE c.id = '\xb25ea67b55901db62e4b14311a8c1ab178fec3948b4b493a711970a50aa2a2e1'))[1]) AS value
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id) x
-  WHERE r.id = x.id $$;
+  WHERE r.id = x.id;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_rec_sacrifice_pity(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_rec_sacrifice_pity(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   UPDATE domain.rec_sacrifice_pity r SET block_number = x.block_number, value = x.value
   FROM (SELECT domain.id32(e.id) AS id, max(s.block_number) AS block_number, domain.to_bigint((array_agg(s.value) FILTER (WHERE c.id = '\xb25ea67b55901db62e4b14311a8c1ab178fec3948b4b493a711970a50aa2a2e1'))[1]) AS value
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id) x
-  WHERE r.id = x.id $$;
+  WHERE r.id = x.id;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_rec_scavenge_instance(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_rec_scavenge_instance(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   UPDATE domain.rec_scavenge_instance r SET block_number = x.block_number, value = x.value
   FROM (SELECT domain.id32(e.id) AS id, max(s.block_number) AS block_number, domain.to_bigint((array_agg(s.value) FILTER (WHERE c.id = '\xb25ea67b55901db62e4b14311a8c1ab178fec3948b4b493a711970a50aa2a2e1'))[1]) AS value
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id) x
-  WHERE r.id = x.id $$;
+  WHERE r.id = x.id;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_rec_operator_cache(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_rec_operator_cache(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   UPDATE domain.rec_operator_cache r SET block_number = x.block_number, cache_operator = x.cache_operator
   FROM (SELECT domain.id32(e.id) AS id, max(s.block_number) AS block_number, domain.to_address((array_agg(s.value) FILTER (WHERE c.id = '\xf9b94d2a933222e58f90359e8ec33041c5f08d7bc4304958d1c52c21991da575'))[1]) AS cache_operator
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id) x
-  WHERE r.id = x.id $$;
+  WHERE r.id = x.id;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_rec_soulbound(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_rec_soulbound(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   UPDATE domain.rec_soulbound r SET block_number = x.block_number, value = x.value
   FROM (SELECT domain.id32(e.id) AS id, max(s.block_number) AS block_number, domain.to_bigint((array_agg(s.value) FILTER (WHERE c.id = '\xb25ea67b55901db62e4b14311a8c1ab178fec3948b4b493a711970a50aa2a2e1'))[1]) AS value
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id) x
-  WHERE r.id = x.id $$;
+  WHERE r.id = x.id;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_rec_bonus_type(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_rec_bonus_type(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   UPDATE domain.rec_bonus_type r SET block_number = x.block_number
   FROM (SELECT domain.id32(e.id) AS id, max(s.block_number) AS block_number
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id) x
-  WHERE r.id = x.id $$;
+  WHERE r.id = x.id;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_rec_trade_buy(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_rec_trade_buy(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   UPDATE domain.rec_trade_buy r SET block_number = x.block_number, keys = x.keys, values_ = x.values_
   FROM (SELECT domain.id32(e.id) AS id, max(s.block_number) AS block_number, domain.to_uint_array((array_agg(s.value) FILTER (WHERE c.id = '\xc6a29e9d963ddf0ecc32d72ae16fddf22661517259c701d58065adfefd57eb02'))[1])::integer[] AS keys, domain.to_uint_array((array_agg(s.value) FILTER (WHERE c.id = '\xfb08db6d59480b008d636f90eaab4796d6e70486db57ea5b6d38235c97e3a3ec'))[1]) AS values_
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id) x
-  WHERE r.id = x.id $$;
+  WHERE r.id = x.id;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_rec_trade_sell(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_rec_trade_sell(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   UPDATE domain.rec_trade_sell r SET block_number = x.block_number, keys = x.keys, values_ = x.values_
   FROM (SELECT domain.id32(e.id) AS id, max(s.block_number) AS block_number, domain.to_uint_array((array_agg(s.value) FILTER (WHERE c.id = '\xc6a29e9d963ddf0ecc32d72ae16fddf22661517259c701d58065adfefd57eb02'))[1])::integer[] AS keys, domain.to_uint_array((array_agg(s.value) FILTER (WHERE c.id = '\xfb08db6d59480b008d636f90eaab4796d6e70486db57ea5b6d38235c97e3a3ec'))[1]) AS values_
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id) x
-  WHERE r.id = x.id $$;
+  WHERE r.id = x.id;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_rec_quest_objective_snapshot(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_rec_quest_objective_snapshot(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   UPDATE domain.rec_quest_objective_snapshot r SET block_number = x.block_number, id_anchor = x.id_anchor, value = x.value
   FROM (SELECT domain.id32(e.id) AS id, max(s.block_number) AS block_number, domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\xb045c5017717023376f3cca4fc00dc4ee26e151a86d28f1db156cf5222daccd1'))[1]) AS id_anchor, domain.to_bigint((array_agg(s.value) FILTER (WHERE c.id = '\xb25ea67b55901db62e4b14311a8c1ab178fec3948b4b493a711970a50aa2a2e1'))[1]) AS value
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id) x
-  WHERE r.id = x.id $$;
+  WHERE r.id = x.id;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_rec_registry_quest_objective(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_rec_registry_quest_objective(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   UPDATE domain.rec_registry_quest_objective r SET block_number = x.block_number
   FROM (SELECT domain.id32(e.id) AS id, max(s.block_number) AS block_number
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id) x
-  WHERE r.id = x.id $$;
+  WHERE r.id = x.id;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_rec_registry_quest_requirement(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_rec_registry_quest_requirement(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   UPDATE domain.rec_registry_quest_requirement r SET block_number = x.block_number
   FROM (SELECT domain.id32(e.id) AS id, max(s.block_number) AS block_number
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id) x
-  WHERE r.id = x.id $$;
+  WHERE r.id = x.id;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_rec_registry_quest_reward(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_rec_registry_quest_reward(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   UPDATE domain.rec_registry_quest_reward r SET block_number = x.block_number
   FROM (SELECT domain.id32(e.id) AS id, max(s.block_number) AS block_number
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id) x
-  WHERE r.id = x.id $$;
+  WHERE r.id = x.id;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_rec_snapshot_anchor(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_rec_snapshot_anchor(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   UPDATE domain.rec_snapshot_anchor r SET block_number = x.block_number
   FROM (SELECT domain.id32(e.id) AS id, max(s.block_number) AS block_number
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id) x
-  WHERE r.id = x.id $$;
+  WHERE r.id = x.id;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_rec_registry_skill_bonus(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_rec_registry_skill_bonus(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   UPDATE domain.rec_registry_skill_bonus r SET block_number = x.block_number
   FROM (SELECT domain.id32(e.id) AS id, max(s.block_number) AS block_number
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id) x
-  WHERE r.id = x.id $$;
+  WHERE r.id = x.id;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_rec_registry_skill_requirement(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_rec_registry_skill_requirement(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   UPDATE domain.rec_registry_skill_requirement r SET block_number = x.block_number
   FROM (SELECT domain.id32(e.id) AS id, max(s.block_number) AS block_number
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id) x
-  WHERE r.id = x.id $$;
+  WHERE r.id = x.id;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_rec_auction_requirement(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_rec_auction_requirement(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   UPDATE domain.rec_auction_requirement r SET block_number = x.block_number
   FROM (SELECT domain.id32(e.id) AS id, max(s.block_number) AS block_number
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id) x
-  WHERE r.id = x.id $$;
+  WHERE r.id = x.id;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_rec_goal_objective(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_rec_goal_objective(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   UPDATE domain.rec_goal_objective r SET block_number = x.block_number, for_ = x.for_, id_anchor = x.id_anchor, index = x.index, logic_type = x.logic_type, type = x.type, value = x.value
   FROM (SELECT domain.id32(e.id) AS id, max(s.block_number) AS block_number, domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\x0e980fab8730829e1930c8cdc024ae35650d9eec12d20425b19fc4ade883178c'))[1]) AS for_, domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\xb045c5017717023376f3cca4fc00dc4ee26e151a86d28f1db156cf5222daccd1'))[1]) AS id_anchor, domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\x62adc4221185187a288916c2630b5e1f37e9437c5b68d55bc59b9debc23f19d0'))[1]) AS index, domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\x787589c9eda599ea35279a6d93e360e8fdc5402255545ca394f5033f5e58ed42'))[1]) AS logic_type, domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\x024accd0d273ef6123273b21662f5cc055a7d58adf98cc1b060edd029af93f7f'))[1]) AS type, domain.to_bigint((array_agg(s.value) FILTER (WHERE c.id = '\xb25ea67b55901db62e4b14311a8c1ab178fec3948b4b493a711970a50aa2a2e1'))[1]) AS value
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id) x
-  WHERE r.id = x.id $$;
+  WHERE r.id = x.id;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_rec_goal_requirement(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_rec_goal_requirement(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   UPDATE domain.rec_goal_requirement r SET block_number = x.block_number
   FROM (SELECT domain.id32(e.id) AS id, max(s.block_number) AS block_number
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id) x
-  WHERE r.id = x.id $$;
+  WHERE r.id = x.id;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_rec_goal_reward(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_rec_goal_reward(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   UPDATE domain.rec_goal_reward r SET block_number = x.block_number
   FROM (SELECT domain.id32(e.id) AS id, max(s.block_number) AS block_number
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id) x
-  WHERE r.id = x.id $$;
+  WHERE r.id = x.id;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_rec_goal_tier(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_rec_goal_tier(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   UPDATE domain.rec_goal_tier r SET block_number = x.block_number
   FROM (SELECT domain.id32(e.id) AS id, max(s.block_number) AS block_number
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id) x
-  WHERE r.id = x.id $$;
+  WHERE r.id = x.id;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_rec_item_allo(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_rec_item_allo(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   UPDATE domain.rec_item_allo r SET block_number = x.block_number
   FROM (SELECT domain.id32(e.id) AS id, max(s.block_number) AS block_number
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id) x
-  WHERE r.id = x.id $$;
+  WHERE r.id = x.id;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_rec_item_requirement(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_rec_item_requirement(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   UPDATE domain.rec_item_requirement r SET block_number = x.block_number
   FROM (SELECT domain.id32(e.id) AS id, max(s.block_number) AS block_number
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id) x
-  WHERE r.id = x.id $$;
+  WHERE r.id = x.id;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_rec_item_usecase(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_rec_item_usecase(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   UPDATE domain.rec_item_usecase r SET block_number = x.block_number
   FROM (SELECT domain.id32(e.id) AS id, max(s.block_number) AS block_number
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id) x
-  WHERE r.id = x.id $$;
+  WHERE r.id = x.id;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_rec_listing_buy(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_rec_listing_buy(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   UPDATE domain.rec_listing_buy r SET block_number = x.block_number, decay = x.decay, period = x.period, rate = x.rate, scale = x.scale, type = x.type, value = x.value
   FROM (SELECT domain.id32(e.id) AS id, max(s.block_number) AS block_number, domain.to_int32((array_agg(s.value) FILTER (WHERE c.id = '\xdb0a2c2923f596106d3420f17dba40c6898f9f7ed616487818d18a74165b53b1'))[1]) AS decay, domain.to_int32((array_agg(s.value) FILTER (WHERE c.id = '\x16d883d37648798ab8e3fa4bb4d4d4680f890b679b13d715f942321c616cbe43'))[1]) AS period, domain.to_bigint((array_agg(s.value) FILTER (WHERE c.id = '\x20ab550b15bc644ed0151f9ebe2d55c859a9e4338085826137f0d33968582488'))[1]) AS rate, domain.to_int32((array_agg(s.value) FILTER (WHERE c.id = '\x60a0dd8891c9eb10d1c7925049e6a921af7c42c67904ae7963fce0bb6b9c3f3c'))[1]) AS scale, domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\x024accd0d273ef6123273b21662f5cc055a7d58adf98cc1b060edd029af93f7f'))[1]) AS type, domain.to_bigint((array_agg(s.value) FILTER (WHERE c.id = '\xb25ea67b55901db62e4b14311a8c1ab178fec3948b4b493a711970a50aa2a2e1'))[1]) AS value
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id) x
-  WHERE r.id = x.id $$;
+  WHERE r.id = x.id;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_rec_listing_requirement(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_rec_listing_requirement(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   UPDATE domain.rec_listing_requirement r SET block_number = x.block_number
   FROM (SELECT domain.id32(e.id) AS id, max(s.block_number) AS block_number
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id) x
-  WHERE r.id = x.id $$;
+  WHERE r.id = x.id;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_rec_listing_sell(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_rec_listing_sell(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   UPDATE domain.rec_listing_sell r SET block_number = x.block_number, decay = x.decay, period = x.period, rate = x.rate, scale = x.scale, type = x.type, value = x.value
   FROM (SELECT domain.id32(e.id) AS id, max(s.block_number) AS block_number, domain.to_int32((array_agg(s.value) FILTER (WHERE c.id = '\xdb0a2c2923f596106d3420f17dba40c6898f9f7ed616487818d18a74165b53b1'))[1]) AS decay, domain.to_int32((array_agg(s.value) FILTER (WHERE c.id = '\x16d883d37648798ab8e3fa4bb4d4d4680f890b679b13d715f942321c616cbe43'))[1]) AS period, domain.to_bigint((array_agg(s.value) FILTER (WHERE c.id = '\x20ab550b15bc644ed0151f9ebe2d55c859a9e4338085826137f0d33968582488'))[1]) AS rate, domain.to_int32((array_agg(s.value) FILTER (WHERE c.id = '\x60a0dd8891c9eb10d1c7925049e6a921af7c42c67904ae7963fce0bb6b9c3f3c'))[1]) AS scale, domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\x024accd0d273ef6123273b21662f5cc055a7d58adf98cc1b060edd029af93f7f'))[1]) AS type, domain.to_bigint((array_agg(s.value) FILTER (WHERE c.id = '\xb25ea67b55901db62e4b14311a8c1ab178fec3948b4b493a711970a50aa2a2e1'))[1]) AS value
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id) x
-  WHERE r.id = x.id $$;
+  WHERE r.id = x.id;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_rec_node_bonus(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_rec_node_bonus(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   UPDATE domain.rec_node_bonus r SET block_number = x.block_number
   FROM (SELECT domain.id32(e.id) AS id, max(s.block_number) AS block_number
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id) x
-  WHERE r.id = x.id $$;
+  WHERE r.id = x.id;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_rec_node_requirement(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_rec_node_requirement(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   UPDATE domain.rec_node_requirement r SET block_number = x.block_number
   FROM (SELECT domain.id32(e.id) AS id, max(s.block_number) AS block_number
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id) x
-  WHERE r.id = x.id $$;
+  WHERE r.id = x.id;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_rec_recipe_input(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_rec_recipe_input(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   UPDATE domain.rec_recipe_input r SET block_number = x.block_number, keys = x.keys, values_ = x.values_
   FROM (SELECT domain.id32(e.id) AS id, max(s.block_number) AS block_number, domain.to_uint_array((array_agg(s.value) FILTER (WHERE c.id = '\xc6a29e9d963ddf0ecc32d72ae16fddf22661517259c701d58065adfefd57eb02'))[1])::integer[] AS keys, domain.to_uint_array((array_agg(s.value) FILTER (WHERE c.id = '\xfb08db6d59480b008d636f90eaab4796d6e70486db57ea5b6d38235c97e3a3ec'))[1]) AS values_
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id) x
-  WHERE r.id = x.id $$;
+  WHERE r.id = x.id;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_rec_recipe_output(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_rec_recipe_output(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   UPDATE domain.rec_recipe_output r SET block_number = x.block_number, keys = x.keys, values_ = x.values_
   FROM (SELECT domain.id32(e.id) AS id, max(s.block_number) AS block_number, domain.to_uint_array((array_agg(s.value) FILTER (WHERE c.id = '\xc6a29e9d963ddf0ecc32d72ae16fddf22661517259c701d58065adfefd57eb02'))[1])::integer[] AS keys, domain.to_uint_array((array_agg(s.value) FILTER (WHERE c.id = '\xfb08db6d59480b008d636f90eaab4796d6e70486db57ea5b6d38235c97e3a3ec'))[1]) AS values_
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id) x
-  WHERE r.id = x.id $$;
+  WHERE r.id = x.id;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_rec_recipe_requirement(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_rec_recipe_requirement(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   UPDATE domain.rec_recipe_requirement r SET block_number = x.block_number
   FROM (SELECT domain.id32(e.id) AS id, max(s.block_number) AS block_number
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id) x
-  WHERE r.id = x.id $$;
+  WHERE r.id = x.id;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_rec_scavenge_reward(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_rec_scavenge_reward(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   UPDATE domain.rec_scavenge_reward r SET block_number = x.block_number
   FROM (SELECT domain.id32(e.id) AS id, max(s.block_number) AS block_number
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id) x
-  WHERE r.id = x.id $$;
+  WHERE r.id = x.id;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_rec_registry_trait_type(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_rec_registry_trait_type(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   UPDATE domain.rec_registry_trait_type r SET block_number = x.block_number
   FROM (SELECT domain.id32(e.id) AS id, max(s.block_number) AS block_number
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id) x
-  WHERE r.id = x.id $$;
+  WHERE r.id = x.id;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_rec_bonus_ending_type(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_rec_bonus_ending_type(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   UPDATE domain.rec_bonus_ending_type r SET block_number = x.block_number
   FROM (SELECT domain.id32(e.id) AS id, max(s.block_number) AS block_number
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id) x
-  WHERE r.id = x.id $$;
+  WHERE r.id = x.id;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_rec_bonus_instance(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_rec_bonus_instance(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   UPDATE domain.rec_bonus_instance r SET block_number = x.block_number, id_anchor = x.id_anchor, id_type = x.id_type, id_source = x.id_source, time = x.time
   FROM (SELECT domain.id32(e.id) AS id, max(s.block_number) AS block_number, domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\xb045c5017717023376f3cca4fc00dc4ee26e151a86d28f1db156cf5222daccd1'))[1]) AS id_anchor, domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\x998873aedc8c829f7e25178374ed9431f396bd26c559d29a5ea6de65722045cc'))[1]) AS id_type, domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\xc81ce03c0ce7d95786aa8f43fb06c16da8357e856cb08b2052b4bf1807cf8ab3'))[1]) AS id_source, domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\x040fc38fe5717491c84059f73f7686f4157d14971215773d341a2ede964d65ac'))[1]) AS time
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id) x
-  WHERE r.id = x.id $$;
+  WHERE r.id = x.id;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_rec_droptable_item_log(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_rec_droptable_item_log(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   UPDATE domain.rec_droptable_item_log r SET block_number = x.block_number, time = x.time, values_ = x.values_
   FROM (SELECT domain.id32(e.id) AS id, max(s.block_number) AS block_number, domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\x040fc38fe5717491c84059f73f7686f4157d14971215773d341a2ede964d65ac'))[1]) AS time, domain.to_uint_array((array_agg(s.value) FILTER (WHERE c.id = '\xfb08db6d59480b008d636f90eaab4796d6e70486db57ea5b6d38235c97e3a3ec'))[1]) AS values_
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id) x
-  WHERE r.id = x.id $$;
+  WHERE r.id = x.id;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_rec_flag_type(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_rec_flag_type(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   UPDATE domain.rec_flag_type r SET block_number = x.block_number
   FROM (SELECT domain.id32(e.id) AS id, max(s.block_number) AS block_number
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id) x
-  WHERE r.id = x.id $$;
+  WHERE r.id = x.id;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_rec_has_flag(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_rec_has_flag(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   UPDATE domain.rec_has_flag r SET block_number = x.block_number, has_flag = x.has_flag, id_owns_flag = x.id_owns_flag, id_type = x.id_type, type = x.type
   FROM (SELECT domain.id32(e.id) AS id, max(s.block_number) AS block_number, domain.to_bool((array_agg(s.value) FILTER (WHERE c.id = '\xd426585847552196ce5fddb7f2e37e8aa38f62676728e7518835f8440cf91958'))[1]) AS has_flag, domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\x3bfb44d3d96b02f0d98dd5bd3a2e75077ae5d876f198a438658ad9b9098b2989'))[1]) AS id_owns_flag, domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\x998873aedc8c829f7e25178374ed9431f396bd26c559d29a5ea6de65722045cc'))[1]) AS id_type, domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\x024accd0d273ef6123273b21662f5cc055a7d58adf98cc1b060edd029af93f7f'))[1]) AS type
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id) x
-  WHERE r.id = x.id $$;
+  WHERE r.id = x.id;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_rec_is_config(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_rec_is_config(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   UPDATE domain.rec_is_config r SET block_number = x.block_number, value = x.value
   FROM (SELECT domain.id32(e.id) AS id, max(s.block_number) AS block_number, domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\xb25ea67b55901db62e4b14311a8c1ab178fec3948b4b493a711970a50aa2a2e1'))[1]) AS value
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id) x
-  WHERE r.id = x.id $$;
+  WHERE r.id = x.id;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_rec_room_gate_from(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_rec_room_gate_from(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   UPDATE domain.rec_room_gate_from r SET block_number = x.block_number
   FROM (SELECT domain.id32(e.id) AS id, max(s.block_number) AS block_number
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id) x
-  WHERE r.id = x.id $$;
+  WHERE r.id = x.id;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_rec_room_gate_to(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_rec_room_gate_to(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   UPDATE domain.rec_room_gate_to r SET block_number = x.block_number
   FROM (SELECT domain.id32(e.id) AS id, max(s.block_number) AS block_number
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id) x
-  WHERE r.id = x.id $$;
+  WHERE r.id = x.id;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_rec_sacrifice_log(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_rec_sacrifice_log(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   UPDATE domain.rec_sacrifice_log r SET block_number = x.block_number, time = x.time, values_ = x.values_
   FROM (SELECT domain.id32(e.id) AS id, max(s.block_number) AS block_number, domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\x040fc38fe5717491c84059f73f7686f4157d14971215773d341a2ede964d65ac'))[1]) AS time, domain.to_uint_array((array_agg(s.value) FILTER (WHERE c.id = '\xfb08db6d59480b008d636f90eaab4796d6e70486db57ea5b6d38235c97e3a3ec'))[1]) AS values_
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id) x
-  WHERE r.id = x.id $$;
+  WHERE r.id = x.id;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_rec_score_total(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_rec_score_total(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   UPDATE domain.rec_score_total r SET block_number = x.block_number, value = x.value
   FROM (SELECT domain.id32(e.id) AS id, max(s.block_number) AS block_number, domain.to_bigint((array_agg(s.value) FILTER (WHERE c.id = '\xb25ea67b55901db62e4b14311a8c1ab178fec3948b4b493a711970a50aa2a2e1'))[1]) AS value
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id) x
-  WHERE r.id = x.id $$;
+  WHERE r.id = x.id;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_rec_score_type(ids bytea[]) RETURNS void LANGUAGE sql AS $$
+CREATE OR REPLACE FUNCTION domain.refresh_rec_score_type(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
   UPDATE domain.rec_score_type r SET block_number = x.block_number
   FROM (SELECT domain.id32(e.id) AS id, max(s.block_number) AS block_number
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id) x
-  WHERE r.id = x.id $$;
+  WHERE r.id = x.id;
+END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
 CREATE OR REPLACE PROCEDURE domain.bootstrap() LANGUAGE plpgsql AS $$

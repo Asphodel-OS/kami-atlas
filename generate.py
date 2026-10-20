@@ -616,6 +616,8 @@ def write_spec(ix, model, ents, comps, systems, id_ns, src_note):
                     else: out |= local_strings(caller, m_.group(1))
                     continue
                 out |= concat_pattern(a_[2], caller)
+                # a conditional (isAdd ? "POOL_LIQUIDITY_ADD" : "POOL_LIQUIDITY_REMOVE"): every literal it can yield
+                if '?' in a_[2]: out |= set(re.findall(r'"([A-Za-z_][A-Za-z0-9_]*)"', a_[2]))
         return out
     def id_meta(ns):
         """How the id for namespace ns is hashed: encoding and the type of each key, from the first occurrence that

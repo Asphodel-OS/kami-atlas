@@ -2815,6 +2815,8 @@
        "MINT_NUM_TOTAL",
        "MINT_NUM_WL",
        "MOVE",
+       "POOL_LIQUIDITY_ADD",
+       "POOL_LIQUIDITY_REMOVE",
        "POOL_SWAP_TOTAL",
        "POOL_VOLUME",
        "PORTAL_ITEM_CANCEL_TOTAL",

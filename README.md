@@ -108,6 +108,18 @@ The generator finds record references by following pointer fields (`IDType`, `Id
 
 Two things the generator notices about systems: a system whose every entry point reverts before doing anything is marked `disabled` with the message (KamiOnyxRespec, KamiOnyxRename), and shown as such in the atlas; and a system that can reach a component write it is not granted in `deploy.json` gets `writes_without_access` with, for each component, the shortest call path from the entry point (`writes_without_access_paths`). The atlas lists these under the system. Reachability is over-approximate: a write behind a branch the data never takes is listed too, so the path is there to judge it.
 
+## Data logs
+
+The game keeps its counters as records at `is.data(holderID, index, type)`: harvest time per node, items used, trades
+executed, quests completed. `generated/data-logs.yaml` lists every one the contracts can write or read, from every
+`LibData` call: the name (literals, strings the callers pass, and concatenations expanded the same way as record keys,
+so `HARVEST_TIME_*` lists its three phases), the holder (an account, the world at holder 0, a token address), the index
+(0, or an item, node, recipe or account index), the library function, and the systems whose entry points reach it.
+`notes/data-logs.yaml` describes the families. The atlas shows them three ways: a Data logs section on the overview
+and a drilldown per family, a "Data logs held" section on the holder entities and "Data logs written" on each system,
+and an optional map layer (Settings → "Data logs on the map", off by default) that draws each family beside its
+holders. In the indexer they are the `domain.rec_is_data` table.
+
 ## Live config values
 
 `config.py` reads config values from Yominet on demand: read-only `eth_call`, no keys.

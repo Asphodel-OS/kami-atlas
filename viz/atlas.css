@@ -65,6 +65,13 @@ h1 small { display: block; font: 400 12px/1.3 var(--f-mono); color: var(--muted)
 .node.pinned circle { stroke-width: 4; }
 .node.untyped circle { stroke-dasharray: 4 3; }
 .node.singleton path { stroke-width: 2; }
+.node.datalog rect { fill: var(--panel); stroke: var(--muted); stroke-width: 1.6; stroke-dasharray: 3 2; }
+.node.datalog:hover rect, .node.datalog:focus-visible rect { stroke: var(--ink); }
+.edge.datalog .line { stroke: var(--muted); stroke-dasharray: 2 3; opacity: .75; }
+.ent.dl { border-style: dashed; }
+.dl-list li.dl-row { padding: 8px 0; border-top: 1px solid var(--line); }
+.dl-list li.dl-row .kv { margin-top: 4px; }
+.dl-name { font-weight: 600; }
 .node .badge { font: 600 9.5px var(--f-mono); letter-spacing: .06em; text-transform: uppercase; paint-order: stroke; stroke: var(--panel); stroke-width: 3px; pointer-events: none; }
 .sysbtn { font: 500 12px var(--f-mono); color: var(--ink); background: none; border: 1px dashed var(--line); border-radius: 4px; padding: 0 5px; cursor: pointer; }
 .sysbtn:hover { border-color: var(--ink); border-style: solid; }

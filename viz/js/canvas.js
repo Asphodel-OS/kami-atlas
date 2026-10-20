@@ -77,6 +77,7 @@ export function install(A) {
         + row(dot('none', 'var(--muted)'), 'Typed', 'has an EntityType', 'shape:typed')
         + row(dot('none', 'var(--muted)', true), 'Untyped shape', 'no EntityType', 'shape:untyped')
         + row(sw('<path d="M10,1L14,5L10,9L6,5Z" fill="none" stroke="var(--muted)" stroke-width="1.3"/>'), 'Singleton', 'one entity, fixed id', 'shape:singleton')
+        + (A.cfg && A.cfg.dataLogs ? row(sw('<rect x="3" y="1.5" width="14" height="7" rx="2" fill="none" stroke="var(--muted)" stroke-width="1.3" stroke-dasharray="3 2"/>'), 'Data logs', 'counters kept per holder', 'shape:datalog') : '')
         + row(sw(`<circle cx="6" cy="5" r="2.2" fill="none" stroke="var(--muted)" stroke-width="1.2"/><circle cx="17" cy="5" r="4" fill="none" stroke="var(--muted)" stroke-width="1.2"/>`), 'Size', 'more sub-entities') : '')
       + '<span class="lg-title">References</span>'
       + sub('A → B: A stores B’s id or index')

@@ -167,7 +167,9 @@ export function install(A) {
     document.querySelectorAll('#set-lbl button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === cfg.edgeLabels));
     document.getElementById('set-names').checked = cfg.names;
     document.getElementById('set-via').checked = cfg.viaEdges;
+    document.getElementById('set-datalogs').checked = !!cfg.dataLogs;
   }
+  document.getElementById('set-datalogs').addEventListener('change', ev => { cfg.dataLogs = ev.target.checked; saveSettings(); redraw(); });
   document.getElementById('set-via').addEventListener('change', ev => { cfg.viaEdges = ev.target.checked; saveSettings(); redraw(); });
   document.getElementById('set-lbl').addEventListener('click', ev => { const b = ev.target.closest('[data-v]'); if (!b) return; cfg.edgeLabels = b.dataset.v; saveSettings(); applyLabels(); });
   document.getElementById('set-names').addEventListener('change', ev => { cfg.names = ev.target.checked; saveSettings(); applyLabels(); });

@@ -2,7 +2,7 @@
 import { arr } from './util.js';
 
 export function install(A) {
-  const { E, rels, SG, systems, layout, cfg, st, panel, tip, wrap, svg, root, zoom, ms, reduceMotion, W, H, fit, ensureVisible, DIRS, pickToward, legend, relKeys, viaTip, viaGlyph, edgePath, cardOf, uniqueFields, subsOf, show, hide, placeTip, entityTip, singletonTip, systemTip, relTip, navPush, focusView, focusPanel, systemPanel, overviewPanel } = A;
+  const { E, rels, SG, systems, layout, cfg, st, panel, tip, wrap, svg, root, zoom, ms, reduceMotion, W, H, fit, ensureVisible, DIRS, pickToward, legend, relKeys, viaTip, viaGlyph, edgePath, cardOf, uniqueFields, subsOf, datalogTip, show, hide, placeTip, entityTip, singletonTip, systemTip, relTip, navPush, focusView, focusPanel, systemPanel, overviewPanel } = A;
   const BAND = 320, bandY = { runtime: 0, hybrid: 1, registry: 2 };
   const radius = n => E[n] ? 12 + Math.sqrt(subsOf(n).length) * 3.2 : 12;
 
@@ -16,6 +16,16 @@ export function install(A) {
     const nodes = ids.map(id => ({ id, layer: E[id].layer }));
     // singletons that an entity points at (the gacha pool) join the map beside their referrers
     for (const r of rels) if (r.to && SG[r.to] && ids.includes(r.from) && !nodes.some(n => n.id === r.to)) nodes.push({ id: r.to, layer: E[r.from].layer, singleton: true });
+    // data-log families beside their holders (Settings → Data logs on the map; off by default)
+    const DL = A.datalogs || { logs: {}, families: {} }, dlLinks = [];
+    if (cfg.dataLogs) for (const [fam, names] of Object.entries(DL.families)) {
+      const holders = new Set(names.flatMap(x => arr((DL.logs[x] || {}).holder)));
+      const targets = [...holders].filter(h => nodes.some(n => n.id === h));
+      if (!targets.length && !holders.has('world')) continue;
+      const id = 'dl:' + fam;
+      nodes.push({ id, layer: targets.length ? E[targets[0]].layer : 'runtime', datalog: true, fam, world: holders.has('world') });
+      for (const t of targets) dlLinks.push({ source: id, target: t });
+    }
     const byId = Object.fromEntries(nodes.map(n => [n.id, n]));
     const er = rels.filter(r => r.to && byId[r.from] && byId[r.to] && r.from !== r.to && st.rel.has(r.l.type) && (cfg.viaEdges || !(r.via && r.via.kind === 'record')));
     const pairCount = {};
@@ -25,7 +35,9 @@ export function install(A) {
     const bands = root.append('g');
     const content = root.append('g'); A.fitTarget = null;  // bands are sized to the nodes, so fit everything
     const eg = content.append('g'), ng = content.append('g');
-    const edge = eg.selectAll('g').data(links).join('g').attr('class', d => 'edge ' + (d.r.l.required ? 'required' : 'optional'));
+    const dledge = eg.selectAll('g.datalog').data(dlLinks).join('g').attr('class', 'edge datalog');
+    dledge.append('path').attr('class', 'line');
+    const edge = eg.selectAll('g:not(.datalog)').data(links).join('g').attr('class', d => 'edge ' + (d.r.l.required ? 'required' : 'optional'));
     edge.append('path').attr('class', 'line').style('stroke', d => `var(--r-${d.r.l.type})`).attr('marker-end', d => `url(#m-${d.r.l.type})`)
       .attr('marker-start', d => cardOf(d.r.l) ? `url(#c-${cardOf(d.r.l)}-${d.r.l.type})` : null);
     edge.append('path').attr('class', 'hit');
@@ -40,14 +52,15 @@ export function install(A) {
       .on('mouseleave', () => { hide(); edge.classed('faded', false); node.classed('faded', false); applySystem(); });
 
     const node = ng.selectAll('g').data(nodes).join('g')
-      .attr('class', d => 'node' + (d.singleton ? ' singleton' : E[d.id] && E[d.id].typed === false ? ' untyped' : ''))
+      .attr('class', d => 'node' + (d.singleton ? ' singleton' : d.datalog ? ' datalog' : E[d.id] && E[d.id].typed === false ? ' untyped' : ''))
       .attr('tabindex', 0).attr('role', 'button').attr('aria-label', d => d.id);
-    node.filter(d => !d.singleton).append('circle').attr('r', d => radius(d.id))
+    node.filter(d => d.datalog).append('rect').attr('x', -11).attr('y', -9).attr('width', 22).attr('height', 18).attr('rx', 3);
+    node.filter(d => !d.singleton && !d.datalog).append('circle').attr('r', d => radius(d.id))
       .style('fill', d => `color-mix(in srgb, var(--${d.layer}) 22%, var(--panel))`).style('stroke', d => `var(--${d.layer})`);
     node.filter(d => d.singleton).append('path').attr('d', 'M0,-12L12,0L0,12L-12,0Z')
       .style('fill', 'var(--panel)').style('stroke', 'var(--muted)');
-    node.append('text').attr('class', 'name').attr('text-anchor', 'middle').attr('dy', d => radius(d.id) + 14).text(d => d.id);
-    const nk = Object.fromEntries(nodes.map(d => [d.id, new Set(d.singleton ? ['shape:singleton'] : ['layer:' + d.layer, E[d.id].typed === false ? 'shape:untyped' : 'shape:typed'])]));
+    node.append('text').attr('class', 'name').attr('text-anchor', 'middle').attr('dy', d => radius(d.id) + 14).text(d => d.datalog ? d.fam : d.id);
+    const nk = Object.fromEntries(nodes.map(d => [d.id, new Set(d.singleton ? ['shape:singleton'] : d.datalog ? ['shape:datalog'] : ['layer:' + d.layer, E[d.id].typed === false ? 'shape:untyped' : 'shape:typed'])]));
     links.forEach(l => relKeys(l.r).forEach(k => { nk[l.r.from].add(k); nk[l.r.to].add(k); }));
     node.attr('data-k', d => [...nk[d.id]].join(' '));
     edge.attr('data-k', d => { const a = byId[d.r.from], b = byId[d.r.to]; return relKeys(d.r).concat(!a.singleton && !b.singleton && a.layer === b.layer ? ['layer:' + a.layer] : []).join(' '); });
@@ -85,8 +98,9 @@ export function install(A) {
         .on('end', () => focusView(d.id));
       if (reduceMotion) focusView(d.id);
     };
-    const tipFor = d => d.singleton ? singletonTip(d.id) : st.system && role[d.id] ? systemTip(d.id, role[d.id]) : entityTip(d.id);
-    node.on('keydown', (ev, d) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); focusView(d.id); } });
+    const tipFor = d => d.singleton ? singletonTip(d.id) : d.datalog ? datalogTip(d.fam) : st.system && role[d.id] ? systemTip(d.id, role[d.id]) : entityTip(d.id);
+    const open = d => d.datalog ? A.dataView(d.fam) : focusView(d.id);
+    node.on('keydown', (ev, d) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); open(d); } });
 
     if (A.sim) A.sim.stop();
     // the committed layout (notes/layout.json) holds its entities in place; the rest settle around them with seeded
@@ -94,6 +108,7 @@ export function install(A) {
     for (const d of nodes) { const p = layout[d.id]; if (p) { d.x = d.fx = p[0]; d.y = d.fy = p[1]; d.held = true; } }
     A.sim = d3.forceSimulation(nodes).randomSource(d3.randomLcg(0.42))
       .force('link', d3.forceLink(links).id(d => d.id).distance(cfg.linkLen).strength(0.18))
+      .force('dlink', d3.forceLink(dlLinks).id(d => d.id).distance(cfg.linkLen * 0.6).strength(0.5))
       .force('charge', d3.forceManyBody().strength(-620 * cfg.spacing).distanceMax(700 * Math.max(1, cfg.spacing)))
       .force('y', d3.forceY(d => bandY[d.layer] * BAND).strength(0.45))
       .force('x', d3.forceX(0).strength(0.08))
@@ -169,7 +184,7 @@ export function install(A) {
     const ov = content.append('g').attr('class', 'lens-ov').style('pointer-events', 'none');
     const ring = ov.append('circle').attr('fill', 'none').style('stroke', 'var(--ink)').attr('stroke-width', 2).attr('vector-effect', 'non-scaling-stroke').attr('display', 'none');
     // with the details panel showing the preview, the tooltip would only repeat it
-    const panelShows = d => !d.singleton && !st.system && !cfg.collapsed && !panel.hidden && window.matchMedia('(min-width: 901px)').matches;
+    const panelShows = d => !d.singleton && !d.datalog && !st.system && !cfg.collapsed && !panel.hidden && window.matchMedia('(min-width: 901px)').matches;
     const tipAtNode = d => {
       if (panelShows(d)) { tip.hidden = true; return; }
       const t = d3.zoomTransform(svg.node()), [x, y] = t.apply([d.px, d.py]), r = drawnR(d) * t.k;
@@ -214,7 +229,7 @@ export function install(A) {
     const endDrag = () => {
       if (!drag) return;
       const d = drag; drag = null; A.grabbing = false;
-      if (!dragMoved) { if (!d.singleton) flyTo(d); }
+      if (!dragMoved) { if (d.datalog) A.dataView(d.fam); else if (!d.singleton) flyTo(d); }
       else { d.userPinned = true; d.fx = d.x; d.fy = d.y; node.filter(x => x === d).classed('pinned', true); }
       A.sim.alphaTarget(mouse.inside && cfg.pushOn ? 0.12 : 0);
     };
@@ -236,7 +251,7 @@ export function install(A) {
         }
         setKbd(cur);
       },
-      enter() { if (kbd && !kbd.singleton) { const d = kbd; setKbd(null); flyTo(d); return true; } return false; },
+      enter() { if (kbd && !kbd.singleton) { const d = kbd; setKbd(null); if (d.datalog) A.dataView(d.fam); else flyTo(d); return true; } return false; },
       select(id) { setKbd(id && nodes.find(x => x.id === id)); },
       // hovering a system in the list: light up what it creates, changes or reads
       system(name) {
@@ -260,7 +275,7 @@ export function install(A) {
         focusId = fid; edgeHover = false;
         highlight(fid);
         if (!fid) hide();
-        previewPanel(f && !f.singleton ? fid : null);
+        previewPanel(f && !f.singleton && !f.datalog ? fid : null);
       }
       if (f && !drag) tipAtNode(f);
       // draw through the lens, magnified nodes on top
@@ -272,6 +287,7 @@ export function install(A) {
         g.select('text').attr('x', p.lx).attr('y', p.ly - (d.r.via ? 10 : 3));
         if (d.r.via) g.select('.via').attr('transform', `translate(${p.lx},${p.ly})`);
       });
+      dledge.select('path').attr('d', d => `M${d.source.px},${d.source.py}L${d.target.px},${d.target.py}`);
       node.attr('transform', d => `translate(${d.px},${d.py}) scale(${Math.min(3, Math.sqrt(d.pz || 1))})`);
       node.sort((p, q) => (p.pz || 1) - (q.pz || 1));
       if (f) {

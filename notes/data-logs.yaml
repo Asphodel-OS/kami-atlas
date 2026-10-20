@@ -1,0 +1,30 @@
+# Data logs: the counters LibData keeps at is.data(holderID, index, type). The generator finds every write and read in
+# the contracts (generated/data-logs.yaml); these notes say what the families mean. Flow mappings, one per line.
+
+families:
+  HARVEST: {what: "Harvesting totals per account: time spent (HARVEST_TIME, per node and in total, split by day phase), amounts collected (HARVEST_AT_NODE per node, HARVEST_AFFINITY_* per node affinity, HARVEST_WHEN_* per day phase, keyed by the item collected)."}
+  LIQ: {what: "Liquidation totals per account: liquidations by day phase (LIQ_WHEN_*) and the accounts liquidated (LIQ_TARGET_ACC, keyed by the victim's account index)."}
+  LIQUIDATE: {what: "Liquidation counts per account: in total, per node, and as the victim (LIQUIDATED_VICTIM)."}
+  SCAV: {what: "Scavenging claims per account: per bar (SCAV_CLAIM_NODE, keyed by the node index) and per node affinity (SCAV_CLAIM_AFFINITY_*)."}
+  ITEM: {what: "Item flows: ITEM_COUNT is the world total of each item (holder 0, keyed by item index), ITEM_TOTAL an account's lifetime total; ITEM_USE, ITEM_BURN, ITEM_SPEND and ITEM_REVENUE count uses, burns and shop spend/revenue; ACCOUNT_ITEM_USE and KAMI_ITEM_USE split uses by target shape."}
+  TRADE: {what: "Player-to-player trades per account: created, executed, completed, cancelled, items received and spent (keyed by item index), and the tax paid."}
+  KAMI: {what: "Kami lifecycle per account: gacha mints and rerolls, sends, stakes, sacrifices, market listings and sales, names set, levels gained in total."}
+  QUEST: {what: "Quests completed per account, repeatable ones counted separately."}
+  MINT: {what: "Gacha ticket mints: public, whitelist and total, per account and for the world (holder 0)."}
+  TOKEN: {what: "Onyx spent per account and for the world, in total and per use (revive, respec, rename), keyed by the Onyx item index."}
+  PORTAL: {what: "Bridge flows through the token portal: item and token deposits, withdrawals, claims, cancels and tax, per account and for the world; token totals are held by the token address."}
+  POOL: {what: "Liquidity pool activity per account: swaps, volume, liquidity added and removed."}
+  CRAFT: {what: "Crafting per account: recipes crafted (keyed by recipe index) and items produced."}
+  SACRIFICE: {what: "Kami sacrifices per account: items sacrificed and the pity counters for uncommon and rare outcomes."}
+  GOAL: {what: "Contributions to community goals per account."}
+  KILL: {what: "Bounty balances of a kill log (array data, written by a path no deployed system reaches today)."}
+  LISTING: {what: "NPC shop buys and sells per account, in total and per item."}
+  DROPTABLE: {what: "Droptable rewards received per account, keyed by item index."}
+  SKILL: {what: "Skill points spent per account."}
+  MESSAGES: {what: "Chat messages sent per account."}
+  MOVE: {what: "Room moves per account."}
+  TOTAL: {what: "World totals: the number of registered accounts (holder 0)."}
+  GACHA: {what: "Pending gacha commits for the world (holder 0): incremented on commit, reset on reveal."}
+  KAMI721: {what: "Kami NFT unstakes per account."}
+
+logs: {}   # per-log descriptions when a name needs more than its family says, e.g. HARVEST_TIME: {what: "..."}

@@ -28,6 +28,14 @@ export function install(A) {
       <div class="row"><b>Id</b><span><code>${esc(g.id || '')}</code> (constant <code>${esc(g.constant || '')}</code>)</span></div>
       <div class="row"><b>Used in</b><span>${list(arr(g.used_in))}</span></div>`;
   }
+  function datalogTip(fam) {
+    const DL = A.datalogs || { logs: {}, families: {}, notes: {} }, names = (DL.families[fam] || []).filter(x => !x.includes('*'));
+    const note = ((DL.notes || {}).families || {})[fam] || {};
+    return `<h4>${esc(fam)}</h4><span class="pill" style="background:var(--muted)">Data logs</span>
+      ${note.what ? `<div style="margin-top:6px">${esc(note.what)}</div>` : ''}
+      <div class="row"><b>Counters</b><span>${list(names, 6)}</span></div>
+      <div class="muted small" style="margin-top:6px">Click to list them with their holders, indexes and writers.</div>`;
+  }
   function systemTip(n, role) {
     return `<h4>${esc(n)}</h4><div><b>${esc(role)}</b> by <code>${esc(st.system)}</code></div>${entityTip(n).replace(/^<h4>.*?<\/h4>/, '')}`;
   }
@@ -61,5 +69,5 @@ export function install(A) {
   const show = (html, ev) => { tip.innerHTML = html; tip.hidden = false; placeTip(ev); };
   const hide = () => { tip.hidden = true; };
 
-  Object.assign(A, { tip, wrap, placeTip, show, hide, entityTip, singletonTip, systemTip, relTip, subTip });
+  Object.assign(A, { tip, wrap, placeTip, show, hide, entityTip, singletonTip, datalogTip, systemTip, relTip, subTip });
 }

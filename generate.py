@@ -619,6 +619,114 @@ def write_spec(ix, model, ents, comps, systems, id_ns, src_note):
                 # a conditional (isAdd ? "POOL_LIQUIDITY_ADD" : "POOL_LIQUIDITY_REMOVE"): every literal it can yield
                 if '?' in a_[2]: out |= set(re.findall(r'"([A-Za-z_][A-Za-z0-9_]*)"', a_[2]))
         return out
+    def datalogs():
+        """Every LibData write and read in the contracts: the counter names the call can form (literals, strings from
+        the callers, concatenations expanded like the record keys), who holds the counter, what its index is, and the
+        systems whose entry points reach the call. generated/data-logs.yaml and viz/data/datalogs.json."""
+        WR, RD = {'inc', 'dec', 'set', 'setArray'}, {'get', 'getArray', 'safeGet'}
+        sysfns = {f_: c_[:-6] for f_, (c_, fn_, p_) in ix.fn.items() if c_.endswith('System') and fn_.get('visibility') in ('public', 'external')}
+        def reach_systems(fid):
+            seen, q, out = {fid}, [fid], set()
+            while q:
+                x = q.pop()
+                if x in sysfns: out.add(sysfns[x]); continue
+                for caller, _ in callers_of.get(x, []):
+                    if caller not in seen: seen.add(caller); q.append(caller)
+            return out
+        def assigns(fid, name):
+            f = ix.fn[fid][1]; s_, l_, _ = map(int, f['src'].split(':'))
+            body = ix.src[ix.fn[fid][2]][s_:s_ + l_].decode(errors='replace')
+            return [m.group(1).strip() for m in re.finditer(r'\b%s(?:\[[^\]]*\])?\s*=\s*([^;]+);' % re.escape(name), body)]
+        def holder_kinds(t, fid, depth=0):
+            t = t.strip()
+            if t == '0': return {'world'}
+            if 'token' in t.lower(): return {'token address'}
+            if re.fullmatch(r'\w+', t) and depth < 2:
+                asg = assigns(fid, t)
+                if asg:
+                    out = {'world'} if any(a.startswith('new ') for a in asg) else set()   # unset slots of a new array are 0
+                    for a in asg:
+                        if not a.startswith('new '): out |= holder_kinds(a, fid, depth + 1)
+                    return out
+            if 'getUniqueEntityId' in t: return {'a new entity (log)'}
+            if re.search(r'acc', t, re.I): return {'ACCOUNT'}
+            if re.search(r'kami', t, re.I): return {'KAMI'}
+            if re.search(r'holder', t, re.I): return {'holder (from the caller)'}
+            if re.search(r'target', t, re.I): return {'target (any entity)'}
+            return {t}
+        def index_kinds(t, fid, depth=0):
+            t = t.strip()
+            if t == '0': return {'0'}
+            if re.fullmatch(r'\w+', t) and depth < 2:
+                asg = assigns(fid, t)
+                if asg:
+                    out = {'0'} if any(a.startswith('new ') for a in asg) else set()
+                    for a in asg:
+                        if not a.startswith('new '): out |= index_kinds(a, fid, depth + 1)
+                    return out
+            tl = t.lower()
+            if 'getindex' in tl and 'acc' in tl: return {'ACCOUNT'}   # LibAccount.getIndex(comps, accVicID): the victim's account index
+            if 'item' in tl or 'currency' in tl or 'onyx' in tl: return {'ITEM'}
+            if 'node' in tl: return {'NODE'}
+            if 'recipe' in tl: return {'RECIPE'}
+            if tl in ('index', 'data.index'): return {'index (from the caller)'}
+            return {t}
+        def type_values(arg, fid):
+            if arg.get('nodeType') == 'Literal' and arg.get('kind') == 'string': return {arg['value']}
+            text = ix.text(ix.fn[fid][2], arg['src'], 400)
+            out = set()
+            if arg.get('nodeType') == 'Identifier':
+                name = arg['name']; ps = [x['name'] for x in ix.fn[fid][1]['parameters']['parameters']]
+                if name in ps: out |= key_literals(fid, ps.index(name))
+                out |= local_strings(fid, name)
+                if arg.get('referencedDeclaration') in ix.str_consts: out.add(ix.str_consts[arg['referencedDeclaration']])
+            elif arg.get('nodeType') == 'IndexAccess':
+                base = arg.get('baseExpression', {}).get('name')
+                if base:
+                    ps = [x['name'] for x in ix.fn[fid][1]['parameters']['parameters']]
+                    out |= local_strings(fid, base)
+                    if base in ps: out |= key_literals(fid, ps.index(base))
+            elif arg.get('nodeType') == 'Conditional':
+                out |= set(re.findall(r'"([A-Za-z_][A-Za-z0-9_]*)"', text))
+            else:
+                out |= concat_pattern(text, fid)
+            return {v for v in out if v}
+        logs = {}
+        def rec(name):
+            return logs.setdefault(name, {'holder': set(), 'index': set(), 'op': set(), 'written_in': set(), 'written_by': set(), 'read_in': set(), 'read_by': set()})
+        for fid, (c_, f_, path_) in ix.fn.items():
+            if c_ == 'LibData': continue   # its own overloads forward to each other
+            for n in walk(f_.get('body') or {}):
+                if n.get('nodeType') != 'FunctionCall': continue
+                callee = n.get('expression', {})
+                if callee.get('nodeType') != 'MemberAccess' or callee.get('expression', {}).get('name') != 'LibData': continue
+                op = callee.get('memberName'); args = n.get('arguments', [])
+                if op not in WR | RD or len(args) < 4: continue
+                hk = holder_kinds(ix.text(path_, args[1]['src'], 200), fid)
+                ik = index_kinds(ix.text(path_, args[2]['src'], 200), fid)
+                for t_ in type_values(args[3], fid):
+                    r_ = rec(t_)
+                    if op in WR:
+                        r_['holder'] |= hk; r_['index'] |= ik; r_['op'].add(op); r_['written_in'].add(ix.key(fid)); r_['written_by'] |= reach_systems(fid)
+                    else:
+                        r_['read_in'].add(ix.key(fid)); r_['read_by'] |= reach_systems(fid)
+        # patterns (HARVEST_TIME_*) stand beside their expansions; a family is the first word of the name
+        family = lambda nm: 'ITEM' if nm.endswith('_ITEM_USE') else nm.strip('*_').split('_')[0]
+        out = {}
+        for nm in sorted(logs):
+            r_ = logs[nm]
+            o = {'family': family(nm)}
+            if '*' in nm:
+                rx = re.compile('^' + re.escape(nm).replace('\\*', '.*') + '$')
+                o['pattern'] = True; o['values'] = sorted(x for x in logs if '*' not in x and rx.match(x) and x != nm.replace('*', ''))
+            for k_ in ('holder', 'index', 'op', 'written_in', 'written_by', 'read_in', 'read_by'):
+                if r_[k_]: o[k_] = sorted(r_[k_])
+            out[nm] = o
+        fams = {}
+        for nm, o in out.items(): fams.setdefault(o['family'], []).append(nm)
+        notes_ = {'families': read_note_section(os.path.join(NOTES, 'data-logs.yaml'), 'families'),
+                  'logs': read_note_section(os.path.join(NOTES, 'data-logs.yaml'), 'logs')}
+        return {'logs': out, 'families': {k_: sorted(v_) for k_, v_ in sorted(fams.items())}, 'notes': notes_}
     def id_meta(ns):
         """How the id for namespace ns is hashed: encoding and the type of each key, from the first occurrence that
         has an owner function (they all hash the same way, or the model would have split them)."""
@@ -690,6 +798,11 @@ def write_spec(ix, model, ents, comps, systems, id_ns, src_note):
             'id_namespaces': {ns: {'entity': ent_ns.get(ns)} for ns in id_ns},
             'left_out': model['source'].get('left_out') or {}}
     with open(os.path.join(GEN, 'recognition.json'), 'w') as f_: json.dump(spec, f_, indent=1, sort_keys=False)
+    dl = datalogs()
+    write(os.path.join(GEN, 'data-logs.yaml'), src_note, {'about': 'Data logs: the counters LibData keeps at is.data(holderID, index, type), from every LibData write and read in the contracts. holder/index: what the call passes (world = holder 0; ITEM/NODE/RECIPE = that registry index). written_by/read_by: the systems whose entry points reach the call. A name with * is a pattern; values are its expansions. Descriptions live in notes/data-logs.yaml.',
+                                                           'families': dl['families'], 'logs': dl['logs']})
+    vd_ = os.path.join(HERE, 'viz', 'data'); os.makedirs(vd_, exist_ok=True)
+    with open(os.path.join(vd_, 'datalogs.json'), 'w') as f_: json.dump(dl, f_)
     return spec
 
 

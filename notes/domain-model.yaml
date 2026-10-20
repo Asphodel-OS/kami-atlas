@@ -45,7 +45,7 @@ entities:
   REFERENCE: {what: "A lookup pointer attached to an anchor."}
   CONDITION: {what: "A requirement or objective (type, logic, index, value) attached to whatever requires it: harvesting a node, using an item, accepting or completing a quest, buying a listing, upgrading a skill, crafting. The game's universal condition record; it has no EntityType."}
   ROOM_GATE: {what: "A condition guarding movement into a room, optionally only when coming from a specific room. No EntityType."}
-  COMMIT: {what: "A pending random roll (commit-reveal) that resolves at a future block: gacha mints and rerolls, sacrifices, droptable rewards from items, quests, goals and scavenging. No EntityType; removed once revealed."}
+  COMMIT: {what: "A pending random roll (commit-reveal) that resolves at a future block: gacha mints and rerolls, sacrifices, droptable rewards from items, quests, goals and scavenging. No EntityType; removed once revealed.", also_fields: IdSource|Value}   # LibDroptable.commit adds the droptable id and the roll count after LibCommit.commit
 
 links:   # for links the generator left unresolved (to: null)
   FRIENDSHIP.IdTarget: {to: ACCOUNT, note: "the other account"}

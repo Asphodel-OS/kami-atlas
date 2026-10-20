@@ -1762,6 +1762,10 @@ def main():
         write(os.path.join(GEN, 'functions', c + '.yaml'), src_note, tbl)
     write(os.path.join(GEN, 'formulas.yaml'), src_note, formulas)
     write(os.path.join(GEN, 'components.yaml'), src_note, comps)
+    for et_, o in read_note_section(os.path.join(NOTES, 'domain-model.yaml'), 'entities').items():  # also_fields: components the tracer misses on a shape (set in another library than the creating one)
+        if o.get('also_fields') and et_ in ents:
+            ents[et_]['components_at_creation'] = sorted(set(ents[et_].get('components_at_creation') or []) | {f.strip() for f in str(o['also_fields']).split('|') if f.strip()})
+            ents[et_]['components_from_notes'] = True
     write(os.path.join(GEN, 'entities.yaml'), src_note, {'entity_types': ents, 'id_namespaces': id_ns})
     ignored_links = fold_note_links(model['entities'], read_note_section(os.path.join(NOTES, 'domain-model.yaml'), 'links'))
     for ns_, o in read_note_section(os.path.join(NOTES, 'domain-model.yaml'), 'sub_entities').items():  # held_by: who holds a shared record, when the code can't say

@@ -2446,7 +2446,9 @@
    "components": [
     "BlockReveal",
     "IdHolder",
-    "Type"
+    "IdSource",
+    "Type",
+    "Value"
    ],
    "components_later": [],
    "components_later_in": {},
@@ -2495,7 +2497,9 @@
     "signature": [
      "BlockReveal",
      "IdHolder",
-     "Type"
+     "IdSource",
+     "Type",
+     "Value"
     ],
     "named_by": "kami-atlas: no EntityType in the contracts; named by generate.py after LibCommit.commit"
    }

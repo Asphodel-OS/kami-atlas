@@ -42,13 +42,14 @@ entity_types:
       IdSource: ["sourceID  (in LibBonus.regCreate)"]
   COMMIT:
     created_in: [LibCommit.commit]
-    components_at_creation: [BlockReveal, IdHolder, Type]
+    components_at_creation: [BlockReveal, IdHolder, IdSource, Type, Value]
     checked_in: []
     made_by: "player actions"
     created_by_systems: [AccountUseItem, GoalClaim, KamiCastItem, KamiGachaMint, KamiGachaReroll, KamiSacrificeCommit, KamiUseItem, QuestComplete, ScavengeClaim, SkillRespec]
     created_by_players: [AccountUseItem, GoalClaim, KamiCastItem, KamiGachaMint, KamiGachaReroll, KamiSacrificeCommit, KamiUseItem, QuestComplete, ScavengeClaim, SkillRespec]
     links_set_at_creation:
       IdHolder: ["holderID  (in LibCommit.commit(uint256,uint256,string))"]
+    components_from_notes: true
   CONDITION:
     created_in: [LibConditional.createFor]
     components_at_creation: [For, IDAnchor, Index, LogicType, Type, Value]

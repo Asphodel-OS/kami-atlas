@@ -475,7 +475,7 @@ INSERT INTO domain.record_spec (ns, table_name, parent_type, encoding, key_order
 ON CONFLICT (ns) DO UPDATE SET table_name = EXCLUDED.table_name, parent_type = EXCLUDED.parent_type, encoding = EXCLUDED.encoding, key_order = EXCLUDED.key_order, key_types = EXCLUDED.key_types, key_columns = EXCLUDED.key_columns, key_parents = EXCLUDED.key_parents, key_values = EXCLUDED.key_values, key_patterns = EXCLUDED.key_patterns, fields = EXCLUDED.fields;
 CREATE TABLE IF NOT EXISTS domain.shape_spec (name text PRIMARY KEY REFERENCES domain.kind(name), signature text[] NOT NULL, created_by text[] NOT NULL);
 INSERT INTO domain.shape_spec (name, signature, created_by) VALUES
-  ('COMMIT', ARRAY['BlockReveal', 'IdHolder', 'Type']::text[], ARRAY['AccountUseItem', 'GoalClaim', 'KamiCastItem', 'KamiGachaMint', 'KamiGachaReroll', 'KamiSacrificeCommit', 'KamiUseItem', 'QuestComplete', 'ScavengeClaim', 'SkillRespec']::text[]),
+  ('COMMIT', ARRAY['BlockReveal', 'IdHolder', 'IdSource', 'Type', 'Value']::text[], ARRAY['AccountUseItem', 'GoalClaim', 'KamiCastItem', 'KamiGachaMint', 'KamiGachaReroll', 'KamiSacrificeCommit', 'KamiUseItem', 'QuestComplete', 'ScavengeClaim', 'SkillRespec']::text[]),
   ('CONDITION', ARRAY['For', 'IDAnchor', 'Index', 'LogicType', 'Type', 'Value']::text[], ARRAY['Chat', '_AuctionRegistry', '_GoalRegistry', '_ItemRegistry', '_ListingRegistry', '_NodeRegistry', '_QuestRegistry', '_RecipeRegistry', '_SkillRegistry']::text[]),
   ('ROOM_GATE', ARRAY['For', 'IDFrom', 'IDTo', 'IdSource', 'Index', 'LogicType', 'Type', 'Value']::text[], ARRAY['_RoomRegistry']::text[])
 ON CONFLICT (name) DO UPDATE SET signature = EXCLUDED.signature, created_by = EXCLUDED.created_by;
@@ -539,9 +539,12 @@ CREATE TABLE IF NOT EXISTS domain.commit (
   block_number integer NOT NULL,
   block_reveal integer,
   id_holder bytea,
-  type text
+  id_source bytea,
+  type text,
+  value bigint
 );
 CREATE INDEX IF NOT EXISTS idx_domain_commit_id_holder ON domain.commit(id_holder);
+CREATE INDEX IF NOT EXISTS idx_domain_commit_id_source ON domain.commit(id_source);
 CREATE TABLE IF NOT EXISTS domain.equipment (
   id bytea PRIMARY KEY,
   block_number integer NOT NULL,
@@ -1447,14 +1450,16 @@ END $$;
 -- +goose StatementBegin
 CREATE OR REPLACE FUNCTION domain.refresh_commit(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
 BEGIN
-  INSERT INTO domain.commit (id, block_number, block_reveal, id_holder, type)
+  INSERT INTO domain.commit (id, block_number, block_reveal, id_holder, id_source, type, value)
   SELECT domain.id32(e.id), max(s.block_number), domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\xeb96d6a560bda13fa9b1f5e6458550803932abff9fe730fa1f8c3a6ddcb67e6b'))[1]) AS block_reveal,
     domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\x5bc28889d745caef68975e56a733199d93efb3f5ae8e4606262ab97c83f72648'))[1]) AS id_holder,
-    domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\x024accd0d273ef6123273b21662f5cc055a7d58adf98cc1b060edd029af93f7f'))[1]) AS type
+    domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\xc81ce03c0ce7d95786aa8f43fb06c16da8357e856cb08b2052b4bf1807cf8ab3'))[1]) AS id_source,
+    domain.to_string((array_agg(s.value) FILTER (WHERE c.id = '\x024accd0d273ef6123273b21662f5cc055a7d58adf98cc1b060edd029af93f7f'))[1]) AS type,
+    domain.to_bigint((array_agg(s.value) FILTER (WHERE c.id = '\xb25ea67b55901db62e4b14311a8c1ab178fec3948b4b493a711970a50aa2a2e1'))[1]) AS value
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id
-  ON CONFLICT (id) DO UPDATE SET block_number = EXCLUDED.block_number, block_reveal = EXCLUDED.block_reveal, id_holder = EXCLUDED.id_holder, type = EXCLUDED.type;
+  ON CONFLICT (id) DO UPDATE SET block_number = EXCLUDED.block_number, block_reveal = EXCLUDED.block_reveal, id_holder = EXCLUDED.id_holder, id_source = EXCLUDED.id_source, type = EXCLUDED.type, value = EXCLUDED.value;
 END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin

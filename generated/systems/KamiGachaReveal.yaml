@@ -5,6 +5,10 @@ KamiGachaReveal:
   comment: "@notice reveals gacha results. owner agnostic - reveal is sent to original account"
   args: "bytes arguments"
   entry_points: [reveal, forceReveal, execute]
+  selectors:
+    "execute(bytes)": "0x09c5eabe"
+    "forceReveal(uint256[])": "0x02d9e4af"
+    "reveal(uint256[])": "0xb93f208a"
   deployed: true
   writes: [BlockReveal, IDOwnsKami, IdHolder, Reroll, Value]
   data: [GACHA_COMMITS_PENDING]

@@ -4,6 +4,10 @@ Kami721IsInWorld:
   file: src/systems/Kami721IsInWorldSystem.sol
   comment: "@notice a view check to check if pet is in world. Used to allow upgradibiliy"
   entry_points: [isInWorld, execute, executeTyped]
+  selectors:
+    "execute(bytes)": "0x09c5eabe"
+    "executeTyped()": "0xe1df4ba6"
+    "isInWorld(uint256)": "0xb5f3365f"
   deployed: true
   reads: [State]
   steps:

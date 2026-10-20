@@ -6,6 +6,9 @@ KamiMarketList:
   args: "uint32 kamiIndex, uint256 price, uint256 expiry"
   entry_points: [execute]
   also: [executeTyped]
+  selectors:
+    "execute(bytes)": "0x09c5eabe"
+    "executeTyped(uint32,uint256,uint256)": "0x21580eda"
   deployed: true
   writes:
     - EntityType

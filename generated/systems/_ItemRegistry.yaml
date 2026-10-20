@@ -4,6 +4,21 @@ _ItemRegistry:
   file: src/systems/_ItemRegistrySystem.sol
   args: "bytes arguments"
   entry_points: [create, createConsumable, addRequirement, addFlag, setSlot, addAlloBasic, addAlloBonus, addAlloDT, addAlloStat, remove, disable, enable, setRarity, execute]
+  selectors:
+    "addAlloBasic(bytes)": "0xb39bdf22"
+    "addAlloBonus(bytes)": "0xeb04c569"
+    "addAlloDT(bytes)": "0x59ce910b"
+    "addAlloStat(bytes)": "0xb452abd4"
+    "addFlag(uint32,string)": "0x06cc1c38"
+    "addRequirement(bytes)": "0x7e534103"
+    "create(bytes)": "0xcf5ba53f"
+    "createConsumable(bytes)": "0xe96e3836"
+    "disable(uint32)": "0x3fbd60f4"
+    "enable(uint32)": "0xaea6c198"
+    "execute(bytes)": "0x09c5eabe"
+    "remove(uint32)": "0x00d84fd8"
+    "setRarity(bytes)": "0xe5d96e6b"
+    "setSlot(uint32,string)": "0x5cbf4483"
   deployed: true
   writes:
     - Description

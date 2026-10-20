@@ -6,6 +6,9 @@ AccountSetName:
   args: "string name"
   entry_points: [execute]
   also: [executeTyped]
+  selectors:
+    "execute(bytes)": "0x09c5eabe"
+    "executeTyped(string)": "0x765a4b0b"
   deployed: true
   writes: [Name, TimeLast]
   reads: [EntityType]

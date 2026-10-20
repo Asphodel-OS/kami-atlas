@@ -4,6 +4,10 @@ _AuthManageRole:
   file: src/systems/_AuthManageRoleSystem.sol
   args: "bytes arguments"
   entry_points: [execute, addRole, removeRole]
+  selectors:
+    "addRole(address,string)": "0x7d72aa65"
+    "execute(bytes)": "0x09c5eabe"
+    "removeRole(address,string)": "0x1bfe0308"
   deployed: true
   writes: [HasFlag, IDOwnsFlag, IDType, Type]
   flags: [AUTH]

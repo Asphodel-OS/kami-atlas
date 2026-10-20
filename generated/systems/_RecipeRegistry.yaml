@@ -4,6 +4,11 @@ _RecipeRegistry:
   file: src/systems/_RecipeRegistrySystem.sol
   args: "bytes arguments"
   entry_points: [create, addRequirement, remove, execute]
+  selectors:
+    "addRequirement(uint32,string,string,uint32,uint32,string)": "0x51e12765"
+    "create(bytes)": "0xcf5ba53f"
+    "execute(bytes)": "0x09c5eabe"
+    "remove(uint32)": "0x00d84fd8"
   deployed: true
   writes: [EntityType, Experience, For, IDAnchor, Index, IndexRecipe, IsRegistry, Keys, LogicType, Stamina, Type, Value, Values]
   access_not_written: [IDFrom, IDTo]

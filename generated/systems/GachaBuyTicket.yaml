@@ -4,6 +4,10 @@ GachaBuyTicket:
   file: src/systems/GachaBuyTicketSystem.sol
   args: "bytes arguments"
   entry_points: [buyPublic, buyWL, execute]
+  selectors:
+    "buyPublic(uint256)": "0xc0c8dd07"
+    "buyWL()": "0x5f11df2e"
+    "execute(bytes)": "0x09c5eabe"
   deployed: true
   writes: [EntityType, IDOwnsInventory, IndexItem, TimeLast, Value]
   reads: [HasFlag, TokenAddress]

@@ -5,6 +5,9 @@ RelationshipAdvance:
   args: "uint32 npcIndex, uint32 relIndex"
   entry_points: [execute]
   also: [executeTyped]
+  selectors:
+    "execute(bytes)": "0x09c5eabe"
+    "executeTyped(uint32,uint32)": "0x276aaa75"
   deployed: true
   writes: [EntityType, IDOwnsRelationship, IndexNPC, IndexRelationship, TimeLast]
   reads: [CacheOperator, IndexRoom]

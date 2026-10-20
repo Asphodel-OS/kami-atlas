@@ -5,6 +5,9 @@ GoalClaim:
   args: "uint32 goalIndex"
   entry_points: [execute]
   also: [executeTyped]
+  selectors:
+    "execute(bytes)": "0x09c5eabe"
+    "executeTyped(uint32)": "0x09c90324"
   deployed: true
   writes:
     - BlockReveal

@@ -5,6 +5,9 @@ Craft:
   args: "uint32 index, uint256 amt"
   entry_points: [execute]
   also: [executeTyped]
+  selectors:
+    "execute(bytes)": "0x09c5eabe"
+    "executeTyped(uint32,uint256)": "0x5c817c70"
   deployed: true
   writes: [EntityType, Experience, IDOwnsInventory, IndexItem, Stamina, TimeLast, TimeLastAction, Value]
   reads:

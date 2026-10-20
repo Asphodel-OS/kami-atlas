@@ -5,6 +5,10 @@ KamiMarketAcceptOffer:
   comment: "@notice Accept any offer — WETH pulled from buyer, kami reassigned via IDOwnsKami"
   args: "uint256 offerID, uint32[] kamiIndices"
   entry_points: [execute, executeTyped]
+  selectors:
+    "execute(bytes)": "0x09c5eabe"
+    "executeTyped(uint256,uint32)": "0xe60f3a76"
+    "executeTyped(uint256,uint32[])": "0x46abd2a3"
   deployed: true
   writes:
     - Balance

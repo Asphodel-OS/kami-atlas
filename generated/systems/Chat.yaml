@@ -5,6 +5,11 @@ Chat:
   args: "string message"
   entry_points: [execute, addRequirement, removeRequirement]
   also: [executeTyped]
+  selectors:
+    "addRequirement(string,string,uint32,uint256,string)": "0x5da7c2d6"
+    "execute(bytes)": "0x09c5eabe"
+    "executeTyped(string)": "0x765a4b0b"
+    "removeRequirement()": "0x7c9052d2"
   deployed: true
   writes: [For, IDAnchor, Index, LogicType, TimeLast, Type, Value]
   reads: [CacheOperator, EntityType, HasFlag, IDOwnsKami, IndexRoom, IsComplete, Level, SkillPoint, State, TimeNext]

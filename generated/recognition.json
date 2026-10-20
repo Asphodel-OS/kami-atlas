@@ -544,7 +544,11 @@
     "TimeLast",
     "TimeLastAction",
     "Value"
-   ]
+   ],
+   "selectors": {
+    "execute(bytes)": "0x09c5eabe",
+    "executeTyped(uint32)": "0x09c90324"
+   }
   },
   "AccountRegister": {
    "id": "system.account.register",
@@ -562,7 +566,11 @@
     "TimeLastAction",
     "TimeStart",
     "Value"
-   ]
+   ],
+   "selectors": {
+    "execute(bytes)": "0x09c5eabe",
+    "executeTyped(address,string)": "0x65ca12ec"
+   }
   },
   "AccountSetBio": {
    "id": "system.account.set.bio",
@@ -570,7 +578,11 @@
    "writes": [
     "Description",
     "TimeLast"
-   ]
+   ],
+   "selectors": {
+    "execute(bytes)": "0x09c5eabe",
+    "executeTyped(string)": "0x765a4b0b"
+   }
   },
   "AccountSetName": {
    "id": "system.account.set.name",
@@ -578,7 +590,11 @@
    "writes": [
     "Name",
     "TimeLast"
-   ]
+   ],
+   "selectors": {
+    "execute(bytes)": "0x09c5eabe",
+    "executeTyped(string)": "0x765a4b0b"
+   }
   },
   "AccountSetOperator": {
    "id": "system.account.set.operator",
@@ -587,7 +603,11 @@
     "AddressOperator",
     "CacheOperator",
     "TimeLast"
-   ]
+   ],
+   "selectors": {
+    "execute(bytes)": "0x09c5eabe",
+    "executeTyped(address)": "0x240b27e6"
+   }
   },
   "AccountSetPFP": {
    "id": "system.account.set.pfp",
@@ -595,7 +615,11 @@
    "writes": [
     "MediaURI",
     "TimeLast"
-   ]
+   ],
+   "selectors": {
+    "execute(bytes)": "0x09c5eabe",
+    "executeTyped(uint256)": "0x3e991df3"
+   }
   },
   "AccountUseItem": {
    "id": "system.account.use.item",
@@ -622,7 +646,11 @@
     "TimeNext",
     "Type",
     "Value"
-   ]
+   ],
+   "selectors": {
+    "execute(bytes)": "0x09c5eabe",
+    "executeTyped(uint32,uint256)": "0x5c817c70"
+   }
   },
   "AuctionBuy": {
    "id": "system.auction.buy",
@@ -634,7 +662,11 @@
     "IndexItem",
     "TimeLast",
     "Value"
-   ]
+   ],
+   "selectors": {
+    "execute(bytes)": "0x09c5eabe",
+    "executeTyped(uint32,uint32)": "0x276aaa75"
+   }
   },
   "Chat": {
    "id": "system.chat",
@@ -647,7 +679,13 @@
     "TimeLast",
     "Type",
     "Value"
-   ]
+   ],
+   "selectors": {
+    "addRequirement(string,string,uint32,uint256,string)": "0x5da7c2d6",
+    "execute(bytes)": "0x09c5eabe",
+    "executeTyped(string)": "0x765a4b0b",
+    "removeRequirement()": "0x7c9052d2"
+   }
   },
   "Craft": {
    "id": "system.craft",
@@ -661,7 +699,11 @@
     "TimeLast",
     "TimeLastAction",
     "Value"
-   ]
+   ],
+   "selectors": {
+    "execute(bytes)": "0x09c5eabe",
+    "executeTyped(uint32,uint256)": "0x5c817c70"
+   }
   },
   "DroptableReveal": {
    "id": "system.droptable.item.reveal",
@@ -675,21 +717,34 @@
     "IndexItem",
     "Type",
     "Value"
-   ]
+   ],
+   "selectors": {
+    "execute(bytes)": "0x09c5eabe",
+    "executeTyped(uint256[])": "0x72de78c2",
+    "forceReveal(uint256)": "0x265ab676"
+   }
   },
   "EchoKamis": {
    "id": "system.echo.kamis",
    "deployed": true,
    "writes": [
     "Component[by id]"
-   ]
+   ],
+   "selectors": {
+    "execute(bytes)": "0x09c5eabe",
+    "executeTyped()": "0xe1df4ba6"
+   }
   },
   "EchoRoom": {
    "id": "system.echo.room",
    "deployed": true,
    "writes": [
     "IndexRoom"
-   ]
+   ],
+   "selectors": {
+    "execute(bytes)": "0x09c5eabe",
+    "executeTyped()": "0xe1df4ba6"
+   }
   },
   "FriendAccept": {
    "id": "system.friend.accept",
@@ -701,7 +756,11 @@
     "IdTarget",
     "State",
     "TimeLast"
-   ]
+   ],
+   "selectors": {
+    "execute(bytes)": "0x09c5eabe",
+    "executeTyped(uint256)": "0x3e991df3"
+   }
   },
   "FriendBlock": {
    "id": "system.friend.block",
@@ -713,7 +772,11 @@
     "IdTarget",
     "State",
     "TimeLast"
-   ]
+   ],
+   "selectors": {
+    "execute(bytes)": "0x09c5eabe",
+    "executeTyped(address)": "0x240b27e6"
+   }
   },
   "FriendCancel": {
    "id": "system.friend.cancel",
@@ -725,7 +788,11 @@
     "IdTarget",
     "State",
     "TimeLast"
-   ]
+   ],
+   "selectors": {
+    "execute(bytes)": "0x09c5eabe",
+    "executeTyped(uint256)": "0x3e991df3"
+   }
   },
   "FriendRequest": {
    "id": "system.friend.request",
@@ -737,7 +804,11 @@
     "IdTarget",
     "State",
     "TimeLast"
-   ]
+   ],
+   "selectors": {
+    "execute(bytes)": "0x09c5eabe",
+    "executeTyped(address)": "0x240b27e6"
+   }
   },
   "GachaBuyTicket": {
    "id": "system.buy.gacha.ticket",
@@ -748,12 +819,23 @@
     "IndexItem",
     "TimeLast",
     "Value"
-   ]
+   ],
+   "selectors": {
+    "buyPublic(uint256)": "0xc0c8dd07",
+    "buyWL()": "0x5f11df2e",
+    "execute(bytes)": "0x09c5eabe"
+   }
   },
   "Getter": {
    "id": "system.getter",
    "deployed": true,
-   "writes": []
+   "writes": [],
+   "selectors": {
+    "execute(bytes)": "0x09c5eabe",
+    "getAccount(uint256)": "0xce88b145",
+    "getKami(uint256)": "0x1b1e0fc0",
+    "getKamiByIndex(uint32)": "0x83e8abdf"
+   }
   },
   "GoalClaim": {
    "id": "system.goal.claim",
@@ -779,7 +861,11 @@
     "TimeNext",
     "Type",
     "Value"
-   ]
+   ],
+   "selectors": {
+    "execute(bytes)": "0x09c5eabe",
+    "executeTyped(uint32)": "0x09c90324"
+   }
   },
   "GoalContribute": {
    "id": "system.goal.contribute",
@@ -793,7 +879,11 @@
     "IsComplete",
     "TimeLast",
     "Value"
-   ]
+   ],
+   "selectors": {
+    "execute(bytes)": "0x09c5eabe",
+    "executeTyped(uint32,uint256)": "0x5c817c70"
+   }
   },
   "HarvestCollect": {
    "id": "system.harvest.collect",
@@ -813,7 +903,14 @@
     "TimeLast",
     "TimeNext",
     "Value"
-   ]
+   ],
+   "selectors": {
+    "execute(bytes)": "0x09c5eabe",
+    "executeAllowFailure(bytes)": "0xf00c4431",
+    "executeBatched(uint256[])": "0x01929a9f",
+    "executeBatchedAllowFailure(uint256[])": "0xb0fa4458",
+    "executeTyped(uint256)": "0x3e991df3"
+   }
   },
   "HarvestLiquidate": {
    "id": "system.harvest.liquidate",
@@ -834,7 +931,11 @@
     "TimeLast",
     "TimeNext",
     "Value"
-   ]
+   ],
+   "selectors": {
+    "execute(bytes)": "0x09c5eabe",
+    "executeTyped(uint256,uint256)": "0x915657fb"
+   }
   },
   "HarvestStart": {
    "id": "system.harvest.start",
@@ -856,7 +957,12 @@
     "TimeReset",
     "TimeStart",
     "Value"
-   ]
+   ],
+   "selectors": {
+    "execute(bytes)": "0x09c5eabe",
+    "executeBatched(uint256[],uint32,uint256,uint256)": "0x68f37c94",
+    "executeTyped(uint256,uint32,uint256,uint256)": "0xc8372a87"
+   }
   },
   "HarvestStop": {
    "id": "system.harvest.stop",
@@ -877,7 +983,14 @@
     "TimeLast",
     "TimeNext",
     "Value"
-   ]
+   ],
+   "selectors": {
+    "execute(bytes)": "0x09c5eabe",
+    "executeAllowFailure(bytes)": "0xf00c4431",
+    "executeBatched(uint256[])": "0x01929a9f",
+    "executeBatchedAllowFailure(uint256[])": "0xb0fa4458",
+    "executeTyped(uint256)": "0x3e991df3"
+   }
   },
   "ItemBurn": {
    "id": "system.item.burn",
@@ -888,7 +1001,11 @@
     "IndexItem",
     "TimeLast",
     "Value"
-   ]
+   ],
+   "selectors": {
+    "execute(bytes)": "0x09c5eabe",
+    "executeTyped(uint32[],uint256[])": "0x8330e879"
+   }
   },
   "ItemTransfer": {
    "id": "system.item.transfer",
@@ -899,17 +1016,31 @@
     "IndexItem",
     "TimeLast",
     "Value"
-   ]
+   ],
+   "selectors": {
+    "execute(bytes)": "0x09c5eabe",
+    "executeTyped(uint32[],uint256[],uint256)": "0x9032746d"
+   }
   },
   "Kami721IsInWorld": {
    "id": "system.Kami721.IsInWorld",
    "deployed": true,
-   "writes": []
+   "writes": [],
+   "selectors": {
+    "execute(bytes)": "0x09c5eabe",
+    "executeTyped()": "0xe1df4ba6",
+    "isInWorld(uint256)": "0xb5f3365f"
+   }
   },
   "Kami721Metadata": {
    "id": "system.Kami721.Metadata",
    "deployed": true,
-   "writes": []
+   "writes": [],
+   "selectors": {
+    "execute(bytes)": "0x09c5eabe",
+    "executeTyped()": "0xe1df4ba6",
+    "tokenURI(uint256)": "0xc87b56dd"
+   }
   },
   "Kami721Stake": {
    "id": "system.kami721.stake",
@@ -927,12 +1058,22 @@
     "TimeStart",
     "Value",
     "Values"
-   ]
+   ],
+   "selectors": {
+    "execute(bytes)": "0x09c5eabe",
+    "executeBatch(uint32[])": "0x77445aed",
+    "executeTyped(uint32)": "0x09c90324"
+   }
   },
   "Kami721Transfer": {
    "id": "system.kami721.transfer",
    "deployed": true,
-   "writes": []
+   "writes": [],
+   "selectors": {
+    "batchTransfer(uint256[],address)": "0xce40ad86",
+    "batchTransferToMany(uint256[],address[])": "0xebcee357",
+    "execute(bytes)": "0x09c5eabe"
+   }
   },
   "Kami721Unstake": {
    "id": "system.kami721.unstake",
@@ -952,7 +1093,12 @@
     "Time",
     "TimeLast",
     "Value"
-   ]
+   ],
+   "selectors": {
+    "execute(bytes)": "0x09c5eabe",
+    "executeBatch(uint32[])": "0x77445aed",
+    "executeTyped(uint32)": "0x09c90324"
+   }
   },
   "KamiCastItem": {
    "id": "system.kami.cast.item",
@@ -980,7 +1126,11 @@
     "TimeNext",
     "Type",
     "Value"
-   ]
+   ],
+   "selectors": {
+    "execute(bytes)": "0x09c5eabe",
+    "executeTyped(uint256,uint32)": "0xe60f3a76"
+   }
   },
   "KamiEquip": {
    "id": "system.kami.equip",
@@ -998,7 +1148,11 @@
     "Time",
     "TimeLast",
     "Value"
-   ]
+   ],
+   "selectors": {
+    "execute(bytes)": "0x09c5eabe",
+    "executeTyped(uint256,uint32)": "0xe60f3a76"
+   }
   },
   "KamiGachaMint": {
    "id": "system.kami.gacha.mint",
@@ -1030,7 +1184,11 @@
     "Type",
     "Value",
     "Violence"
-   ]
+   ],
+   "selectors": {
+    "execute(bytes)": "0x09c5eabe",
+    "executeTyped(uint256)": "0x3e991df3"
+   }
   },
   "KamiGachaReroll": {
    "id": "system.kami.gacha.reroll",
@@ -1053,7 +1211,11 @@
     "TimeLast",
     "Type",
     "Value"
-   ]
+   ],
+   "selectors": {
+    "execute(bytes)": "0x09c5eabe",
+    "reroll(uint256[])": "0xc32ffe1b"
+   }
   },
   "KamiGachaReveal": {
    "id": "system.kami.gacha.reveal",
@@ -1064,7 +1226,12 @@
     "IdHolder",
     "Reroll",
     "Value"
-   ]
+   ],
+   "selectors": {
+    "execute(bytes)": "0x09c5eabe",
+    "forceReveal(uint256[])": "0x02d9e4af",
+    "reveal(uint256[])": "0xb93f208a"
+   }
   },
   "KamiLevel": {
    "id": "system.kami.level",
@@ -1076,7 +1243,11 @@
     "SkillPoint",
     "TimeLast",
     "Value"
-   ]
+   ],
+   "selectors": {
+    "execute(bytes)": "0x09c5eabe",
+    "executeTyped(uint256)": "0x3e991df3"
+   }
   },
   "KamiMarketAcceptOffer": {
    "id": "system.kamimarket.acceptoffer",
@@ -1105,7 +1276,12 @@
     "TimeStart",
     "Value",
     "Values"
-   ]
+   ],
+   "selectors": {
+    "execute(bytes)": "0x09c5eabe",
+    "executeTyped(uint256,uint32)": "0xe60f3a76",
+    "executeTyped(uint256,uint32[])": "0x46abd2a3"
+   }
   },
   "KamiMarketBuy": {
    "id": "system.kamimarket.buy",
@@ -1134,7 +1310,11 @@
     "TimeStart",
     "Value",
     "Values"
-   ]
+   ],
+   "selectors": {
+    "execute(bytes)": "0x09c5eabe",
+    "executeTyped(uint256[])": "0x72de78c2"
+   }
   },
   "KamiMarketCancel": {
    "id": "system.kamimarket.cancel",
@@ -1151,7 +1331,12 @@
     "TimeStart",
     "Value",
     "Values"
-   ]
+   ],
+   "selectors": {
+    "execute(bytes)": "0x09c5eabe",
+    "executeAdmin(uint256[])": "0xa781e655",
+    "executeTyped(uint256)": "0x3e991df3"
+   }
   },
   "KamiMarketList": {
    "id": "system.kamimarket.list",
@@ -1175,7 +1360,11 @@
     "TimeStart",
     "Value",
     "Values"
-   ]
+   ],
+   "selectors": {
+    "execute(bytes)": "0x09c5eabe",
+    "executeTyped(uint32,uint256,uint256)": "0x21580eda"
+   }
   },
   "KamiMarketOffer": {
    "id": "system.kamimarket.offer",
@@ -1191,7 +1380,12 @@
     "TimeLast",
     "TimeStart",
     "Value"
-   ]
+   ],
+   "selectors": {
+    "execute(bytes)": "0x09c5eabe",
+    "executeTypedCollection(uint256,uint32,uint256)": "0x70aca40d",
+    "executeTypedOffer(uint32,uint256,uint256)": "0x4c967b83"
+   }
   },
   "KamiName": {
    "id": "system.kami.name",
@@ -1203,7 +1397,11 @@
     "Name",
     "TimeLast",
     "Value"
-   ]
+   ],
+   "selectors": {
+    "execute(bytes)": "0x09c5eabe",
+    "executeTyped(uint256,string)": "0x68c47df2"
+   }
   },
   "KamiOnyxRename": {
    "id": "system.kami.onyx.rename",
@@ -1216,6 +1414,10 @@
     "TimeLast",
     "Value"
    ],
+   "selectors": {
+    "execute(bytes)": "0x09c5eabe",
+    "executeTyped(uint256,string)": "0x68c47df2"
+   },
    "disabled": "Onyx Features are temporarily disabled."
   },
   "KamiOnyxRespec": {
@@ -1236,6 +1438,10 @@
     "TimeLast",
     "Value"
    ],
+   "selectors": {
+    "execute(bytes)": "0x09c5eabe",
+    "executeTyped(uint256)": "0x3e991df3"
+   },
    "disabled": "Onyx Features are temporarily disabled."
   },
   "KamiOnyxRevive": {
@@ -1249,7 +1455,11 @@
     "State",
     "TimeLast",
     "Value"
-   ]
+   ],
+   "selectors": {
+    "execute(bytes)": "0x09c5eabe",
+    "executeTyped(uint256)": "0x3e991df3"
+   }
   },
   "KamiSacrificeCommit": {
    "id": "system.kami.sacrifice.commit",
@@ -1273,7 +1483,11 @@
     "TimeLast",
     "Type",
     "Value"
-   ]
+   ],
+   "selectors": {
+    "execute(bytes)": "0x09c5eabe",
+    "executeTyped(uint32)": "0x09c90324"
+   }
   },
   "KamiSacrificeReveal": {
    "id": "system.kami.sacrifice.reveal",
@@ -1286,7 +1500,12 @@
     "IndexItem",
     "TimeLast",
     "Value"
-   ]
+   ],
+   "selectors": {
+    "execute(bytes)": "0x09c5eabe",
+    "executeTyped(uint256)": "0x3e991df3",
+    "executeTypedBatch(uint256[])": "0x4b9338a7"
+   }
   },
   "KamiSend": {
    "id": "system.kami.send",
@@ -1315,7 +1534,12 @@
     "TimeStart",
     "Value",
     "Values"
-   ]
+   ],
+   "selectors": {
+    "execute(bytes)": "0x09c5eabe",
+    "executeTyped(uint32,address)": "0x72b0fa5f",
+    "executeTyped(uint32[],address)": "0xcebb631d"
+   }
   },
   "KamiUnequip": {
    "id": "system.kami.unequip",
@@ -1333,7 +1557,11 @@
     "Time",
     "TimeLast",
     "Value"
-   ]
+   ],
+   "selectors": {
+    "execute(bytes)": "0x09c5eabe",
+    "executeTyped(uint256,string)": "0x68c47df2"
+   }
   },
   "KamiUseItem": {
    "id": "system.kami.use.item",
@@ -1360,7 +1588,11 @@
     "TimeReset",
     "Type",
     "Value"
-   ]
+   ],
+   "selectors": {
+    "execute(bytes)": "0x09c5eabe",
+    "executeTyped(uint256,uint32)": "0xe60f3a76"
+   }
   },
   "ListingBuy": {
    "id": "system.listing.buy",
@@ -1375,7 +1607,11 @@
     "TimeLast",
     "TimeStart",
     "Value"
-   ]
+   ],
+   "selectors": {
+    "execute(bytes)": "0x09c5eabe",
+    "executeTyped(uint32,uint32[],uint32[])": "0x7c3f45fb"
+   }
   },
   "ListingSell": {
    "id": "system.listing.sell",
@@ -1387,7 +1623,11 @@
     "IndexItem",
     "TimeLast",
     "Value"
-   ]
+   ],
+   "selectors": {
+    "execute(bytes)": "0x09c5eabe",
+    "executeTyped(uint32,uint32[],uint32[])": "0x7c3f45fb"
+   }
   },
   "NewbieVendorBuy": {
    "id": "system.newbievendor.buy",
@@ -1398,7 +1638,12 @@
     "TimeLast",
     "Value",
     "Values"
-   ]
+   ],
+   "selectors": {
+    "calcPrice()": "0xd98c4408",
+    "execute(bytes)": "0x09c5eabe",
+    "executeTyped(uint32)": "0x09c90324"
+   }
   },
   "Pool": {
    "id": "system.pool",
@@ -1411,7 +1656,13 @@
     "IndexItem",
     "TimeLast",
     "Value"
-   ]
+   ],
+   "selectors": {
+    "addLiquidity(uint32,uint32,uint256,uint256,uint256,uint256)": "0xffb80b03",
+    "execute(bytes)": "0x09c5eabe",
+    "removeLiquidity(uint32,uint32,uint256,uint256,uint256)": "0x68d6ac09",
+    "swap(uint32,uint32,uint256,uint256)": "0x4a4f0718"
+   }
   },
   "QuestAccept": {
    "id": "system.quest.accept",
@@ -1425,7 +1676,11 @@
     "TimeLast",
     "TimeStart",
     "Value"
-   ]
+   ],
+   "selectors": {
+    "execute(bytes)": "0x09c5eabe",
+    "executeTyped(uint32)": "0x09c90324"
+   }
   },
   "QuestComplete": {
    "id": "system.quest.complete",
@@ -1451,7 +1706,11 @@
     "TimeNext",
     "Type",
     "Value"
-   ]
+   ],
+   "selectors": {
+    "execute(bytes)": "0x09c5eabe",
+    "executeTyped(uint256)": "0x3e991df3"
+   }
   },
   "QuestDrop": {
    "id": "system.quest.drop",
@@ -1464,7 +1723,11 @@
     "TimeLast",
     "TimeStart",
     "Value"
-   ]
+   ],
+   "selectors": {
+    "execute(bytes)": "0x09c5eabe",
+    "executeTyped(uint256)": "0x3e991df3"
+   }
   },
   "RelationshipAdvance": {
    "id": "system.relationship.advance",
@@ -1475,7 +1738,11 @@
     "IndexNPC",
     "IndexRelationship",
     "TimeLast"
-   ]
+   ],
+   "selectors": {
+    "execute(bytes)": "0x09c5eabe",
+    "executeTyped(uint32,uint32)": "0x276aaa75"
+   }
   },
   "ScavengeClaim": {
    "id": "system.scavenge.claim",
@@ -1500,7 +1767,11 @@
     "TimeNext",
     "Type",
     "Value"
-   ]
+   ],
+   "selectors": {
+    "execute(bytes)": "0x09c5eabe",
+    "executeTyped(uint256)": "0x3e991df3"
+   }
   },
   "SkillRespec": {
    "id": "system.skill.respec",
@@ -1528,7 +1799,11 @@
     "TimeNext",
     "Type",
     "Value"
-   ]
+   ],
+   "selectors": {
+    "execute(bytes)": "0x09c5eabe",
+    "executeTyped(uint256)": "0x3e991df3"
+   }
   },
   "SkillUpgrade": {
    "id": "system.skill.upgrade",
@@ -1546,7 +1821,11 @@
     "Time",
     "TimeLast",
     "Value"
-   ]
+   ],
+   "selectors": {
+    "execute(bytes)": "0x09c5eabe",
+    "executeTyped(uint256,uint32)": "0xe60f3a76"
+   }
   },
   "TokenPortal": {
    "id": "system.erc20.portal",
@@ -1566,7 +1845,23 @@
     "TokenAddress",
     "TokenAllowance",
     "Value"
-   ]
+   ],
+   "selectors": {
+    "adminCancel(uint256)": "0x2a628e83",
+    "adminPause(uint256)": "0x2692c59f",
+    "adminToggleEnabled(bool)": "0x2e8c210e",
+    "adminUnpause(uint256)": "0x25fc00f0",
+    "cancel(uint256)": "0x40e58ee5",
+    "claim(uint256)": "0x379607f5",
+    "deposit(uint32,uint256)": "0xaaf10398",
+    "execute(bytes)": "0x09c5eabe",
+    "initItem(uint32)": "0xe83e407f",
+    "setItem(uint32,address,int32)": "0x21321390",
+    "setLaneItem(uint32,bool)": "0x87a05a58",
+    "unsetItem(uint32)": "0x7f17d8f5",
+    "withdraw(uint32,uint256)": "0x0e19dc3a",
+    "withdrawToOperator(uint32,uint256)": "0x8b39e1a0"
+   }
   },
   "TradeCancel": {
    "id": "system.trade.cancel",
@@ -1582,7 +1877,12 @@
     "TimeLast",
     "Value",
     "Values"
-   ]
+   ],
+   "selectors": {
+    "execute(bytes)": "0x09c5eabe",
+    "executeAdmin(uint256[])": "0xa781e655",
+    "executeTyped(uint256)": "0x3e991df3"
+   }
   },
   "TradeComplete": {
    "id": "system.trade.complete",
@@ -1598,7 +1898,12 @@
     "TimeLast",
     "Value",
     "Values"
-   ]
+   ],
+   "selectors": {
+    "execute(bytes)": "0x09c5eabe",
+    "executeAdmin(uint256[])": "0xa781e655",
+    "executeTyped(uint256)": "0x3e991df3"
+   }
   },
   "TradeCreate": {
    "id": "system.trade.create",
@@ -1614,7 +1919,11 @@
     "TimeLast",
     "Value",
     "Values"
-   ]
+   ],
+   "selectors": {
+    "execute(bytes)": "0x09c5eabe",
+    "executeTyped(uint32[],uint256[],uint32[],uint256[],uint256)": "0x34d8e3a1"
+   }
   },
   "TradeExecute": {
    "id": "system.trade.execute",
@@ -1627,19 +1936,30 @@
     "State",
     "TimeLast",
     "Value"
-   ]
+   ],
+   "selectors": {
+    "execute(bytes)": "0x09c5eabe",
+    "executeTyped(uint256)": "0x3e991df3"
+   }
   },
   "_721BatchMinter": {
    "id": "system.Kami721.BatchMint",
    "deployed": true,
-   "writes": []
+   "writes": [],
+   "selectors": {
+    "_getTraitStats(uint256)": "0xc4908186"
+   }
   },
   "_AdminSetFlag": {
    "id": "system.admin.set.flag",
    "deployed": true,
    "writes": [
     "HasFlag"
-   ]
+   ],
+   "selectors": {
+    "execute(bytes)": "0x09c5eabe",
+    "executeTyped(uint256[],string,bool)": "0xbd0bfeb2"
+   }
   },
   "_AuctionRegistry": {
    "id": "system.auction.registry",
@@ -1660,7 +1980,13 @@
     "TimeStart",
     "Type",
     "Value"
-   ]
+   ],
+   "selectors": {
+    "addRequirement(uint32,string,string,uint32,uint256,string)": "0x1576edcb",
+    "create(uint32,uint32,uint32,int32,int32,int32,int32,uint256)": "0x1b49ba87",
+    "execute(bytes)": "0x09c5eabe",
+    "remove(uint32)": "0x00d84fd8"
+   }
   },
   "_AuthManageRole": {
    "id": "system.auth.registry",
@@ -1670,14 +1996,28 @@
     "IDOwnsFlag",
     "IDType",
     "Type"
-   ]
+   ],
+   "selectors": {
+    "addRole(address,string)": "0x7d72aa65",
+    "execute(bytes)": "0x09c5eabe",
+    "removeRole(address,string)": "0x1bfe0308"
+   }
   },
   "_ConfigSet": {
    "id": "system.config.registry",
    "deployed": true,
    "writes": [
     "Value"
-   ]
+   ],
+   "selectors": {
+    "execute(bytes)": "0x09c5eabe",
+    "executeTyped(string,uint256)": "0x92976665",
+    "setValue(string,uint256)": "0x7c2da7aa",
+    "setValueAddress(string,address)": "0x1bb4b8e3",
+    "setValueArray(string,uint32[8])": "0x348984f3",
+    "setValueBool(string,bool)": "0xa83c6932",
+    "setValueString(string,string)": "0xab7d4d8c"
+   }
   },
   "_DistributeItem": {
    "id": "system.distribute.item",
@@ -1687,7 +2027,11 @@
     "IDOwnsInventory",
     "IndexItem",
     "Value"
-   ]
+   ],
+   "selectors": {
+    "execute(bytes)": "0x09c5eabe",
+    "executeTyped(address[],uint32,uint256[])": "0xd84c4975"
+   }
   },
   "_FactionRegistry": {
    "id": "system.faction.registry",
@@ -1699,7 +2043,12 @@
     "IsRegistry",
     "MediaURI",
     "Name"
-   ]
+   ],
+   "selectors": {
+    "create(bytes)": "0xcf5ba53f",
+    "execute(bytes)": "0x09c5eabe",
+    "remove(uint32)": "0x00d84fd8"
+   }
   },
   "_GoalRegistry": {
    "id": "system.goal.registry",
@@ -1723,7 +2072,19 @@
     "Type",
     "Value",
     "Weights"
-   ]
+   ],
+   "selectors": {
+    "addRequirement(bytes)": "0x7e534103",
+    "addRewardBasic(bytes)": "0x510b8052",
+    "addRewardDT(bytes)": "0x720c2ed5",
+    "addRewardDisplay(bytes)": "0xb47fc7ad",
+    "addRewardStat(bytes)": "0x071657f0",
+    "create(bytes)": "0xcf5ba53f",
+    "execute(bytes)": "0x09c5eabe",
+    "remove(uint32)": "0x00d84fd8",
+    "removeRewards(uint32)": "0x629c5fe0",
+    "setDisabled(uint32,bool)": "0x564eb313"
+   }
   },
   "_HarvestAdmin": {
    "id": "system.harvest.admin",
@@ -1739,7 +2100,12 @@
     "TimeLast",
     "TimeNext",
     "Value"
-   ]
+   ],
+   "selectors": {
+    "execute(bytes)": "0x09c5eabe",
+    "stop(uint32)": "0x789ae24f",
+    "stopBatched(uint32[])": "0x01ef75e0"
+   }
   },
   "_ItemRegistry": {
    "id": "system.item.registry",
@@ -1775,7 +2141,23 @@
     "Value",
     "Violence",
     "Weights"
-   ]
+   ],
+   "selectors": {
+    "addAlloBasic(bytes)": "0xb39bdf22",
+    "addAlloBonus(bytes)": "0xeb04c569",
+    "addAlloDT(bytes)": "0x59ce910b",
+    "addAlloStat(bytes)": "0xb452abd4",
+    "addFlag(uint32,string)": "0x06cc1c38",
+    "addRequirement(bytes)": "0x7e534103",
+    "create(bytes)": "0xcf5ba53f",
+    "createConsumable(bytes)": "0xe96e3836",
+    "disable(uint32)": "0x3fbd60f4",
+    "enable(uint32)": "0xaea6c198",
+    "execute(bytes)": "0x09c5eabe",
+    "remove(uint32)": "0x00d84fd8",
+    "setRarity(bytes)": "0xe5d96e6b",
+    "setSlot(uint32,string)": "0x5cbf4483"
+   }
   },
   "_KamiMarketRegistry": {
    "id": "system.kamimarket.registry",
@@ -1783,7 +2165,16 @@
    "writes": [
     "Value",
     "Values"
-   ]
+   ],
+   "selectors": {
+    "execute(bytes)": "0x09c5eabe",
+    "rebuildListingIndex(uint256[])": "0x0c1b3835",
+    "setEnabled(bool)": "0x328d8f72",
+    "setFeeRate(uint32[8])": "0x50a2df2f",
+    "setFeeRecipient(address)": "0xe74b981b",
+    "setPurchaseCooldown(uint256)": "0x74baa131",
+    "setVault(address)": "0x6817031b"
+   }
   },
   "_ListingRegistry": {
    "id": "system.listing.registry",
@@ -1805,7 +2196,19 @@
     "TimeStart",
     "Type",
     "Value"
-   ]
+   ],
+   "selectors": {
+    "addRequirement(bytes)": "0x7e534103",
+    "create(bytes)": "0xcf5ba53f",
+    "execute(bytes)": "0x09c5eabe",
+    "remove(uint32,uint32)": "0x31f3666c",
+    "removeBuy(uint32,uint32)": "0x86477dd5",
+    "removeSell(uint32,uint32)": "0xb2ba303a",
+    "setBuyFixed(uint32,uint32)": "0x4ebee436",
+    "setBuyGDA(uint32,uint32,int32,int32,int32,bool)": "0xc6e851a3",
+    "setSellFixed(uint32,uint32)": "0x36a8a6f4",
+    "setSellScaled(uint32,uint32,int32)": "0xcb868db8"
+   }
   },
   "_NPCRegistry": {
    "id": "system.npc.registry",
@@ -1815,7 +2218,13 @@
     "IndexNPC",
     "IndexRoom",
     "Name"
-   ]
+   ],
+   "selectors": {
+    "create(bytes)": "0xcf5ba53f",
+    "execute(bytes)": "0x09c5eabe",
+    "setName(uint32,string)": "0x996d6225",
+    "setRoom(uint32,uint32)": "0x96a2c1d3"
+   }
   },
   "_NewbieVendorRegistry": {
    "id": "system.newbievendor.registry",
@@ -1824,7 +2233,18 @@
     "TimeStart",
     "Value",
     "Values"
-   ]
+   ],
+   "selectors": {
+    "addToPool(uint256[])": "0xa2f774e0",
+    "execute(bytes)": "0x09c5eabe",
+    "initTWAP(uint256)": "0x9cced066",
+    "setCycleDuration(uint256)": "0x8cc23934",
+    "setEnabled(bool)": "0x328d8f72",
+    "setMinPrice(uint256)": "0x5ea8cd12",
+    "setPool(uint256[])": "0xe0b7dcf4",
+    "setTWAPWindow(uint256)": "0x068d4825",
+    "setVendorAddress(address)": "0xd91376f3"
+   }
   },
   "_NodeRegistry": {
    "id": "system.node.registry",
@@ -1849,7 +2269,18 @@
     "Type",
     "Value",
     "Weights"
-   ]
+   ],
+   "selectors": {
+    "addBonus(bytes)": "0x2029afd6",
+    "addRequirement(bytes)": "0x7e534103",
+    "addScavRewardBasic(bytes)": "0xcffc49de",
+    "addScavRewardDT(bytes)": "0x080e18d5",
+    "addScavenge(uint32,uint256)": "0xdea6f5e8",
+    "create(bytes)": "0xcf5ba53f",
+    "execute(bytes)": "0x09c5eabe",
+    "remove(uint32)": "0x00d84fd8",
+    "removeScavenge(uint32)": "0x593cf789"
+   }
   },
   "_PoolRegistry": {
    "id": "system.pool.registry",
@@ -1865,7 +2296,15 @@
     "Rate",
     "TimeStart",
     "Value"
-   ]
+   ],
+   "selectors": {
+    "create(uint32,uint32,uint256,uint256,uint256)": "0x8da607ee",
+    "donate(uint32,uint32,uint256,uint256)": "0xf7d3082c",
+    "execute(bytes)": "0x09c5eabe",
+    "remove(uint32,uint32)": "0x31f3666c",
+    "setDisabled(uint32,uint32,bool)": "0x249d80c5",
+    "setFee(uint32,uint32,uint256)": "0xbb18a9bd"
+   }
   },
   "_QuestRegistry": {
    "id": "system.quest.registry",
@@ -1892,7 +2331,18 @@
     "Type",
     "Value",
     "Weights"
-   ]
+   ],
+   "selectors": {
+    "addObjective(bytes)": "0x796c272f",
+    "addRequirement(bytes)": "0x7e534103",
+    "addRewardBasic(bytes)": "0x510b8052",
+    "addRewardDT(bytes)": "0x720c2ed5",
+    "addRewardStat(bytes)": "0x071657f0",
+    "create(bytes)": "0xcf5ba53f",
+    "execute(bytes)": "0x09c5eabe",
+    "remove(uint32)": "0x00d84fd8",
+    "setDisabled(uint32,bool)": "0x564eb313"
+   }
   },
   "_RecipeRegistry": {
    "id": "system.recipe.registry",
@@ -1911,7 +2361,13 @@
     "Type",
     "Value",
     "Values"
-   ]
+   ],
+   "selectors": {
+    "addRequirement(uint32,string,string,uint32,uint32,string)": "0x51e12765",
+    "create(bytes)": "0xcf5ba53f",
+    "execute(bytes)": "0x09c5eabe",
+    "remove(uint32)": "0x00d84fd8"
+   }
   },
   "_RelationshipRegistry": {
    "id": "system.relationship.registry",
@@ -1924,7 +2380,13 @@
     "IsRegistry",
     "Name",
     "Whitelist"
-   ]
+   ],
+   "selectors": {
+    "create(bytes)": "0xcf5ba53f",
+    "execute(bytes)": "0x09c5eabe",
+    "remove(uint32,uint32)": "0x31f3666c",
+    "update(bytes)": "0xc43ed2c8"
+   }
   },
   "_RoomRegistry": {
    "id": "system.room.registry",
@@ -1948,7 +2410,15 @@
     "Name",
     "Type",
     "Value"
-   ]
+   ],
+   "selectors": {
+    "addFlag(uint32,string)": "0x06cc1c38",
+    "addGate(bytes)": "0x8f59323c",
+    "create(bytes)": "0xcf5ba53f",
+    "execute(bytes)": "0x09c5eabe",
+    "remove(uint32)": "0x00d84fd8",
+    "setTexts(uint32,string,string)": "0xbc50578f"
+   }
   },
   "_SacrificeRegistry": {
    "id": "system.sacrifice.registry",
@@ -1956,7 +2426,14 @@
    "writes": [
     "Keys",
     "Weights"
-   ]
+   ],
+   "selectors": {
+    "execute(bytes)": "0x09c5eabe",
+    "setAllDroptables(uint32[],uint256[],uint32[],uint256[],uint32[],uint256[])": "0x7f7d6a76",
+    "setNormalDroptable(uint32[],uint256[])": "0x3070b927",
+    "setRarePityDroptable(uint32[],uint256[])": "0x24997b09",
+    "setUncommonPityDroptable(uint32[],uint256[])": "0x22b3a2d3"
+   }
   },
   "_SkillRegistry": {
    "id": "system.skill.registry",
@@ -1980,7 +2457,14 @@
     "Time",
     "Type",
     "Value"
-   ]
+   ],
+   "selectors": {
+    "addBonus(bytes)": "0x2029afd6",
+    "addRequirement(bytes)": "0x7e534103",
+    "create(bytes)": "0xcf5ba53f",
+    "execute(bytes)": "0x09c5eabe",
+    "remove(uint32)": "0x00d84fd8"
+   }
   },
   "_SnapshotT2": {
    "id": "system.setup.snapshot.t2",
@@ -1990,7 +2474,11 @@
     "IDOwnsInventory",
     "IndexItem",
     "Value"
-   ]
+   ],
+   "selectors": {
+    "dropKillRewards(bytes)": "0x97f2d0bb",
+    "execute(bytes)": "0x09c5eabe"
+   }
   },
   "_TraitRegistry": {
    "id": "system.trait.registry",
@@ -2012,21 +2500,34 @@
     "Rarity",
     "Slots",
     "Violence"
-   ]
+   ],
+   "selectors": {
+    "create(bytes)": "0xcf5ba53f",
+    "execute(bytes)": "0x09c5eabe",
+    "remove(uint32,string)": "0xed1fa0cb"
+   }
   },
   "_TriggerCompEvent": {
    "id": "system.test.comp.event",
    "deployed": true,
    "writes": [
     "TimeStart"
-   ]
+   ],
+   "selectors": {
+    "execute(bytes)": "0x09c5eabe",
+    "executeTyped()": "0xe1df4ba6"
+   }
   },
   "_WorldWhitelist": {
    "id": "system.world.whitelist.set",
    "deployed": true,
    "writes": [
     "HasFlag"
-   ]
+   ],
+   "selectors": {
+    "execute(bytes)": "0x09c5eabe",
+    "whitelist(address)": "0x9b19251a"
+   }
   }
  },
  "framework_components": {

@@ -5,6 +5,13 @@ _PoolRegistry:
   comment: "create or manage a constant-product Pool between two fungible items NOTE: reserves are supplied from the calling admin's own inventory (never minted); the initial shares are locked to the pool itself so supply/reserves can never fully drain"
   args: "bytes arguments"
   entry_points: [create, donate, setFee, setDisabled, remove, execute]
+  selectors:
+    "create(uint32,uint32,uint256,uint256,uint256)": "0x8da607ee"
+    "donate(uint32,uint32,uint256,uint256)": "0xf7d3082c"
+    "execute(bytes)": "0x09c5eabe"
+    "remove(uint32,uint32)": "0x31f3666c"
+    "setDisabled(uint32,uint32,bool)": "0x249d80c5"
+    "setFee(uint32,uint32,uint256)": "0xbb18a9bd"
   deployed: true
   writes: [EntityType, IDOwnsInventory, IDType, IdHolder, IndexItem, IsDisabled, Keys, Rate, TimeStart, Value]
   reads: [HasFlag]

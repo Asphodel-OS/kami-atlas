@@ -5,6 +5,9 @@ KamiMarketBuy:
   comment: "@notice Buy listing(s) with ETH — batch support, all-or-nothing"
   args: "uint256[] listingIDs"
   entry_points: [execute, executeTyped]
+  selectors:
+    "execute(bytes)": "0x09c5eabe"
+    "executeTyped(uint256[])": "0x72de78c2"
   deployed: true
   writes:
     - Balance

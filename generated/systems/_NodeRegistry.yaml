@@ -5,6 +5,16 @@ _NodeRegistry:
   comment: "create a Node as specified"
   args: "bytes arguments"
   entry_points: [create, remove, addBonus, addRequirement, addScavenge, addScavRewardBasic, addScavRewardDT, removeScavenge, execute]
+  selectors:
+    "addBonus(bytes)": "0x2029afd6"
+    "addRequirement(bytes)": "0x7e534103"
+    "addScavRewardBasic(bytes)": "0xcffc49de"
+    "addScavRewardDT(bytes)": "0x080e18d5"
+    "addScavenge(uint32,uint256)": "0xdea6f5e8"
+    "create(bytes)": "0xcf5ba53f"
+    "execute(bytes)": "0x09c5eabe"
+    "remove(uint32)": "0x00d84fd8"
+    "removeScavenge(uint32)": "0x593cf789"
   deployed: true
   writes: [Affinity, Description, EntityType, For, IDAnchor, IdSource, Index, IndexItem, IndexNode, IndexRoom, IsRegistry, Keys, LogicType, Name, Subtype, Time, Type, Value, Weights]
   write_access: "*"

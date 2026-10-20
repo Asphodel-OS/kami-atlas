@@ -6,6 +6,9 @@ KamiOnyxRevive:
   args: "uint256 id"
   entry_points: [execute]
   also: [executeTyped]
+  selectors:
+    "execute(bytes)": "0x09c5eabe"
+    "executeTyped(uint256)": "0x3e991df3"
   deployed: true
   writes: [EntityType, Health, IDOwnsInventory, IndexItem, State, TimeLast, Value]
   reads: [Affinity, CacheOperator, Harmony, IDOwnsKami, IdSource, Level, Power, Slots, Stamina, TimeReset, Violence]

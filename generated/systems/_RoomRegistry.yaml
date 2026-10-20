@@ -5,6 +5,13 @@ _RoomRegistry:
   comment: "create a room within the world"
   args: "bytes arguments"
   entry_points: [create, setTexts, addGate, addFlag, remove, execute]
+  selectors:
+    "addFlag(uint32,string)": "0x06cc1c38"
+    "addGate(bytes)": "0x8f59323c"
+    "create(bytes)": "0xcf5ba53f"
+    "execute(bytes)": "0x09c5eabe"
+    "remove(uint32)": "0x00d84fd8"
+    "setTexts(uint32,string,string)": "0xbc50578f"
   deployed: true
   writes: [Description, EntityType, Exits, For, HasFlag, IDAnchor, IDFrom, IDOwnsFlag, IDTo, IDType, IdSource, Index, IndexRoom, Location, LogicType, Name, Type, Value]
   flags: [ROOM]

@@ -4,6 +4,12 @@ _SkillRegistry:
   file: src/systems/_SkillRegistrySystem.sol
   args: "bytes arguments"
   entry_points: [create, addBonus, addRequirement, remove, execute]
+  selectors:
+    "addBonus(bytes)": "0x2029afd6"
+    "addRequirement(bytes)": "0x7e534103"
+    "create(bytes)": "0xcf5ba53f"
+    "execute(bytes)": "0x09c5eabe"
+    "remove(uint32)": "0x00d84fd8"
   deployed: true
   writes: [Cost, Description, EntityType, For, IDAnchor, IdSource, Index, IndexSkill, IsRegistry, Level, LogicType, Max, MediaURI, Name, Subtype, Time, Type, Value]
   write_access: "*"

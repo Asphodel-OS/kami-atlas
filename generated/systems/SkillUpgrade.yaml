@@ -6,6 +6,9 @@ SkillUpgrade:
   args: "uint256 holderID, uint32 skillIndex"
   entry_points: [execute]
   also: [executeTyped]
+  selectors:
+    "execute(bytes)": "0x09c5eabe"
+    "executeTyped(uint256,uint32)": "0xe60f3a76"
   deployed: true
   writes: [EntityType, Health, IDAnchor, IDOwnsSkill, IDType, IdSource, IndexSkill, Level, SkillPoint, Time, TimeLast, Value]
   reads: [Affinity, CacheOperator, For, Harmony, HasFlag, IDOwnsKami, Index, IndexRoom, IsComplete, LogicType, Power, Slots, Stamina, State, Subtype, TimeNext, TimeReset, Type, Violence]

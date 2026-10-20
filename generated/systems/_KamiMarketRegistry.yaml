@@ -5,6 +5,14 @@ _KamiMarketRegistry:
   comment: "@notice Admin — set fee rates, vault address, enable/disable"
   args: "bytes "
   entry_points: [execute, setFeeRate, rebuildListingIndex, setFeeRecipient, setVault, setEnabled, setPurchaseCooldown]
+  selectors:
+    "execute(bytes)": "0x09c5eabe"
+    "rebuildListingIndex(uint256[])": "0x0c1b3835"
+    "setEnabled(bool)": "0x328d8f72"
+    "setFeeRate(uint32[8])": "0x50a2df2f"
+    "setFeeRecipient(address)": "0xe74b981b"
+    "setPurchaseCooldown(uint256)": "0x74baa131"
+    "setVault(address)": "0x6817031b"
   deployed: true
   writes: [Value, Values]
   reads: [EntityType, State]

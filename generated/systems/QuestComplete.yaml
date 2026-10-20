@@ -5,6 +5,9 @@ QuestComplete:
   args: "uint256 id"
   entry_points: [execute]
   also: [executeTyped]
+  selectors:
+    "execute(bytes)": "0x09c5eabe"
+    "executeTyped(uint256)": "0x3e991df3"
   deployed: true
   writes:
     - BlockReveal

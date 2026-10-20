@@ -6,6 +6,9 @@ FriendBlock:
   args: "address addr"
   entry_points: [execute]
   also: [executeTyped]
+  selectors:
+    "execute(bytes)": "0x09c5eabe"
+    "executeTyped(address)": "0x240b27e6"
   deployed: true
   writes: [EntityType, IDAnchor, IdSource, IdTarget, State, TimeLast]
   reads: [CacheOperator]

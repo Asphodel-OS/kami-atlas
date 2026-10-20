@@ -5,6 +5,9 @@ TradeCreate:
   args: "uint32[] buyIndices, uint256[] buyAmts, uint32[] sellIndices, uint256[] sellAmts, uint256 targetID"
   entry_points: [execute]
   also: [executeTyped]
+  selectors:
+    "execute(bytes)": "0x09c5eabe"
+    "executeTyped(uint32[],uint256[],uint32[],uint256[],uint256)": "0x34d8e3a1"
   deployed: true
   writes: [EntityType, IDOwnsInventory, IDOwnsTrade, IdTarget, IndexItem, Keys, State, TimeLast, Value, Values]
   reads: [HasFlag, IndexRoom]

@@ -5,6 +5,11 @@ _NPCRegistry:
   comment: "create a NPC as specified"
   args: "bytes arguments"
   entry_points: [create, setName, setRoom, execute]
+  selectors:
+    "create(bytes)": "0xcf5ba53f"
+    "execute(bytes)": "0x09c5eabe"
+    "setName(uint32,string)": "0x996d6225"
+    "setRoom(uint32,uint32)": "0x96a2c1d3"
   deployed: true
   writes: [EntityType, IndexNPC, IndexRoom, Name]
   steps:

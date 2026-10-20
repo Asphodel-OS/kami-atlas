@@ -6,6 +6,12 @@ HarvestCollect:
   args: "uint256 id"
   entry_points: [execute, executeAllowFailure, executeBatchedAllowFailure]
   also: [executeBatched, executeTyped]
+  selectors:
+    "execute(bytes)": "0x09c5eabe"
+    "executeAllowFailure(bytes)": "0xf00c4431"
+    "executeBatched(uint256[])": "0x01929a9f"
+    "executeBatchedAllowFailure(uint256[])": "0xb0fa4458"
+    "executeTyped(uint256)": "0x3e991df3"
   deployed: true
   writes: [EntityType, Experience, Health, IDAnchor, IDOwnsInventory, IDType, IdHolder, IdSource, IndexItem, Level, Time, TimeLast, TimeNext, Value]
   reads: [Affinity, CacheOperator, Harmony, IDOwnsKami, IdTarget, IndexRoom, Power, Slots, Stamina, State, TimeReset, TokenAddress, Violence]

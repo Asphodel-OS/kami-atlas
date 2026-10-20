@@ -4,6 +4,9 @@ EchoRoom:
   file: src/systems/EchoRoomSystem.sol
   entry_points: [execute]
   also: [executeTyped]
+  selectors:
+    "execute(bytes)": "0x09c5eabe"
+    "executeTyped()": "0xe1df4ba6"
   deployed: true
   writes: [IndexRoom]
   reads: [CacheOperator]

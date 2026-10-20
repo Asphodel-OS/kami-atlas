@@ -6,6 +6,9 @@ ListingSell:
   args: "uint32 merchantIndex, uint32[] itemIndices, uint32[] amts"
   entry_points: [execute]
   also: [executeTyped]
+  selectors:
+    "execute(bytes)": "0x09c5eabe"
+    "executeTyped(uint32,uint32[],uint32[])": "0x7c3f45fb"
   deployed: true
   writes: [Balance, EntityType, IDOwnsInventory, IndexItem, TimeLast, Value]
   reads:

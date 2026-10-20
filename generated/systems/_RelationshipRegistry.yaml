@@ -4,6 +4,11 @@ _RelationshipRegistry:
   file: src/systems/_RelationshipRegistrySystem.sol
   args: "bytes arguments"
   entry_points: [create, update, remove, execute]
+  selectors:
+    "create(bytes)": "0xcf5ba53f"
+    "execute(bytes)": "0x09c5eabe"
+    "remove(uint32,uint32)": "0x31f3666c"
+    "update(bytes)": "0xc43ed2c8"
   deployed: true
   writes: [Blacklist, EntityType, IndexNPC, IndexRelationship, IsRegistry, Name, Whitelist]
   steps:

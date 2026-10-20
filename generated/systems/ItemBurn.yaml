@@ -6,6 +6,9 @@ ItemBurn:
   args: "uint32[] indices, uint256[] amts"
   entry_points: [execute]
   also: [executeTyped]
+  selectors:
+    "execute(bytes)": "0x09c5eabe"
+    "executeTyped(uint32[],uint256[])": "0x8330e879"
   deployed: true
   writes: [EntityType, IDOwnsInventory, IndexItem, TimeLast, Value]
   reads: [CacheOperator, HasFlag]

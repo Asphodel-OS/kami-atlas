@@ -4,6 +4,10 @@ Kami721Metadata:
   file: src/systems/Kami721MetadataSystem.sol
   comment: "@title  System that handles metadata for Kami721 @dev    does not implement execute, only views tokenURI @dev    URI is structured in a system to allow for upgradibility"
   entry_points: [tokenURI, execute, executeTyped]
+  selectors:
+    "execute(bytes)": "0x09c5eabe"
+    "executeTyped()": "0xe1df4ba6"
+    "tokenURI(uint256)": "0xc87b56dd"
   deployed: true
   reads: [Affinity, Level, MediaURI, Name, "Stat[by name]"]
   stats: [HARMONY, HEALTH, POWER, VIOLENCE]

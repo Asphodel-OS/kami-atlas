@@ -6,6 +6,9 @@ KamiCastItem:
   args: "uint256 targetID, uint32 itemIndex"
   entry_points: [execute]
   also: [executeTyped]
+  selectors:
+    "execute(bytes)": "0x09c5eabe"
+    "executeTyped(uint256,uint32)": "0xe60f3a76"
   deployed: true
   writes:
     - BlockReveal

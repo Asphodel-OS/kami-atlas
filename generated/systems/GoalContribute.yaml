@@ -5,6 +5,9 @@ GoalContribute:
   args: "uint32 goalIndex, uint256 amt"
   entry_points: [execute]
   also: [executeTyped]
+  selectors:
+    "execute(bytes)": "0x09c5eabe"
+    "executeTyped(uint32,uint256)": "0x5c817c70"
   deployed: true
   writes: [EntityType, IDOwnsInventory, IDType, IdHolder, IndexItem, IsComplete, TimeLast, Value]
   reads: [CacheOperator, For, HasFlag, IDOwnsKami, Index, IndexRoom, IsDisabled, Level, LogicType, SkillPoint, State, TimeNext, Type]

@@ -6,6 +6,9 @@ AccountSetBio:
   args: "string bio"
   entry_points: [execute]
   also: [executeTyped]
+  selectors:
+    "execute(bytes)": "0x09c5eabe"
+    "executeTyped(string)": "0x765a4b0b"
   deployed: true
   writes: [Description, TimeLast]
   reads: [CacheOperator]

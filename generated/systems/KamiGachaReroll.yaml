@@ -5,6 +5,9 @@ KamiGachaReroll:
   comment: "@notice commits to get a random pet from gacha via rerolling + cost @dev only meant to be called for a single account"
   args: "bytes arguments"
   entry_points: [reroll, execute]
+  selectors:
+    "execute(bytes)": "0x09c5eabe"
+    "reroll(uint256[])": "0xc32ffe1b"
   deployed: true
   writes: [BlockReveal, EntityType, For, IDAnchor, IDOwnsEquipment, IDOwnsInventory, IDOwnsKami, IDType, IdHolder, IdSource, IndexItem, Level, Reroll, Time, TimeLast, Type, Value]
   reads: [State, TokenAddress]

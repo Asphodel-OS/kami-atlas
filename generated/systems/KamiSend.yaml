@@ -5,6 +5,10 @@ KamiSend:
   comment: "@notice Send in-world (staked) kamis to another player without unstaking"
   args: "uint32[] kamiIndices, address toAddress"
   entry_points: [execute, executeTyped]
+  selectors:
+    "execute(bytes)": "0x09c5eabe"
+    "executeTyped(uint32,address)": "0x72b0fa5f"
+    "executeTyped(uint32[],address)": "0xcebb631d"
   deployed: true
   writes:
     - Balance

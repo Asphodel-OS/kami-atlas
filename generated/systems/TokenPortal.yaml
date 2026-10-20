@@ -5,6 +5,21 @@ TokenPortal:
   comment: "@notice System for bridging in ERC20 tokens into the game world (as an item). @dev A special system, uses local storage as the source of truth to avoid depending on item registries. Not meant to be upgraded frequently, but can be if needed. If redeploying, token items must be re-initialized through initItem()."
   args: "bytes arguments"
   entry_points: [deposit, withdraw, withdrawToOperator, claim, cancel, adminPause, adminUnpause, adminCancel, adminToggleEnabled, setLaneItem, initItem, setItem, unsetItem, execute]
+  selectors:
+    "adminCancel(uint256)": "0x2a628e83"
+    "adminPause(uint256)": "0x2692c59f"
+    "adminToggleEnabled(bool)": "0x2e8c210e"
+    "adminUnpause(uint256)": "0x25fc00f0"
+    "cancel(uint256)": "0x40e58ee5"
+    "claim(uint256)": "0x379607f5"
+    "deposit(uint32,uint256)": "0xaaf10398"
+    "execute(bytes)": "0x09c5eabe"
+    "initItem(uint32)": "0xe83e407f"
+    "setItem(uint32,address,int32)": "0x21321390"
+    "setLaneItem(uint32,bool)": "0x87a05a58"
+    "unsetItem(uint32)": "0x7f17d8f5"
+    "withdraw(uint32,uint256)": "0x0e19dc3a"
+    "withdrawToOperator(uint32,uint256)": "0x8b39e1a0"
   deployed: true
   writes: [EntityType, HasFlag, IDOwnsInventory, IDOwnsWithdrawal, IndexItem, IsDisabled, Scale, Tax, TimeEnd, TimeLast, TimeStart, TokenAddress, TokenAllowance, Value]
   reads: [AddressOperator, CacheOperator, TokenHolder, Type]

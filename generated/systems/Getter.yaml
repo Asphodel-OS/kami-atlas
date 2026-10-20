@@ -5,6 +5,11 @@ Getter:
   comment: "@notice an external system to get info about various entity shapes"
   args: "bytes arguments"
   entry_points: [getAccount, getKamiByIndex, getKami, execute]
+  selectors:
+    "execute(bytes)": "0x09c5eabe"
+    "getAccount(uint256)": "0xce88b145"
+    "getKami(uint256)": "0x1b1e0fc0"
+    "getKamiByIndex(uint32)": "0x83e8abdf"
   deployed: true
   reads:
     - Affinity

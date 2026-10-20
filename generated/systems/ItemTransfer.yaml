@@ -5,6 +5,9 @@ ItemTransfer:
   args: "uint32[] indices, uint256[] amts, uint256 targetID"
   entry_points: [execute]
   also: [executeTyped]
+  selectors:
+    "execute(bytes)": "0x09c5eabe"
+    "executeTyped(uint32[],uint256[],uint256)": "0x9032746d"
   deployed: true
   writes: [EntityType, IDOwnsInventory, IndexItem, TimeLast, Value]
   reads: [HasFlag]

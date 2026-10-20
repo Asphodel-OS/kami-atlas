@@ -6,6 +6,9 @@ HarvestLiquidate:
   args: "uint256 victimHarvID, uint256 killerID"
   entry_points: [execute]
   also: [executeTyped]
+  selectors:
+    "execute(bytes)": "0x09c5eabe"
+    "executeTyped(uint256,uint256)": "0x915657fb"
   deployed: true
   writes: [EntityType, Experience, Health, IDAnchor, IDOwnsInventory, IDType, IdHolder, IdSource, IndexItem, Level, State, Time, TimeLast, TimeNext, Value]
   reads: [Affinity, CacheOperator, Harmony, IDOwnsKami, IndexAccount, IndexRoom, Power, Slots, Stamina, TimeReset, TokenAddress, Violence]

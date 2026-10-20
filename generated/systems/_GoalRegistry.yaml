@@ -4,6 +4,17 @@ _GoalRegistry:
   file: src/systems/_GoalRegistrySystem.sol
   args: "bytes arguments"
   entry_points: [create, setDisabled, addRequirement, addRewardBasic, addRewardDT, addRewardStat, addRewardDisplay, remove, removeRewards, execute]
+  selectors:
+    "addRequirement(bytes)": "0x7e534103"
+    "addRewardBasic(bytes)": "0x510b8052"
+    "addRewardDT(bytes)": "0x720c2ed5"
+    "addRewardDisplay(bytes)": "0xb47fc7ad"
+    "addRewardStat(bytes)": "0x071657f0"
+    "create(bytes)": "0xcf5ba53f"
+    "execute(bytes)": "0x09c5eabe"
+    "remove(uint32)": "0x00d84fd8"
+    "removeRewards(uint32)": "0x629c5fe0"
+    "setDisabled(uint32,bool)": "0x564eb313"
   deployed: true
   writes: [Description, EntityType, For, IDAnchor, IdSource, Index, IndexRoom, IsComplete, IsDisabled, IsRegistry, Keys, LogicType, Name, Subtype, Time, Type, Value, Weights]
   write_access: "*"

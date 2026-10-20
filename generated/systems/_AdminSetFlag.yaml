@@ -6,6 +6,9 @@ _AdminSetFlag:
   args: "uint256[] ids, string flagType, bool state"
   entry_points: [execute]
   also: [executeTyped]
+  selectors:
+    "execute(bytes)": "0x09c5eabe"
+    "executeTyped(uint256[],string,bool)": "0xbd0bfeb2"
   deployed: true
   writes: [HasFlag]
   reads: [EntityType]

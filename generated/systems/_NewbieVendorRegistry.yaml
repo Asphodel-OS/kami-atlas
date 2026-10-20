@@ -5,6 +5,16 @@ _NewbieVendorRegistry:
   comment: "@notice Admin system for Newbie Kami Vendor configuration"
   args: "bytes "
   entry_points: [execute, setVendorAddress, setEnabled, setCycleDuration, setPool, addToPool, setMinPrice, setTWAPWindow, initTWAP]
+  selectors:
+    "addToPool(uint256[])": "0xa2f774e0"
+    "execute(bytes)": "0x09c5eabe"
+    "initTWAP(uint256)": "0x9cced066"
+    "setCycleDuration(uint256)": "0x8cc23934"
+    "setEnabled(bool)": "0x328d8f72"
+    "setMinPrice(uint256)": "0x5ea8cd12"
+    "setPool(uint256[])": "0xe0b7dcf4"
+    "setTWAPWindow(uint256)": "0x068d4825"
+    "setVendorAddress(address)": "0xd91376f3"
   deployed: true
   writes: [TimeStart, Value, Values]
   config: [NEWBIE_VENDOR_ADDRESS, NEWBIE_VENDOR_CYCLE, NEWBIE_VENDOR_ENABLED, NEWBIE_VENDOR_MIN_PRICE, NEWBIE_VENDOR_TWAP_WINDOW]

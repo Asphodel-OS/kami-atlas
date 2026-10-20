@@ -6,6 +6,9 @@ AccountSetOperator:
   args: "address operator"
   entry_points: [execute]
   also: [executeTyped]
+  selectors:
+    "execute(bytes)": "0x09c5eabe"
+    "executeTyped(address)": "0x240b27e6"
   deployed: true
   writes: [AddressOperator, CacheOperator, TimeLast]
   reads: [EntityType]

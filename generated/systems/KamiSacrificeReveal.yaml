@@ -6,6 +6,10 @@ KamiSacrificeReveal:
   args: "uint256 commitID"
   entry_points: [execute]
   also: [executeTyped, executeTypedBatch]
+  selectors:
+    "execute(bytes)": "0x09c5eabe"
+    "executeTyped(uint256)": "0x3e991df3"
+    "executeTypedBatch(uint256[])": "0x4b9338a7"
   deployed: true
   writes: [EntityType, IDOwnsInventory, IdHolder, IdSource, IndexItem, TimeLast, Value]
   reads: [BlockReveal, CacheOperator, Keys, TokenAddress]

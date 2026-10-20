@@ -5,6 +5,17 @@ _ListingRegistry:
   comment: "create or update a Listing on a NPC by its Merchnat Index"
   args: "bytes arguments"
   entry_points: [create, remove, removeBuy, removeSell, setBuyFixed, setBuyGDA, setSellFixed, setSellScaled, addRequirement, execute]
+  selectors:
+    "addRequirement(bytes)": "0x7e534103"
+    "create(bytes)": "0xcf5ba53f"
+    "execute(bytes)": "0x09c5eabe"
+    "remove(uint32,uint32)": "0x31f3666c"
+    "removeBuy(uint32,uint32)": "0x86477dd5"
+    "removeSell(uint32,uint32)": "0xb2ba303a"
+    "setBuyFixed(uint32,uint32)": "0x4ebee436"
+    "setBuyGDA(uint32,uint32,int32,int32,int32,bool)": "0xc6e851a3"
+    "setSellFixed(uint32,uint32)": "0x36a8a6f4"
+    "setSellScaled(uint32,uint32,int32)": "0xcb868db8"
   deployed: true
   writes: [Balance, Decay, EntityType, For, IDAnchor, Index, IndexCurrency, IndexItem, IndexNPC, LogicType, Period, Rate, Scale, TimeStart, Type, Value]
   write_access: "*"

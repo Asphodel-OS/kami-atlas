@@ -5,6 +5,12 @@ __LocalSetup:
   comment: "@notice only for local development! not intended for production"
   args: "bytes arguments"
   entry_points: [initAccounts, initPets, initHarvests, attachItemERC20, execute]
+  selectors:
+    "attachItemERC20(uint32)": "0x7e28c7da"
+    "execute(bytes)": "0x09c5eabe"
+    "initAccounts()": "0x49f2545b"
+    "initHarvests()": "0x2ce728ad"
+    "initPets()": "0xd9c5a518"
   deployed: true
   skip_env: [testing, production]
   writes:

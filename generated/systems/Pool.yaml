@@ -5,6 +5,11 @@ Pool:
   comment: "PoolSystem holds all player-facing interactions with constant-product Pools: swapping and adding/removing liquidity. Liquidity removal deliberately works on disabled pools so LPs can always exit"
   args: "bytes arguments"
   entry_points: [swap, addLiquidity, removeLiquidity, execute]
+  selectors:
+    "addLiquidity(uint32,uint32,uint256,uint256,uint256,uint256)": "0xffb80b03"
+    "execute(bytes)": "0x09c5eabe"
+    "removeLiquidity(uint32,uint32,uint256,uint256,uint256)": "0x68d6ac09"
+    "swap(uint32,uint32,uint256,uint256)": "0x4a4f0718"
   deployed: true
   writes: [EntityType, IDOwnsInventory, IDType, IdHolder, IndexItem, TimeLast, Value]
   reads: [CacheOperator, HasFlag, IsDisabled, Rate]

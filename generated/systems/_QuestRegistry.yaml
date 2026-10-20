@@ -4,6 +4,16 @@ _QuestRegistry:
   file: src/systems/_QuestRegistrySystem.sol
   args: "bytes arguments"
   entry_points: [create, addObjective, addRequirement, addRewardBasic, addRewardDT, addRewardStat, setDisabled, remove, execute]
+  selectors:
+    "addObjective(bytes)": "0x796c272f"
+    "addRequirement(bytes)": "0x7e534103"
+    "addRewardBasic(bytes)": "0x510b8052"
+    "addRewardDT(bytes)": "0x720c2ed5"
+    "addRewardStat(bytes)": "0x071657f0"
+    "create(bytes)": "0xcf5ba53f"
+    "execute(bytes)": "0x09c5eabe"
+    "remove(uint32)": "0x00d84fd8"
+    "setDisabled(uint32,bool)": "0x564eb313"
   deployed: true
   writes:
     - Description

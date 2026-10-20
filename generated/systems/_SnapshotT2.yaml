@@ -4,6 +4,9 @@ _SnapshotT2:
   file: src/systems/_SnapshotT2System.sol
   args: "bytes arguments"
   entry_points: [dropKillRewards, execute]
+  selectors:
+    "dropKillRewards(bytes)": "0x97f2d0bb"
+    "execute(bytes)": "0x09c5eabe"
   deployed: true
   writes: [EntityType, IDOwnsInventory, IndexItem, Value]
   reads: [TokenAddress]

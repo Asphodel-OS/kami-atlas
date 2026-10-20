@@ -6,6 +6,9 @@ KamiSacrificeCommit:
   args: "uint32 kamiIndex"
   entry_points: [execute]
   also: [executeTyped]
+  selectors:
+    "execute(bytes)": "0x09c5eabe"
+    "executeTyped(uint32)": "0x09c90324"
   deployed: true
   writes: [BlockReveal, EntityType, For, Health, IDAnchor, IDOwnsEquipment, IDOwnsInventory, IDOwnsKami, IDType, IdHolder, IdSource, IndexItem, Level, State, Time, TimeLast, Type, Value]
   reads: [Affinity, CacheOperator, Harmony, Power, Slots, Stamina, TimeReset, TokenAddress, Violence]

@@ -5,6 +5,10 @@ NewbieVendorBuy:
   comment: "@notice Newbie Kami Vendor — buy one kami at market-floor price (one-time per player) @dev Price tracks the marketplace: 110% of the cheapest active listing      (vendor's own excluded), clamped below by minPrice. A cheap listing is      itself a real buyable offer, so faking one risks selling at that price;      residual list/cancel timing games are bounded by the clamp — worst case      the vendor sells at the admin-set floor, one kami per <24h-old account.      The vendor holds kamis staked in-game. Admin sets a pool of kami      indices; the first 3 are displayed for sale. When one is bought, the      next from the pool fills in."
   args: "uint32 kamiIndex"
   entry_points: [execute, executeTyped, calcPrice]
+  selectors:
+    "calcPrice()": "0xd98c4408"
+    "execute(bytes)": "0x09c5eabe"
+    "executeTyped(uint32)": "0x09c90324"
   deployed: true
   writes: [HasFlag, IDOwnsKami, TimeLast, Value, Values]
   reads: [EntityType, IDOwnsKamiOrder, State, TimeEnd, TimeStart]

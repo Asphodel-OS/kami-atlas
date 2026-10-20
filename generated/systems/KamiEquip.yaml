@@ -6,6 +6,9 @@ KamiEquip:
   args: "uint256 kamiID, uint32 itemIndex"
   entry_points: [execute]
   also: [executeTyped]
+  selectors:
+    "execute(bytes)": "0x09c5eabe"
+    "executeTyped(uint256,uint32)": "0xe60f3a76"
   deployed: true
   writes: [EntityType, For, IDAnchor, IDOwnsEquipment, IDOwnsInventory, IDType, IdSource, IndexItem, Level, Time, TimeLast, Value]
   reads: [CacheOperator, IDOwnsKami, IsDisabled, State, Subtype, TokenAddress, Type]

@@ -6,6 +6,9 @@ _WorldWhitelist:
   args: "bytes arguments"
   entry_points: [execute]
   also: [whitelist]
+  selectors:
+    "execute(bytes)": "0x09c5eabe"
+    "whitelist(address)": "0x9b19251a"
   deployed: true
   writes: [HasFlag]
   flags: [WORLD_WHITELIST]

@@ -6,6 +6,9 @@ KamiLevel:
   args: "uint256 id"
   entry_points: [execute]
   also: [executeTyped]
+  selectors:
+    "execute(bytes)": "0x09c5eabe"
+    "executeTyped(uint256)": "0x3e991df3"
   deployed: true
   writes: [Experience, Health, Level, SkillPoint, TimeLast, Value]
   reads: [Affinity, CacheOperator, EntityType, Harmony, IDOwnsKami, IdSource, IndexKami, Power, Slots, Stamina, State, TimeReset, Violence]

@@ -6,6 +6,10 @@ KamiMarketOffer:
   args: "bytes arguments"
   entry_points: [execute]
   also: [executeTypedCollection, executeTypedOffer]
+  selectors:
+    "execute(bytes)": "0x09c5eabe"
+    "executeTypedCollection(uint256,uint32,uint256)": "0x70aca40d"
+    "executeTypedOffer(uint32,uint256,uint256)": "0x4c967b83"
   deployed: true
   writes: [Balance, EntityType, IDOwnsKamiOrder, IndexKami, Max, State, TimeEnd, TimeLast, TimeStart, Value]
   reads: [CacheOperator]

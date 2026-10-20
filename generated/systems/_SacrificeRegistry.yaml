@@ -5,6 +5,12 @@ _SacrificeRegistry:
   comment: "@notice Registry system for configuring sacrifice droptables @dev Admin-only system for setting up reward tables for kami sacrifices"
   args: "bytes "
   entry_points: [setNormalDroptable, setUncommonPityDroptable, setRarePityDroptable, setAllDroptables, execute]
+  selectors:
+    "execute(bytes)": "0x09c5eabe"
+    "setAllDroptables(uint32[],uint256[],uint32[],uint256[],uint32[],uint256[])": "0x7f7d6a76"
+    "setNormalDroptable(uint32[],uint256[])": "0x3070b927"
+    "setRarePityDroptable(uint32[],uint256[])": "0x24997b09"
+    "setUncommonPityDroptable(uint32[],uint256[])": "0x22b3a2d3"
   deployed: true
   writes: [Keys, Weights]
   steps:

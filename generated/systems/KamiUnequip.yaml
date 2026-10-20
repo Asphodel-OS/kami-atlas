@@ -6,6 +6,9 @@ KamiUnequip:
   args: "uint256 kamiID, string slot"
   entry_points: [execute]
   also: [executeTyped]
+  selectors:
+    "execute(bytes)": "0x09c5eabe"
+    "executeTyped(uint256,string)": "0x68c47df2"
   deployed: true
   writes: [EntityType, For, IDAnchor, IDOwnsEquipment, IDOwnsInventory, IDType, IdSource, IndexItem, Level, Time, TimeLast, Value]
   reads: [CacheOperator, IDOwnsKami, State, TokenAddress]

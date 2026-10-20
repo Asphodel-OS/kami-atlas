@@ -6,6 +6,10 @@ DroptableReveal:
   args: "uint256[] ids"
   entry_points: [execute, forceReveal]
   also: [executeTyped]
+  selectors:
+    "execute(bytes)": "0x09c5eabe"
+    "executeTyped(uint256[])": "0x72de78c2"
+    "forceReveal(uint256)": "0x265ab676"
   deployed: true
   writes: [BlockReveal, EntityType, IDOwnsInventory, IdHolder, IdSource, IndexItem, Type, Value]
   reads: [Keys, TokenAddress]

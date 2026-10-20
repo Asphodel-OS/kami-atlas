@@ -4,6 +4,10 @@ _FactionRegistry:
   file: src/systems/_FactionRegistrySystem.sol
   args: "bytes arguments"
   entry_points: [create, remove, execute]
+  selectors:
+    "create(bytes)": "0xcf5ba53f"
+    "execute(bytes)": "0x09c5eabe"
+    "remove(uint32)": "0x00d84fd8"
   deployed: true
   writes: [Description, EntityType, IndexFaction, IsRegistry, MediaURI, Name]
   steps:

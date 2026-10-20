@@ -6,6 +6,9 @@ AccountUseItem:
   args: "uint32 itemIndex, uint256 amt"
   entry_points: [execute]
   also: [executeTyped]
+  selectors:
+    "execute(bytes)": "0x09c5eabe"
+    "executeTyped(uint32,uint256)": "0x5c817c70"
   deployed: true
   writes:
     - BlockReveal

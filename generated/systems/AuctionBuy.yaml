@@ -6,6 +6,9 @@ AuctionBuy:
   args: "uint32 itemIndex, uint32 amt"
   entry_points: [execute]
   also: [executeTyped]
+  selectors:
+    "execute(bytes)": "0x09c5eabe"
+    "executeTyped(uint32,uint32)": "0x276aaa75"
   deployed: true
   writes: [Balance, EntityType, IDOwnsInventory, IndexItem, TimeLast, Value]
   reads: [Decay, For, HasFlag, IDOwnsKami, Index, IndexRoom, IsComplete, Level, LogicType, Max, Period, Rate, SkillPoint, State, TimeNext, TimeStart, TokenAddress, Type]

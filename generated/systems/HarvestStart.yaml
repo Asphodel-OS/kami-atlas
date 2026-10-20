@@ -6,6 +6,10 @@ HarvestStart:
   args: "uint256 kamiID, uint32 nodeIndex, uint256 taxerID, uint256 taxAmt"
   entry_points: [execute]
   also: [executeBatched, executeTyped]
+  selectors:
+    "execute(bytes)": "0x09c5eabe"
+    "executeBatched(uint256[],uint32,uint256,uint256)": "0x68f37c94"
+    "executeTyped(uint256,uint32,uint256,uint256)": "0xc8372a87"
   deployed: true
   writes: [EntityType, Health, IDAnchor, IDOwnsTax, IDType, IdHolder, IdSource, IdTarget, Level, State, Time, TimeLast, TimeNext, TimeReset, TimeStart, Value]
   reads: [Affinity, CacheOperator, For, Harmony, HasFlag, IDOwnsKami, Index, IndexRoom, IsComplete, LogicType, Power, SkillPoint, Slots, Stamina, Subtype, Type, Violence]

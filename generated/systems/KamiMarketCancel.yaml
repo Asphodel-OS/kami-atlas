@@ -6,6 +6,10 @@ KamiMarketCancel:
   args: "uint256 id"
   entry_points: [execute, executeAdmin]
   also: [executeTyped]
+  selectors:
+    "execute(bytes)": "0x09c5eabe"
+    "executeAdmin(uint256[])": "0xa781e655"
+    "executeTyped(uint256)": "0x3e991df3"
   deployed: true
   writes: [Balance, IDOwnsKamiOrder, IndexKami, IndexKamiListing, Max, State, TimeEnd, TimeLast, TimeStart, Value, Values]
   reads: [CacheOperator]

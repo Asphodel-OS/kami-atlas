@@ -6,6 +6,9 @@ _DistributeItem:
   args: "address[] accounts, uint32 itemIndex, uint256[] amounts"
   entry_points: [execute]
   also: [executeTyped]
+  selectors:
+    "execute(bytes)": "0x09c5eabe"
+    "executeTyped(address[],uint32,uint256[])": "0xd84c4975"
   deployed: true
   writes: [EntityType, IDOwnsInventory, IndexItem, Value]
   reads: [TokenAddress]

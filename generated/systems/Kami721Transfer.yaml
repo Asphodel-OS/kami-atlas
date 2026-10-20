@@ -5,6 +5,10 @@ Kami721Transfer:
   comment: "@dev Simple system to enable kami batch transfers. Handles 721 contract only, does not interact with components."
   args: "bytes arguments"
   entry_points: [batchTransfer, batchTransferToMany, execute]
+  selectors:
+    "batchTransfer(uint256[],address)": "0xce40ad86"
+    "batchTransferToMany(uint256[],address[])": "0xebcee357"
+    "execute(bytes)": "0x09c5eabe"
   deployed: true
   steps:
     batchTransfer:

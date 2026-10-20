@@ -67,6 +67,7 @@ STAT_NAMES = {'HEALTH': 'Health', 'POWER': 'Power', 'HARMONY': 'Harmony', 'VIOLE
 STAT, ANY = '@stat', '@component'
 AMBIENT = {'IUint256Component', 'IUintComp', 'IWorld'}  # passed to nearly every function; left out of signatures
 KEYED_LIBS = {'LibConfig': 'config', 'LibBonus': 'bonuses', 'LibFlag': 'flags', 'LibData': 'data', 'LibStat': 'stats'}
+SELECTORS = {}  # (source path, contract name) -> {canonical signature: 4-byte selector hex}, from the compiler's methodIdentifiers
 NS_META = defaultdict(list)   # namespace -> [{'fid', 'keys', 'packed'}] for every keccak256(abi.encode[Packed]("ns", keys…)) seen
 
 
@@ -91,6 +92,8 @@ def load_units():
             ast = j.get('ast')
             if ast and ast['absolutePath'].startswith('src/') and ast['absolutePath'] not in units:
                 units[ast['absolutePath']] = ast
+            if ast and j.get('methodIdentifiers'):
+                SELECTORS[(ast['absolutePath'], f[:-5])] = j['methodIdentifiers']
     return units
 
 
@@ -641,6 +644,7 @@ def write_spec(ix, model, ents, comps, systems, id_ns, src_note):
             'components': {n: {'id': c.get('id'), 'type': c.get('type'), 'indexed': bool(c.get('indexed')),
                                **({'client_name': c['client_name']} if c.get('client_name') else {})} for n, c in comps.items()},
             'systems': {n: {'id': r.get('id'), 'deployed': bool(r.get('deployed')), 'writes': r.get('writes') or [],
+                            'selectors': r.get('selectors') or {},
                             **({'disabled': r['disabled']} if r.get('disabled') else {})} for n, r in systems.items() if not n.startswith('__')},
             'framework_components': framework,
             'entities': entities, 'shared_records': shared,
@@ -1533,6 +1537,8 @@ def main():
         wrappers = {n for n, f in fns.items() if n != 'execute' and any(
             x.get('nodeType') == 'Identifier' and x.get('name') in ('execute', 'executeTyped') for x in walk(f.get('body') or {}))}
         entries = [n for n in fns if n not in wrappers] or list(fns)
+        selectors = {sig: '0x' + h for sig, h in sorted(SELECTORS.get((path, contract['name']), {}).items())
+                     if sig[:sig.index('(')] in set(entries) | wrappers}  # anyone decoding transactions needs these
         idm = re.search(r'keccak256\("(system\.[^"]+)"\)', raw)
         typed = fns.get('executeTyped')
         args = ', '.join('%s %s' % (p['typeDescriptions']['typeString'].replace('contract ', ''), p['name'])
@@ -1569,6 +1575,7 @@ def main():
             'args': args or None,
             'entry_points': entries,
             'also': sorted(wrappers) or None,
+            'selectors': selectors or None,
             'deployed': bool(d),
             'skip_env': d.get('skipEnv'),
             'writes': sorted(allw),

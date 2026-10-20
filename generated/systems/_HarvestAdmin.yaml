@@ -5,6 +5,10 @@ _HarvestAdmin:
   comment: "admin controls for harvest operations"
   args: "bytes arguments"
   entry_points: [stop, stopBatched, execute]
+  selectors:
+    "execute(bytes)": "0x09c5eabe"
+    "stop(uint32)": "0x789ae24f"
+    "stopBatched(uint32[])": "0x01ef75e0"
   deployed: false
   writes: [Health, IDAnchor, IDType, IdSource, Level, State, Time, TimeLast, TimeNext, Value]
   reads: [Affinity, CacheOperator, EntityType, Harmony, Power, Slots, Stamina, TimeReset, Violence]

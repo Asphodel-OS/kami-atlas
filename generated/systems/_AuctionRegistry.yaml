@@ -5,6 +5,11 @@ _AuctionRegistry:
   comment: "create or update a Listing on a NPC by its Merchnat Index"
   args: "bytes arguments"
   entry_points: [create, remove, addRequirement, execute]
+  selectors:
+    "addRequirement(uint32,string,string,uint32,uint256,string)": "0x1576edcb"
+    "create(uint32,uint32,uint32,int32,int32,int32,int32,uint256)": "0x1b49ba87"
+    "execute(bytes)": "0x09c5eabe"
+    "remove(uint32)": "0x00d84fd8"
   deployed: true
   writes: [Balance, Decay, EntityType, For, IDAnchor, Index, IndexCurrency, IndexItem, LogicType, Max, Period, Rate, TimeStart, Type, Value]
   write_access: "*"

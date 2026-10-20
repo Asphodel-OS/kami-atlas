@@ -6,6 +6,9 @@ KamiName:
   args: "uint256 id, string name"
   entry_points: [execute]
   also: [executeTyped]
+  selectors:
+    "execute(bytes)": "0x09c5eabe"
+    "executeTyped(uint256,string)": "0x68c47df2"
   deployed: true
   skip_env: [testing]
   writes: [EntityType, IDOwnsInventory, IndexItem, Name, TimeLast, Value]

@@ -6,6 +6,10 @@ Kami721Unstake:
   args: "uint32 tokenIndex"
   entry_points: [execute]
   also: [executeBatch, executeTyped]
+  selectors:
+    "execute(bytes)": "0x09c5eabe"
+    "executeBatch(uint32[])": "0x77445aed"
+    "executeTyped(uint32)": "0x09c90324"
   deployed: true
   skip_env: [testing]
   writes: [EntityType, For, IDAnchor, IDOwnsEquipment, IDOwnsInventory, IDOwnsKami, IDType, IdSource, IndexItem, Level, State, Time, TimeLast, Value]

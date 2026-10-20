@@ -41,6 +41,9 @@ About 110k tokens in all (roughly: systems 34k, functions 50k, components 10k, f
    - `events`: game events it can emit (the names the indexer sees, e.g. `HARVEST_COLLECT`)
    - `stats`, `config`, `bonuses`: the stat names, config keys and bonus types it depends on
    - `steps`: its entry points, in source order; `internal`: the system contract's own helpers
+   - `selectors`: the 4-byte function selector of every entry point and wrapper, by canonical signature, as the
+     compiler reports them (`execute(bytes)` is `0x09c5eabe` on every system; `executeTyped` and the batched
+     wrappers differ per system); also in `recognition.json` under `systems`
    - `writes_without_access` / `access_not_written`: differences from `deploy.json` `writeAccess`
 3. Follow any call into `generated/functions/<Library>.yaml`, and any `calc*` into `formulas.yaml`.
 

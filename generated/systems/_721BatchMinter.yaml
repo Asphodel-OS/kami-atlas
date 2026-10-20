@@ -4,6 +4,8 @@ _721BatchMinter:
   file: src/systems/_721BatchMinterSystem.sol
   comment: "@notice small contract to make trait handling more readable"
   entry_points: [_getTraitStats]
+  selectors:
+    "_getTraitStats(uint256)": "0xc4908186"
   deployed: true
   access_not_written: ["*", ProxyPermissionsERC721]
   steps:

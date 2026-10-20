@@ -5,6 +5,10 @@ _TraitRegistry:
   comment: "Adds a trait to the registry. Traits are condensed here with a string identifier to reduce number of systems"
   args: "bytes arguments"
   entry_points: [create, remove, execute]
+  selectors:
+    "create(bytes)": "0xcf5ba53f"
+    "execute(bytes)": "0x09c5eabe"
+    "remove(uint32,string)": "0xed1fa0cb"
   deployed: true
   writes: [Affinity, EntityType, Harmony, Health, IDAnchor, IndexBackground, IndexBody, IndexColor, IndexFace, IndexHand, IsRegistry, Name, Power, Rarity, Slots, Violence]
   write_access: "*"

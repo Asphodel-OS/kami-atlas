@@ -5,6 +5,9 @@ _TriggerCompEvent:
   comment: "@notice for test world, to trigger and set a ValueUpdate component event. used as workaround to refresh indexer"
   entry_points: [execute]
   also: [executeTyped]
+  selectors:
+    "execute(bytes)": "0x09c5eabe"
+    "executeTyped()": "0xe1df4ba6"
   deployed: true
   skip_env: [local, production]
   writes: [TimeStart]

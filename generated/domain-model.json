@@ -3248,6 +3248,7 @@
     "IDAnchor",
     "IDType",
     "IdSource",
+    "Level",
     "Time"
    ],
    "links": {
@@ -3286,7 +3287,8 @@
    "held_by": [
     "ACCOUNT",
     "KAMI"
-   ]
+   ],
+   "fields_from_notes": true
   },
   "droptable.item.log": {
    "id": "droptable.item.log(holderID, dtID)",

@@ -1809,7 +1809,7 @@ shared_sub_entities:
         down: "compute bonus.instance(regID, holderID, duration) from the parent"
         up: "from the key values"
     kind: record
-    fields: [IDAnchor, IDType, IdSource, Time]
+    fields: [IDAnchor, IDType, IdSource, Level, Time]
     links:
       IDAnchor:
         to: bonus.ending.type
@@ -1833,6 +1833,7 @@ shared_sub_entities:
         derived: ["IdSource = regID in LibBonus.assign (traced through callers)"]
         inferred: true
     held_by: [ACCOUNT, KAMI]
+    fields_from_notes: true
   droptable.item.log:
     id: "droptable.item.log(holderID, dtID)"
     keys:

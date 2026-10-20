@@ -1768,6 +1768,10 @@ def main():
         if o.get('held_by') and ns_ in model.get('shared_sub_entities', {}):
             model['shared_sub_entities'][ns_]['held_by'] = [h.strip() for h in str(o['held_by']).split('|') if h.strip()]
             model['shared_sub_entities'][ns_]['held_by_from_notes'] = True
+        if o.get('also_fields') and ns_ in model.get('shared_sub_entities', {}):  # fields the tracer misses (set through an array variable, or in another function)
+            sub_ = model['shared_sub_entities'][ns_]
+            sub_['fields'] = sorted(set(sub_.get('fields') or []) | {f.strip() for f in str(o['also_fields']).split('|') if f.strip()})
+            sub_['fields_from_notes'] = True
     model = {'source': model_meta, **model, **({'links_ignored_in_notes': ignored_links} if ignored_links else {})}
     if '--diff' in sys.argv:  # what this run changed against a committed output (default HEAD) before overwriting it
         i = sys.argv.index('--diff'); ref = sys.argv[i + 1] if i + 1 < len(sys.argv) and not sys.argv[i + 1].startswith('-') else 'HEAD'

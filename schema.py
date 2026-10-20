@@ -362,8 +362,8 @@ CREATE INDEX IF NOT EXISTS idx_domain_entity_parent ON domain.entity(parent);'''
   op text NOT NULL,                     -- insert | update | delete
   changed text[]                        -- columns that changed, NULL on insert and delete
 );
-CREATE INDEX IF NOT EXISTS idx_domain_outbox_block ON domain.outbox(block_number);
-CREATE INDEX IF NOT EXISTS idx_domain_outbox_kind_id ON domain.outbox(kind, id);''')
+CREATE INDEX IF NOT EXISTS idx_domain_outbox_block_seq ON domain.outbox(block_number, seq);   -- the feed's catch-up and the range bounds
+CREATE INDEX IF NOT EXISTS idx_domain_outbox_id_seq ON domain.outbox(id, seq);                -- entity-filtered catch-up''')
     # entity-type tables
     for t, e in ents.items():
         cols = []

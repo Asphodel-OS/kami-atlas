@@ -462,7 +462,7 @@ INSERT INTO domain.record_spec (ns, table_name, parent_type, encoding, key_order
   ('scavenge.reward', 'rec_scavenge_reward', 'SCAVENGE', 'packed', ARRAY['regID']::text[], ARRAY['uint256']::text[], ARRAY['key_reg_id']::text[], '{"regID": ["SCAVENGE"]}'::jsonb, '{}'::jsonb, '{}'::jsonb, '{}'::text[]),
   ('registry.trait.type', 'rec_registry_trait_type', 'TRAIT', 'packed', ARRAY['_type']::text[], ARRAY['string']::text[], ARRAY['key__type']::text[], '{"_type": ["TRAIT"]}'::jsonb, '{"_type": ["BACKGROUND", "BODY", "COLOR", "FACE", "HAND"]}'::jsonb, '{}'::jsonb, '{}'::text[]),
   ('bonus.ending.type', 'rec_bonus_ending_type', NULL, 'packed', ARRAY['type_', 'holderID']::text[], ARRAY['string', 'uint256']::text[], ARRAY['key_type', 'key_holder_id']::text[], '{"holderID": ["ACCOUNT", "KAMI"], "type_": []}'::jsonb, '{"type_": []}'::jsonb, '{}'::jsonb, '{}'::text[]),
-  ('bonus.instance', 'rec_bonus_instance', NULL, 'packed', ARRAY['regID', 'holderID', 'duration']::text[], ARRAY['uint256', 'uint256', 'uint256']::text[], ARRAY['key_reg_id', 'key_holder_id', 'key_duration']::text[], '{"duration": [], "holderID": ["ACCOUNT", "KAMI"], "regID": ["BONUS"]}'::jsonb, '{}'::jsonb, '{}'::jsonb, ARRAY['IDAnchor', 'IDType', 'IdSource', 'Time']::text[]),
+  ('bonus.instance', 'rec_bonus_instance', NULL, 'packed', ARRAY['regID', 'holderID', 'duration']::text[], ARRAY['uint256', 'uint256', 'uint256']::text[], ARRAY['key_reg_id', 'key_holder_id', 'key_duration']::text[], '{"duration": [], "holderID": ["ACCOUNT", "KAMI"], "regID": ["BONUS"]}'::jsonb, '{}'::jsonb, '{}'::jsonb, ARRAY['IDAnchor', 'IDType', 'IdSource', 'Level', 'Time']::text[]),
   ('droptable.item.log', 'rec_droptable_item_log', NULL, 'packed', ARRAY['holderID', 'dtID']::text[], ARRAY['uint256', 'uint256']::text[], ARRAY['key_holder_id', 'key_dt_id']::text[], '{"dtID": [], "holderID": []}'::jsonb, '{}'::jsonb, '{}'::jsonb, ARRAY['Time', 'Values']::text[]),
   ('flag.type', 'rec_flag_type', NULL, 'packed', ARRAY['parentType', 'flagType']::text[], ARRAY['string', 'string']::text[], ARRAY['key_parent_type', 'key_flag_type']::text[], '{"flagType": [], "parentType": []}'::jsonb, '{"flagType": ["REPEATABLE"], "parentType": ["AUTH", "ITEM", "QUEST", "ROOM"]}'::jsonb, '{}'::jsonb, '{}'::text[]),
   ('has.flag', 'rec_has_flag', NULL, 'packed', ARRAY['id', 'flagType']::text[], ARRAY['uint256', 'string']::text[], ARRAY['key_id', 'key_flag_type']::text[], '{"flagType": [], "id": ["ACCOUNT", "ITEM", "QUEST", "ROOM"]}'::jsonb, '{"flagType": ["BYPASS_BONUS_RESET", "CAN_RESET_SKILLS", "ITEM_UNBURNABLE", "MINT_WHITELISTED", "NEWBIE_VENDOR_PURCHASED", "NOT_NAMEABLE", "NOT_TRADABLE", "PORTAL_TO_OPERATOR", "REPEATABLE", "WORLD_WHITELIST"]}'::jsonb, '{}'::jsonb, ARRAY['HasFlag', 'IDOwnsFlag', 'IDType', 'Type']::text[]),
@@ -510,8 +510,8 @@ CREATE TABLE IF NOT EXISTS domain.outbox (
   op text NOT NULL,                     -- insert | update | delete
   changed text[]                        -- columns that changed, NULL on insert and delete
 );
-CREATE INDEX IF NOT EXISTS idx_domain_outbox_block ON domain.outbox(block_number);
-CREATE INDEX IF NOT EXISTS idx_domain_outbox_kind_id ON domain.outbox(kind, id);
+CREATE INDEX IF NOT EXISTS idx_domain_outbox_block_seq ON domain.outbox(block_number, seq);   -- the feed's catch-up and the range bounds
+CREATE INDEX IF NOT EXISTS idx_domain_outbox_id_seq ON domain.outbox(id, seq);                -- entity-filtered catch-up
 CREATE TABLE IF NOT EXISTS domain.account (
   id bytea PRIMARY KEY,
   block_number integer NOT NULL,
@@ -1333,6 +1333,7 @@ CREATE TABLE IF NOT EXISTS domain.rec_bonus_instance (
   id_anchor bytea,
   id_type bytea,
   id_source bytea,
+  level integer,
   time integer
 );
 CREATE INDEX IF NOT EXISTS idx_domain_rec_bonus_instance_parent ON domain.rec_bonus_instance(parent);
@@ -2483,8 +2484,8 @@ END $$;
 -- +goose StatementBegin
 CREATE OR REPLACE FUNCTION domain.refresh_rec_bonus_instance(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
 BEGIN
-  UPDATE domain.rec_bonus_instance r SET block_number = x.block_number, id_anchor = x.id_anchor, id_type = x.id_type, id_source = x.id_source, time = x.time
-  FROM (SELECT domain.id32(e.id) AS id, max(s.block_number) AS block_number, domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\xb045c5017717023376f3cca4fc00dc4ee26e151a86d28f1db156cf5222daccd1'))[1]) AS id_anchor, domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\x998873aedc8c829f7e25178374ed9431f396bd26c559d29a5ea6de65722045cc'))[1]) AS id_type, domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\xc81ce03c0ce7d95786aa8f43fb06c16da8357e856cb08b2052b4bf1807cf8ab3'))[1]) AS id_source, domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\x040fc38fe5717491c84059f73f7686f4157d14971215773d341a2ede964d65ac'))[1]) AS time
+  UPDATE domain.rec_bonus_instance r SET block_number = x.block_number, id_anchor = x.id_anchor, id_type = x.id_type, id_source = x.id_source, level = x.level, time = x.time
+  FROM (SELECT domain.id32(e.id) AS id, max(s.block_number) AS block_number, domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\xb045c5017717023376f3cca4fc00dc4ee26e151a86d28f1db156cf5222daccd1'))[1]) AS id_anchor, domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\x998873aedc8c829f7e25178374ed9431f396bd26c559d29a5ea6de65722045cc'))[1]) AS id_type, domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\xc81ce03c0ce7d95786aa8f43fb06c16da8357e856cb08b2052b4bf1807cf8ab3'))[1]) AS id_source, domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\xf8911dfd3f908e7a27ff20b80381dc7334f6abc557cdd58de4a9bfb47ebde734'))[1]) AS level, domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\x040fc38fe5717491c84059f73f7686f4157d14971215773d341a2ede964d65ac'))[1]) AS time
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id) x

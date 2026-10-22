@@ -15,7 +15,7 @@ Calls are resolved by the compiler (overloads exact). Component access is found 
 is fetched by its ID (getAddrByID / getCompByID) and a method is called on it; stat components
 fetched by name ("HEALTH", ...) are resolved at the call site that passes the literal.
 """
-import fcntl, json, os, re, subprocess, sys
+import fcntl, json, os, re, subprocess, sys, glob, shutil
 import itertools
 from collections import defaultdict
 
@@ -75,8 +75,15 @@ NS_META = defaultdict(list)   # namespace -> [{'fid', 'keys', 'packed'}] for eve
 # ---------------- build + load ----------------
 
 def build():
+    """One full forge compile, with build-info. Every AST must come from the same compiler job: solc numbers AST
+    nodes per job, and `referencedDeclaration` only resolves inside that numbering. An incremental build writes
+    the changed files' artifacts from a new job beside older ones, so per-contract artifacts can mix jobs
+    (seen with forge 1.5.1: 13k colliding ids, every cross-file call unresolved, 8 entity types instead of 34).
+    --force makes a single job and the build-info file carries all its sources' ASTs."""
     if REF != 'local': sync_worktree(REF, os.path.dirname(os.path.dirname(ROOT)))
-    cmd = ['forge', 'build', '--skip', 'test', '--skip', 'script', '--ast',
+    info = os.path.join(CACHE, 'build-info')
+    shutil.rmtree(info, ignore_errors=True)
+    cmd = ['forge', 'build', '--force', '--skip', 'test', '--skip', 'script', '--ast', '--build-info', '--build-info-path', info,
            '--out', os.path.join(CACHE, 'out'), '--cache-path', os.path.join(CACHE, 'cache')]
     env = dict(os.environ, FOUNDRY_PROFILE='build')
     r = subprocess.run(cmd, cwd=ROOT, env=env, capture_output=True, text=True)
@@ -85,15 +92,28 @@ def build():
 
 
 def load_units():
-    units, out = {}, os.path.join(CACHE, 'out')
-    for d in sorted(os.listdir(out)):   # sorted: directory order differs between macOS and Linux, and unit order decides ties
+    """{source path: AST} for every src/ file, all from one compiler job (see build), plus SELECTORS from the
+    per-contract artifacts (method ids do not depend on node numbering)."""
+    out, info = os.path.join(CACHE, 'out'), os.path.join(CACHE, 'build-info')
+    jobs = sorted(glob.glob(os.path.join(info, '*.json')))
+    if not jobs: sys.exit('no build-info under %s: run without --no-build' % info)
+    best, units = None, {}
+    for jf in jobs:   # the job that covers the most src/ files; forge --force writes exactly one
+        j = json.load(open(jf))
+        srcs = (j.get('output') or {}).get('sources') or {}
+        cand = {p: s['ast'] for p, s in srcs.items() if p.startswith('src/') and s.get('ast')}
+        if len(cand) > len(units): best, units = jf, cand
+    present = sorted(os.path.relpath(os.path.join(r_, f_), ROOT) for r_, _, fs in os.walk(os.path.join(ROOT, 'src')) for f_ in fs if f_.endswith('.sol') and not f_.endswith('.t.sol') and '/test/' not in r_ + '/')   # forge --skip test leaves the test sources out
+    missing = [p for p in present if p not in units]
+    if missing: sys.exit('build-info %s lacks %d src files (%s…): the build was partial, run without --no-build' % (os.path.basename(best), len(missing), ', '.join(missing[:3])))
+    units = {p: units[p] for p in sorted(units)}   # sorted: unit order decides ties, and must not depend on the filesystem
+    for d in sorted(os.listdir(out)):
+        if d == 'build-info': continue
         for f in sorted(os.listdir(os.path.join(out, d))):
             if not f.endswith('.json'): continue
             j = json.load(open(os.path.join(out, d, f)))
             ast = j.get('ast')
-            if ast and ast['absolutePath'].startswith('src/') and ast['absolutePath'] not in units:
-                units[ast['absolutePath']] = ast
-            if ast and j.get('methodIdentifiers'):
+            if ast and ast['absolutePath'].startswith('src/') and j.get('methodIdentifiers'):
                 SELECTORS[(ast['absolutePath'], f[:-5])] = j['methodIdentifiers']
     return units
 

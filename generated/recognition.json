@@ -2,14 +2,14 @@
  "source": {
   "contracts": "kamigotchi/packages/contracts",
   "ref": "origin/main",
-  "commit": "db4b3f834cb5",
+  "commit": "04cb25f8f300",
   "repo": "https://github.com/Asphodel-OS/kamigotchi-open",
   "repo_path": "packages/contracts",
   "left_out": {
    "KILL_BOUNTY_LOG": "untyped shape made in LibKill._logBounty; no deployed system reaches it; deprecated, to be deleted from the contracts (Acheron, 2026-10-16)"
   }
  },
- "generated_from": "the compiler AST of kamigotchi/packages/contracts (origin/main) at db4b3f834cb5",
+ "generated_from": "the compiler AST of kamigotchi/packages/contracts (origin/main) at 04cb25f8f300",
  "about": "Recognition spec for indexers: components and systems by on-chain id; entities by EntityType value or, for untyped shapes, by creating system and write signature; records by id namespace and keys. See README: Recognition spec.",
  "components": {
   "AddressOperator": {

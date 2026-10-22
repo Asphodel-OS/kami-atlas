@@ -28,7 +28,7 @@ config.py                    reads live config values from Yominet
 grants.py                    asks the chain whether the flagged deploy grants are really missing
 recognize.py                 applies the recognition spec to a dump of indexed state and reports what every entity is
 schema.py                    generates Kamigaze's domain schema (one goose migration) from the recognition spec
-.cache/                      compiler output with syntax trees (about 90 MB; safe to delete)
+.cache/                      compiler output with syntax trees and the build-info job (about 200 MB; safe to delete)
 ```
 
 About 110k tokens in all (roughly: systems 34k, functions 50k, components 10k, formulas 8k, domain model 6k). Nothing is repeated: a helper used by 30 systems is written out once.
@@ -58,9 +58,11 @@ Where notes and code disagree, the code wins: fix the note or add an open questi
 
 ## Regenerate
 
-    python3 generate.py             # recompiles with forge (about 1 minute), then generates
+    python3 generate.py             # recompiles with forge (about 1 minute, always a full build), then generates
     python3 generate.py --no-build  # reuse .cache as is (about 1 second)
     python3 generate.py --no-build --diff [ref]   # also print every model value this run changed against the committed output (default HEAD)
+
+The compile is always a full `forge build --force --build-info`: the generator reads every syntax tree from the one build-info job that run writes, never from the per-contract artifacts. solc numbers tree nodes per compiler job, so cross-file references only resolve among trees from the same job; an incremental build leaves artifacts from several jobs side by side, and with forge 1.5 that silently emptied the model (8 entity types found instead of 34).
 
 By default it reads **`origin/main`** of `kami/kamigotchi`, through a private worktree under `.cache/src/main` that it fetches and fast-forwards on every build, so the atlas tracks main regardless of what branch the checkout is on (the checkout's `node_modules` are symlinked in for forge). `--ref <branch-or-tag-or-commit>` tracks something else, and with `--out <dir>` writes the output there instead of `generated/` (the atlas keeps showing main), which is how a recognition spec for an older deployed version is made: `python3 generate.py --ref b621eafda --out /tmp/spec-launch`; `--local` (or `KAMI_CONTRACTS=<path to packages/contracts>`) reads the checkout as is. `dev.py` takes the same two flags. Needs Foundry and Python 3, nothing else. Runs are serialised through a lock in `.cache/`, so a manual run while `dev.py` is regenerating waits instead of interleaving writes.
 

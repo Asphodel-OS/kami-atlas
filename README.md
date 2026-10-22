@@ -117,7 +117,7 @@ executed, quests completed. `generated/data-logs.yaml` lists every one the contr
 `LibData` call: the name (literals, strings the callers pass, and concatenations expanded the same way as record keys,
 so `HARVEST_TIME_*` lists its three phases), the holder (an account, the world at holder 0, a token address), the index
 (0, or an item, node, recipe or account index), the library function, and the systems whose entry points reach it.
-`notes/data-logs.yaml` describes the families. The atlas shows them three ways: a Data logs section on the overview
+Each counter carries a scope: `world` (holder 0 only), `account`, `both` (the same name kept at both levels) or `other` (a token address, a fresh log entity); `scopes` in the file groups the names by it. `notes/data-logs.yaml` describes the families and, per counter, the semantics the code alone does not show (ITEM_TOTAL is gross and never decremented; TRADE_RECEIVE is pre-tax) plus a holder or index the tracer cannot resolve. The atlas shows them three ways: a Data logs section on the overview
 and a drilldown per family, a "Data logs held" section on the holder entities and "Data logs written" on each system,
 and an optional map layer (Settings → "Data logs on the map", off by default) that draws each family beside its
 holders. In the indexer they are the `domain.rec_is_data` table.

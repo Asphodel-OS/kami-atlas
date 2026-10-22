@@ -20,7 +20,7 @@ export function install(A) {
         <p class="muted small" style="margin-top:8px">Arrows run from the entity that stores the reference to the one it references. Solid lines are set every time the entity is created; dashed lines only under a condition.</p></section>
       <section class="block"><h3>Start with</h3><div class="chips">${['ACCOUNT', 'KAMI', 'HARVEST', 'NODE', 'ITEM', 'QUEST', 'CONDITION'].filter(x => E[x]).map(entBtn).join(' ')}</div></section>
       ${Object.keys(DL.families).length ? `<section class="block"><h3>Data logs (${Object.keys(DL.families).length} families)</h3><div class="chips">${Object.keys(DL.families).map(dlBtn).join(' ')}</div>
-        <p class="muted small" style="margin:6px 0 0">Counters the game keeps per account (or for the world) at <code>is.data(holder, index, type)</code>: ${Object.keys(DL.logs).filter(x => !x.includes('*')).length} names. Settings → “Data logs on the map” draws them beside their holders.</p></section>` : ''}
+        <p class="muted small" style="margin:6px 0 0">Counters the game keeps per account (or for the world) at <code>is.data(holder, index, type)</code>: ${Object.keys(DL.logs).filter(x => !x.includes('*')).length} names${DL.scopes ? ` — ${['account', 'world', 'both', 'other'].filter(k => DL.scopes[k]).map(k => `${DL.scopes[k].length} ${k}`).join(', ')}` : ''}. Settings → “Data logs on the map” draws them beside their holders.</p></section>` : ''}
       <section class="block"><h3>Or a system</h3><div class="chips">${['HarvestStart', 'HarvestLiquidate', 'KamiGachaMint', 'QuestComplete', 'Craft'].filter(x => systems[x]).map(sysBtn).join(' ')}</div></section>
       ${Object.keys(SG).length ? `<section class="block"><h3>Singletons (${Object.keys(SG).length})</h3><ul class="plain">${Object.entries(SG).map(([n, g]) =>
         `<li><code>${esc(n)}</code> <span class="muted small">${esc(g.id)} · used in ${arr(g.used_in).map(esc).join(', ')}</span></li>`).join('')}</ul>
@@ -37,7 +37,7 @@ export function install(A) {
     const names = DL.families[fam] || [], note = ((DL.notes || {}).families || {})[fam] || {}, LN = (DL.notes || {}).logs || {};
     const holders = [...new Set(names.flatMap(x => arr(DL.logs[x].holder)))], writers = [...new Set(names.flatMap(x => arr(DL.logs[x].written_by)))].sort();
     const kindBtn = h => E[h] ? entBtn(h) : `<code>${esc(h)}</code>`;
-    const row = x => { const l = DL.logs[x] || {}; return `<li class="dl-row"><div><code class="dl-name">${esc(x)}</code>${l.pattern ? ` <span class="tag">pattern</span>` : ''}${arr(l.op).length ? ` <span class="tag">${esc(arr(l.op).join(', '))}</span>` : ''}${LN[x] && LN[x].what ? `<div class="small">${esc(LN[x].what)}</div>` : ''}
+    const row = x => { const l = DL.logs[x] || {}; return `<li class="dl-row"><div><code class="dl-name">${esc(x)}</code>${l.pattern ? ` <span class="tag">pattern</span>` : ''}${arr(l.op).length ? ` <span class="tag">${esc(arr(l.op).join(', '))}</span>` : ''}${l.scope ? ` <span class="tag" title="world: holder 0 only · account: per account · both: the same name at both levels">${esc(l.scope)}</span>` : ''}${LN[x] && LN[x].what ? `<div class="small">${esc(LN[x].what)}</div>` : ''}
       ${l.pattern && arr(l.values).length ? `<div class="small muted">= ${arr(l.values).map(v => '<code>' + esc(v) + '</code>').join(' ')}</div>` : ''}</div>
       <div class="kv small">
         <span class="k">holder</span><span>${arr(l.holder).map(kindBtn).join(', ') || '<span class="muted">—</span>'}</span>

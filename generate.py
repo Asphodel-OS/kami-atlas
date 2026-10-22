@@ -662,20 +662,34 @@ def write_spec(ix, model, ents, comps, systems, id_ns, src_note):
         def assigns(fid, name):
             f = ix.fn[fid][1]; s_, l_, _ = map(int, f['src'].split(':'))
             body = ix.src[ix.fn[fid][2]][s_:s_ + l_].decode(errors='replace')
-            return [m.group(1).strip() for m in re.finditer(r'\b%s(?:\[[^\]]*\])?\s*=\s*([^;]+);' % re.escape(name), body)]
+            return [m.group(1).strip() for m in re.finditer(r'\b%s(?:\[[^\]]*\])?\s*(?<![=!<>])=(?!=)\s*([^;]+);' % re.escape(name), body)]
+        def through_callers(name, fid, depth, kinds):
+            """What the callers pass for parameter `name` of fid: DroptableReveal's accID arrives in LibDroptable.logTotal
+            as holderID, LibRecipe's crafted item indices as craftedIndices."""
+            ps = [x['name'] for x in ix.fn[fid][1]['parameters']['parameters']]
+            if name not in ps or depth >= 4: return set()
+            pi, out = ps.index(name), set()
+            for caller, args in callers_of.get(fid, []):
+                if pi >= len(args) or args[pi] is None: continue
+                a_ = args[pi]
+                out |= kinds(str(a_[1]) if a_[0] == 'lit' else str(a_[2]), caller, depth + 1)
+            return out
         def holder_kinds(t, fid, depth=0):
             t = t.strip()
             if t == '0': return {'world'}
             if 'token' in t.lower(): return {'token address'}
-            if re.fullmatch(r'\w+', t) and depth < 2:
+            if re.fullmatch(r'\w+', t) and depth < 4:
                 asg = assigns(fid, t)
                 if asg:
                     out = {'world'} if any(a.startswith('new ') for a in asg) else set()   # unset slots of a new array are 0
                     for a in asg:
                         if not a.startswith('new '): out |= holder_kinds(a, fid, depth + 1)
                     return out
+                via = through_callers(t, fid, depth, holder_kinds)
+                if via: return via
             if 'getUniqueEntityId' in t: return {'a new entity (log)'}
-            if re.search(r'acc', t, re.I): return {'ACCOUNT'}
+            # an inventory moves between accounts; a trade's or order's owner is the account that made it
+            if re.search(r'acc|maker|taker|sender|receiver|IDOwns|getOwner|^(to|from)IDs?\b', t, re.I): return {'ACCOUNT'}
             if re.search(r'kami', t, re.I): return {'KAMI'}
             if re.search(r'holder', t, re.I): return {'holder (from the caller)'}
             if re.search(r'target', t, re.I): return {'target (any entity)'}
@@ -683,18 +697,22 @@ def write_spec(ix, model, ents, comps, systems, id_ns, src_note):
         def index_kinds(t, fid, depth=0):
             t = t.strip()
             if t == '0': return {'0'}
-            if re.fullmatch(r'\w+', t) and depth < 2:
+            if re.fullmatch(r'[A-Z][A-Z0-9_]*_INDEX', t): return {'ITEM'}   # MUSU_INDEX, OBOL_INDEX: a fixed item
+            if re.fullmatch(r'\w+', t) and depth < 4:
                 asg = assigns(fid, t)
                 if asg:
                     out = {'0'} if any(a.startswith('new ') for a in asg) else set()
                     for a in asg:
                         if not a.startswith('new '): out |= index_kinds(a, fid, depth + 1)
                     return out
+                via = through_callers(t, fid, depth, index_kinds)
+                if via: return via
             tl = t.lower()
             if 'getindex' in tl and 'acc' in tl: return {'ACCOUNT'}   # LibAccount.getIndex(comps, accVicID): the victim's account index
-            if 'item' in tl or 'currency' in tl or 'onyx' in tl: return {'ITEM'}
+            if 'item' in tl or 'currency' in tl or 'onyx' in tl or 'keyscomponent' in tl: return {'ITEM'}   # a droptable's keys are item indices
             if 'node' in tl: return {'NODE'}
             if 'recipe' in tl: return {'RECIPE'}
+            if re.fullmatch(r'indices(\[i\])?', tl): return {'ITEM'}   # a bare indices array reaching LibData is item indices (burn, transfer, droptable, sacrifice); node and recipe arrays are built locally and resolved above
             if tl in ('index', 'data.index'): return {'index (from the caller)'}
             return {t}
         def type_values(arg, fid):
@@ -738,6 +756,17 @@ def write_spec(ix, model, ents, comps, systems, id_ns, src_note):
                         r_['read_in'].add(ix.key(fid)); r_['read_by'] |= reach_systems(fid)
         # patterns (HARVEST_TIME_*) stand beside their expansions; a family is the first word of the name
         family = lambda nm: 'ITEM' if nm.endswith('_ITEM_USE') else nm.strip('*_').split('_')[0]
+        def scope_of(holders):
+            """world: holder 0 only · account: an account's own counter · both: the same name kept at both levels ·
+            other: a token address, a fresh log entity, or a holder the tracer could not name."""
+            hs = set(holders)
+            if not hs: return 'other'
+            if hs == {'world'}: return 'world'
+            if hs <= {'ACCOUNT'}: return 'account'
+            if hs <= {'ACCOUNT', 'world'}: return 'both'
+            return 'other'
+        notes_ = {'families': read_note_section(os.path.join(NOTES, 'data-logs.yaml'), 'families'),
+                  'logs': read_note_section(os.path.join(NOTES, 'data-logs.yaml'), 'logs')}
         out = {}
         for nm in sorted(logs):
             r_ = logs[nm]
@@ -747,12 +776,19 @@ def write_spec(ix, model, ents, comps, systems, id_ns, src_note):
                 o['pattern'] = True; o['values'] = sorted(x for x in logs if '*' not in x and rx.match(x) and x != nm.replace('*', ''))
             for k_ in ('holder', 'index', 'op', 'written_in', 'written_by', 'read_in', 'read_by'):
                 if r_[k_]: o[k_] = sorted(r_[k_])
+            lognotes = {k_.strip('"\''): v_ for k_, v_ in notes_['logs'].items()}   # a quoted key ("SCAV_CLAIM_*") keeps its quotes in the flow mapping
+            note = lognotes.get(nm) or next((v_ for k_, v_ in lognotes.items() if '*' in k_ and re.fullmatch(re.escape(k_).replace('\\*', '.*'), nm)), {})
+            for k_ in ('holder', 'index'):   # notes name what the tracer cannot (an index array built two calls away)
+                if note.get(k_):
+                    o[k_] = sorted(x.strip() for x in str(note[k_]).split('|') if x.strip()); o[k_ + '_from_notes'] = True
+            if r_['op']: o['scope'] = scope_of(o.get('holder', []))
             out[nm] = o
-        fams = {}
-        for nm, o in out.items(): fams.setdefault(o['family'], []).append(nm)
-        notes_ = {'families': read_note_section(os.path.join(NOTES, 'data-logs.yaml'), 'families'),
-                  'logs': read_note_section(os.path.join(NOTES, 'data-logs.yaml'), 'logs')}
-        return {'logs': out, 'families': {k_: sorted(v_) for k_, v_ in sorted(fams.items())}, 'notes': notes_}
+        fams, scopes = {}, {}
+        for nm, o in out.items():
+            fams.setdefault(o['family'], []).append(nm)
+            if o.get('scope') and '*' not in nm: scopes.setdefault(o['scope'], []).append(nm)
+        return {'logs': out, 'families': {k_: sorted(v_) for k_, v_ in sorted(fams.items())},
+                'scopes': {k_: sorted(v_) for k_, v_ in sorted(scopes.items())}, 'notes': notes_}
     def id_meta(ns):
         """How the id for namespace ns is hashed: encoding and the type of each key, from the first occurrence that
         has an owner function (they all hash the same way, or the model would have split them)."""
@@ -825,8 +861,8 @@ def write_spec(ix, model, ents, comps, systems, id_ns, src_note):
             'left_out': model['source'].get('left_out') or {}}
     with open(os.path.join(GEN, 'recognition.json'), 'w') as f_: json.dump(spec, f_, indent=1, sort_keys=False)
     dl = datalogs()
-    write(os.path.join(GEN, 'data-logs.yaml'), src_note, {'about': 'Data logs: the counters LibData keeps at is.data(holderID, index, type), from every LibData write and read in the contracts. holder/index: what the call passes (world = holder 0; ITEM/NODE/RECIPE = that registry index). written_by/read_by: the systems whose entry points reach the call. A name with * is a pattern; values are its expansions. Descriptions live in notes/data-logs.yaml.',
-                                                           'families': dl['families'], 'logs': dl['logs']})
+    write(os.path.join(GEN, 'data-logs.yaml'), src_note, {'about': 'Data logs: the counters LibData keeps at is.data(holderID, index, type), from every LibData write and read in the contracts. holder/index: what the call passes (world = holder 0; ITEM/NODE/RECIPE = that registry index). written_by/read_by: the systems whose entry points reach the call. scope: world (holder 0 only), account, both (the same name at both levels) or other; scopes groups the names by it. A name with * is a pattern; values are its expansions. Descriptions live in notes/data-logs.yaml.',
+                                                           'families': dl['families'], 'scopes': dl['scopes'], 'logs': dl['logs']})
     vd_ = os.path.join(HERE, 'viz', 'data'); os.makedirs(vd_, exist_ok=True)
     with open(os.path.join(vd_, 'datalogs.json'), 'w') as f_: json.dump(dl, f_)
     return spec
@@ -1643,7 +1679,7 @@ def read_note_section(path, section):
     for line in open(path):
         if re.match(r'^\w', line): inside = line.startswith(section + ':'); continue
         if not inside: continue
-        m = re.match(r'^  ([\w.:,]+):\s*\{(.*)\}\s*(#.*)?$', line)
+        m = re.match(r'^  "?([\w.:,*-]+)"?:\s*\{(.*)\}\s*(#.*)?$', line)   # a key with * (a counter pattern) is quoted in YAML
         if not m: continue
         d = {}
         for k, v in re.findall(r'(\w+):\s*("(?:[^"\\]|\\.)*"|[^,}]+)', m.group(2)):

@@ -1054,7 +1054,7 @@ logs:
   SCAV_CLAIM_AFFINITY_EERIE:
     family: SCAV
     holder: [ACCOUNT]
-    index: ["0", NODE]
+    index: ["0"]
     op: [inc]
     written_in: [LibScavenge.logClaim]
     written_by: [ScavengeClaim]
@@ -1063,7 +1063,7 @@ logs:
   SCAV_CLAIM_AFFINITY_EERIE-INSECT:
     family: SCAV
     holder: [ACCOUNT]
-    index: ["0", NODE]
+    index: ["0"]
     op: [inc]
     written_in: [LibScavenge.logClaim]
     written_by: [ScavengeClaim]
@@ -1072,7 +1072,7 @@ logs:
   SCAV_CLAIM_AFFINITY_EERIE-SCRAP:
     family: SCAV
     holder: [ACCOUNT]
-    index: ["0", NODE]
+    index: ["0"]
     op: [inc]
     written_in: [LibScavenge.logClaim]
     written_by: [ScavengeClaim]
@@ -1081,7 +1081,7 @@ logs:
   SCAV_CLAIM_AFFINITY_INSECT:
     family: SCAV
     holder: [ACCOUNT]
-    index: ["0", NODE]
+    index: ["0"]
     op: [inc]
     written_in: [LibScavenge.logClaim]
     written_by: [ScavengeClaim]
@@ -1090,7 +1090,7 @@ logs:
   SCAV_CLAIM_AFFINITY_INSECT-EERIE:
     family: SCAV
     holder: [ACCOUNT]
-    index: ["0", NODE]
+    index: ["0"]
     op: [inc]
     written_in: [LibScavenge.logClaim]
     written_by: [ScavengeClaim]
@@ -1099,7 +1099,7 @@ logs:
   SCAV_CLAIM_AFFINITY_INSECT-SCRAP:
     family: SCAV
     holder: [ACCOUNT]
-    index: ["0", NODE]
+    index: ["0"]
     op: [inc]
     written_in: [LibScavenge.logClaim]
     written_by: [ScavengeClaim]
@@ -1108,7 +1108,7 @@ logs:
   SCAV_CLAIM_AFFINITY_NORMAL:
     family: SCAV
     holder: [ACCOUNT]
-    index: ["0", NODE]
+    index: ["0"]
     op: [inc]
     written_in: [LibScavenge.logClaim]
     written_by: [ScavengeClaim]
@@ -1117,7 +1117,7 @@ logs:
   SCAV_CLAIM_AFFINITY_SCRAP:
     family: SCAV
     holder: [ACCOUNT]
-    index: ["0", NODE]
+    index: ["0"]
     op: [inc]
     written_in: [LibScavenge.logClaim]
     written_by: [ScavengeClaim]
@@ -1126,7 +1126,7 @@ logs:
   SCAV_CLAIM_AFFINITY_SCRAP-INSECT:
     family: SCAV
     holder: [ACCOUNT]
-    index: ["0", NODE]
+    index: ["0"]
     op: [inc]
     written_in: [LibScavenge.logClaim]
     written_by: [ScavengeClaim]

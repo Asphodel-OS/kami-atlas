@@ -777,7 +777,8 @@ def write_spec(ix, model, ents, comps, systems, id_ns, src_note):
             for k_ in ('holder', 'index', 'op', 'written_in', 'written_by', 'read_in', 'read_by'):
                 if r_[k_]: o[k_] = sorted(r_[k_])
             lognotes = {k_.strip('"\''): v_ for k_, v_ in notes_['logs'].items()}   # a quoted key ("SCAV_CLAIM_*") keeps its quotes in the flow mapping
-            note = lognotes.get(nm) or next((v_ for k_, v_ in lognotes.items() if '*' in k_ and re.fullmatch(re.escape(k_).replace('\\*', '.*'), nm)), {})
+            pats = sorted((k_ for k_ in lognotes if '*' in k_ and re.fullmatch(re.escape(k_).replace('\\*', '.*'), nm)), key=len, reverse=True)   # the most specific pattern wins
+            note = lognotes.get(nm) or (lognotes[pats[0]] if pats else {})
             for k_ in ('holder', 'index'):   # notes name what the tracer cannot (an index array built two calls away)
                 if note.get(k_):
                     o[k_] = sorted(x.strip() for x in str(note[k_]).split('|') if x.strip()); o[k_ + '_from_notes'] = True

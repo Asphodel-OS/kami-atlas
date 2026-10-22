@@ -13,7 +13,7 @@ _NPCRegistry:
   deployed: true
   writes: [EntityType, IndexNPC, IndexRoom, Name]
   steps:
-    create: ["revert if !(id == 0): NPC: already exists", LibNPC.create]
-    setName: ["revert if !(id != 0): NPC: does not exist", LibNPC.setName]
-    setRoom: ["revert if !(id != 0): NPC: does not exist", LibNPC.setRoomIndex]
+    create: [LibNPC.get, "revert if !(id == 0): NPC: already exists", LibNPC.create]
+    setName: [LibNPC.get, "revert if !(id != 0): NPC: does not exist", LibNPC.setName]
+    setRoom: [LibNPC.get, "revert if !(id != 0): NPC: does not exist", LibNPC.setRoomIndex]
     execute: ["revert if !(false): not implemented"]

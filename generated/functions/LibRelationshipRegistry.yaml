@@ -16,6 +16,18 @@ LibRelationshipRegistry.delete_:
     - LibRelationshipRegistry.removeWhitelist
 LibRelationshipRegistry.genID:
   sig: "(uint32 npcIndex, uint32 relIndex) internal pure"
+LibRelationshipRegistry.get:
+  sig: "(uint32 npcIndex, uint32 relIndex) internal view"
+  steps: [LibRelationshipRegistry.genID, LibRelationshipRegistry.isRelationship]
+LibRelationshipRegistry.getBlacklist:
+  sig: "(uint256 id) internal view"
+  steps: [LibRelationshipRegistry.hasBlacklist, "get Blacklist"]
+LibRelationshipRegistry.getNpcIndex:
+  sig: "(uint256 id) internal view"
+  steps: ["get IndexNPC"]
+LibRelationshipRegistry.getWhitelist:
+  sig: "(uint256 id) internal view"
+  steps: [LibRelationshipRegistry.hasWhitelist, "get Whitelist"]
 LibRelationshipRegistry.hasBlacklist:
   sig: "(uint256 id) internal view"
   steps: ["has Blacklist"]

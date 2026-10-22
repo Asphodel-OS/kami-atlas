@@ -11,3 +11,5 @@ LibPack.stringToUint:
   sig: "(string value) internal pure"
 LibPack.uintToString:
   sig: "(uint256 value) internal pure"
+LibPack.unpackArrU32:
+  sig: "(uint256 packed) internal pure"

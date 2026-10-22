@@ -10,9 +10,11 @@ LibTrade.burnResidue:
   sig: "(uint256 tradeID) internal"
   writes: [EntityType, IDOwnsInventory, IndexItem, Value]
   steps:
+    - LibInventory.getBalanceOf
     - "if residue > 0": ["LibInventory.decFor(uint256,uint32,uint256)"]
 LibTrade.calcTax:
   sig: "(uint32 itemIndex, uint256 amount) internal view"
+  steps: ["LibConfig.getArray(\"TRADE_TAX_RATE\")"]
 LibTrade.cancel:
   sig: "(uint256 id) internal"
   writes: [EntityType, IDOwnsInventory, IDOwnsTrade, IdTarget, IndexItem, Keys, State, Value, Values]
@@ -131,13 +133,13 @@ LibTrade.logSpend:
 LibTrade.processCreateFee:
   sig: "(uint256 accID) internal"
   writes: [EntityType, IDOwnsInventory, IndexItem, Value]
-  steps: ["LibInventory.decFor(uint256,uint32,uint256)"]
+  steps: ["LibConfig.get(string) \"TRADE_CREATION_FEE\"", "LibInventory.decFor(uint256,uint32,uint256)"]
 LibTrade.processDeliveryFee:
   sig: "(uint256 accID) internal"
   writes: [EntityType, IDOwnsInventory, IndexItem, Value]
   steps:
     - LibTrade.isInTradeRoom
-    - "if !isInTradeRoom(comps, accID)": ["LibInventory.decFor(uint256,uint32,uint256)"]
+    - "if !isInTradeRoom(comps, accID)": ["LibConfig.get(string) \"TRADE_DELIVERY_FEE\"", "LibInventory.decFor(uint256,uint32,uint256)"]
 LibTrade.verifyIsTrade:
   sig: "(uint256 id) public view"
   steps: ["LibEntityType.isShape(uint256,string) \"TRADE\"", "revert if !LibEntityType.isShape(comps, id, \"TRADE\"): not a trade"]
@@ -146,10 +148,10 @@ LibTrade.verifyMaker:
   steps: ["get IDOwnsTrade", "revert if makerID != accID: Trade owner mismatch"]
 LibTrade.verifyMaxOrders:
   sig: "(uint256 accID) public view"
-  steps: [LibTrade.getNumOrders, "revert if getNumOrders(comps, accID) >= max: Trade order limit reached"]
+  steps: ["LibConfig.get(string) \"MAX_TRADES_PER_ACCOUNT\"", LibTrade.getNumOrders, "revert if getNumOrders(comps, accID) >= max: Trade order limit reached"]
 LibTrade.verifyNotMaker:
   sig: "(uint256 tradeID, uint256 accID) public view"
-  steps: ["revert if makerID == accID: Trade cannot be executed by Maker"]
+  steps: [LibTrade.getMaker, "revert if makerID == accID: Trade cannot be executed by Maker"]
 LibTrade.verifyState:
   sig: "(uint256 id, string state) public view"
   steps: ["eqString State", "revert if !stateMatches: Trade is not <state>"]

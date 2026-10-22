@@ -2,9 +2,13 @@
 LibVIP.finalizePrevStage:
   sig: "(ProxyVIPScoreComponent vipComp, address vipAddr, uint64 currStage) internal"
   steps: [ProxyVIPScoreComponent.finalizeStage]
+LibVIP.getAddress:
+  sig: "() internal view"
+  steps: ["LibConfig.getAddress(\"VIP_SCORE_ADDRESS\")"]
 LibVIP.getStage:
   sig: "() internal view"
+  steps: ["LibConfig.getArray(\"VIP_STAGE\")"]
 LibVIP.inc:
   sig: "(uint256 accID, uint256 amount) internal"
   writes: [IDType, IdHolder, ProxyVIPScore, Value]
-  steps: [LibVIP.getStage, "LibScore.incFor(uint256,uint256,uint32,string,uint256) \"VIP_SCORE\"", LibVIP.finalizePrevStage, LibAccount.getOwner, "inc ProxyVIPScore"]
+  steps: [LibVIP.getAddress, LibVIP.getStage, "LibScore.incFor(uint256,uint256,uint32,string,uint256) \"VIP_SCORE\"", LibVIP.finalizePrevStage, LibAccount.getOwner, "inc ProxyVIPScore"]

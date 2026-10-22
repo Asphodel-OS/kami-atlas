@@ -11,6 +11,9 @@ LibListingRegistry.genReqAnchor:
   sig: "(uint256 regID) internal pure"
 LibListingRegistry.genSellID:
   sig: "(uint256 regID) internal pure"
+LibListingRegistry.get:
+  sig: "(uint32 merchantIndex, uint32 itemIndex) internal view"
+  steps: [LibListingRegistry.genID, "LibEntityType.isShape(uint256,string) \"LISTING\""]
 LibListingRegistry.getCurrencyIndex:
   sig: "(uint256 listingID) internal view"
   steps: ["get IndexCurrency"]
@@ -29,6 +32,8 @@ LibListingRegistry.remove:
     - LibListingRegistry.removePrice
     - LibListingRegistry.genSellID
     - LibListingRegistry.removePrice
+    - LibListingRegistry.genReqAnchor
+    - "LibConditional.queryFor(uint256)"
     - "for each (i < requirements.length)": ["LibConditional.remove(uint256)"]
 LibListingRegistry.removePrice:
   sig: "(uint256 priceID) internal"

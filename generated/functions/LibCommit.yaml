@@ -16,6 +16,9 @@ LibCommit.extractSeeds:
   steps:
     - "extract BlockReveal"
     - "for each (i < ids.length)": [LibCommit.hashSeed]
+LibCommit.extractTypes:
+  sig: "(uint256[] ids) internal"
+  steps: ["extract Type"]
 LibCommit.filterInvalid:
   sig: "(uint256[] ids) internal view"
   steps:

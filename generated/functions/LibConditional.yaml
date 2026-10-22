@@ -64,7 +64,7 @@ LibConditional.parseTargetShape:
   steps:
     - "if forShape.eq(\"ACCOUNT\")": [LibGetter.getAccount]
       else:
-        - "if forShape.eq(\"ROOM\")": [LibRoom.getByIndex]
+        - "if forShape.eq(\"ROOM\")": [LibGetter.getRoom, LibRoom.getByIndex]
           else:
             - "if forShape.eq(\"KAMI\")":
                 - "LibEntityType.isShape(uint256,string) \"KAMI\""

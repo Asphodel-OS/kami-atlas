@@ -38,7 +38,7 @@ KamiGachaMint:
     - Value
     - Violence
   reads: [CacheOperator, Rarity]
-  config: [BASE_KAMI_NAME]
+  config: [BASE_KAMI_NAME, KAMI721_ADDRESS]
   data: [GACHA_COMMITS_PENDING, ITEM_COUNT, KAMI_GACHA_MINT]
   access_not_written: [Affinity, ProxyPermissionsERC721, Reroll]
   steps:

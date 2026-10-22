@@ -15,12 +15,14 @@ Kami721Stake:
   writes: [Balance, IDOwnsKami, IDOwnsKamiOrder, IndexKami, IndexKamiListing, Max, State, TimeEnd, TimeLast, TimeStart, Value, Values]
   reads: [EntityType, IndexRoom]
   events: [KAMI_MARKET_CANCEL]
+  config: [KAMI721_ADDRESS]
   data: [KAMI_MARKET_CANCEL, KAMI_STAKE]
   writes_without_access: [IndexKami]
   writes_without_access_paths:
     IndexKami: [Kami721StakeSystem.execute, LibKamiMarket.cancelListingsForKami, LibKamiMarket.cancelListing, LibKamiMarket._markCancelled, LibKamiMarket._cleanup, LibKamiMarketIndex.cleanup]
   access_not_written: [EntityType, IdHolder, ProxyPermissionsERC721, Type]
   steps:
+    - LibKami.getByIndex
     - LibAccount.getByOwner
     - LibAccount.getRoom
     - LibAccount.getRoom

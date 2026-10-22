@@ -8,7 +8,7 @@ LibGoal.canClaim:
   steps: [LibGoal.checkRoom, LibGoal.genContributionID, "has IsComplete", "has Value"]
 LibGoal.canContribute:
   sig: "(uint32 goalIndex, uint256 goalID, uint256 accID) internal view"
-  steps: [LibGoal.checkRequirements, LibGoal.checkRoom, LibGoal.isComplete]
+  steps: [LibGoal.getRequirements, LibGoal.checkRequirements, LibGoal.checkRoom, LibGoal.isComplete]
 LibGoal.checkRequirements:
   sig: "(uint256 accID, uint256[] requirements) internal view"
   steps: ["LibConditional.check(uint256[],uint256)"]
@@ -69,7 +69,13 @@ LibGoal.distributeRewards:
     - TimeNext
     - Type
     - Value
-  steps: [LibGoal.getContributionAmt, LibGoal.getClaimableTiers, "LibAllo.distribute(uint256[],uint256)", LibGoal.getProportionalRewards, "LibAllo.distribute(uint256[],uint256,uint256)"]
+  steps:
+    - LibGoal.getContributionAmt
+    - LibGoal.getClaimableTiers
+    - LibGoal.getRewards
+    - "LibAllo.distribute(uint256[],uint256)"
+    - LibGoal.getProportionalRewards
+    - "LibAllo.distribute(uint256[],uint256,uint256)"
 "LibGoal.genAlloAnchor(uint256)":
   sig: "(uint256 tierID) internal pure"
 "LibGoal.genAlloAnchor(uint32,uint256)":
@@ -90,7 +96,7 @@ LibGoal.getByIndex:
   steps: [LibGoal.genGoalID, "LibEntityType.isShape(uint256,string) \"GOAL\""]
 LibGoal.getClaimableTiers:
   sig: "(uint32 goalIndex, uint256 contributionAmt) internal view"
-  steps: ["safeGet Value"]
+  steps: [LibGoal.getTiers, "safeGet Value"]
 LibGoal.getContributionAmt:
   sig: "(uint256 goalID, uint256 accID) internal view"
   steps:
@@ -100,6 +106,17 @@ LibGoal.getContributionAmt:
 LibGoal.getProportionalRewards:
   sig: "(uint32 goalIndex) internal view"
   steps: ["LibGoal.genAlloAnchor(uint32,uint256)", "LibAllo.queryFor(uint256)"]
+LibGoal.getRequirements:
+  sig: "(uint32 goalIndex) internal view"
+  steps: [LibGoal.genReqAnchor, "LibConditional.queryFor(uint256)"]
+LibGoal.getRewards:
+  sig: "(uint256[] tierIDs) internal view"
+  steps:
+    - "for each (i < tierIDs.length)": ["LibGoal.genAlloAnchor(uint256)"]
+    - "LibAllo.queryFor(uint256[])"
+LibGoal.getTiers:
+  sig: "(uint32 goalIndex) internal view"
+  steps: [LibGoal.genTierAnchorID, LibReference.queryByParent]
 LibGoal.incContribution:
   sig: "(uint256 holderID, uint256 goalID, uint256 amt) internal"
   writes: [IDType, IdHolder, Value]
@@ -125,12 +142,13 @@ LibGoal.remove:
     - LibDisabled.set
     - LibGoal.genObjID
     - "LibConditional.remove(uint256)"
+    - LibGoal.getRequirements
     - "LibConditional.remove(uint256[])"
     - LibGoal.removeRewards
 LibGoal.removeRewards:
   sig: "(uint32 index) public"
   writes: [EntityType, IDAnchor, IdSource, Index, IsRegistry, Keys, Name, Subtype, Time, Type, Value, Weights]
-  steps: [LibGoal.removeTiers, "LibAllo.remove(uint256[])"]
+  steps: [LibGoal.getTiers, LibGoal.removeTiers, LibGoal.getRewards, "LibAllo.remove(uint256[])"]
 LibGoal.removeTiers:
   sig: "(uint256[] ids) public"
   writes: [EntityType, IDAnchor, Name, Value]

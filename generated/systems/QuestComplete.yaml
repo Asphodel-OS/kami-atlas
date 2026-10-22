@@ -32,11 +32,13 @@ QuestComplete:
     - Value
   reads: [CacheOperator, For, IDOwnsKami, IDOwnsQuest, Index, IndexQuest, IsDisabled, LogicType, SkillPoint, Subtype, TokenAddress]
   write_access: "*"
+  config: [VIP_SCORE_ADDRESS, VIP_STAGE]
   bonuses: [TIMED, UPON_COOLDOWN_SET, UPON_DEATH, UPON_HARVEST_ACTION, UPON_HARVEST_STOP, UPON_KILL_OR_KILLED, UPON_LIQUIDATION]
   flags: [REPEATABLE]
   data: [QUEST_COMPLETE, QUEST_REPEATABLE_COMPLETE]
   steps:
     - LibAccount.getByOperator
+    - LibQuest.getIndex
     - LibQuest.verifyIsQuest
     - LibQuest.verifyEnabled
     - LibQuest.verifyOwner

@@ -577,20 +577,6 @@ entities:
             up: "from the key values"
         kind: record
         fields: [Value]
-      bonus.type:
-        id: "bonus.type(type_, holderID)"
-        keys:
-          type_: null
-          holderID: KAMI
-        parent_from: "holder key"
-        relation:
-          type: keyed
-          required: true
-          navigate:
-            down: "compute bonus.type(type_, holderID) from the parent"
-            up: "from the key values"
-        kind: "anchor key"
-        pointed_at_by: [IDType]
     components_later: [IndexRoom, Reroll, TimeLast, TimeNext]
     components_later_in:
       IndexRoom: [LibRoom.set]
@@ -1525,7 +1511,7 @@ entities:
           up: "the lo, hi keys of amm.pool"
           down: "compute amm.pool(lo, hi)"
         derived:
-          - "registry keys lo, hi of amm.pool(lo, hi) resolve to ITEM (traced through callers: indexA is passed as index to LibItem.getByIndex; indexA is passed as itemIndex to LibInventory.transferForNoLog; indexB is passed as index to LibItem.getByIndex; indexB is passed as itemIndex to LibInventory.getBalanceOf)"
+          - "registry keys lo, hi of amm.pool(lo, hi) resolve to ITEM (traced through callers: indexA is passed as index to LibItem.getByIndex; indexA is passed as itemIndex to LibInventory.getBalanceOf; indexA is passed as itemIndex to LibInventory.transferForNoLog; indexB is passed as index to LibItem.getByIndex)"
         inferred: true
     components: [Keys, Rate, TimeStart]
     owns: [INVENTORY, POOL_SHARE]
@@ -1835,6 +1821,21 @@ shared_sub_entities:
         inferred: true
     held_by: [ACCOUNT, KAMI]
     fields_from_notes: true
+  bonus.type:
+    id: "bonus.type(type_, holderID)"
+    keys:
+      type_: null
+      holderID: [ACCOUNT, KAMI]
+    parent_from: "held by several types"
+    relation:
+      type: keyed
+      required: true
+      navigate:
+        down: "compute bonus.type(type_, holderID) from the parent"
+        up: "from the key values"
+    kind: "anchor key"
+    pointed_at_by: [IDType]
+    held_by: [ACCOUNT, KAMI]
   droptable.item.log:
     id: "droptable.item.log(holderID, dtID)"
     keys:

@@ -43,15 +43,24 @@ _QuestRegistry:
     create:
       - LibQuestRegistry.createQuest
       - "if duration > 0": [LibQuestRegistry.setRepeatable]
-    addObjective: ["revert if !(questID != 0): Quest does not exist", "revert if !(!LibString.eq(type_, \"\")): Quest Objective type cannot be empty", LibQuestRegistry.createObjective]
-    addRequirement: ["revert if !(questID != 0): Quest does not exist", "revert if !(!LibString.eq(type_, \"\")): Quest Requirement type cannot be empty", LibQuestRegistry.createRequirement]
+    addObjective:
+      - LibQuestRegistry.getByIndex
+      - "revert if !(questID != 0): Quest does not exist"
+      - "revert if !(!LibString.eq(type_, \"\")): Quest Objective type cannot be empty"
+      - LibQuestRegistry.createObjective
+    addRequirement:
+      - LibQuestRegistry.getByIndex
+      - "revert if !(questID != 0): Quest does not exist"
+      - "revert if !(!LibString.eq(type_, \"\")): Quest Requirement type cannot be empty"
+      - LibQuestRegistry.createRequirement
     addRewardBasic:
+      - LibQuestRegistry.getByIndex
       - "revert if !(questID != 0): Quest does not exist"
       - "revert if !(!LibString.eq(type_, \"\")): Quest Reward type cannot be empty"
       - LibQuestRegistry.genAlloAnchor
       - LibAllo.createBasic
-    addRewardDT: ["revert if !(questID != 0): Quest does not exist", LibQuestRegistry.genAlloAnchor, LibAllo.createDT]
-    addRewardStat: ["revert if !(questID != 0): Quest does not exist", LibQuestRegistry.genAlloAnchor, LibAllo.createStat]
-    setDisabled: ["revert if !(regID != 0): Quest does not exist", LibDisabled.set]
-    remove: ["revert if !(regID != 0): Quest does not exist", LibQuestRegistry.removeQuest]
+    addRewardDT: [LibQuestRegistry.getByIndex, "revert if !(questID != 0): Quest does not exist", LibQuestRegistry.genAlloAnchor, LibAllo.createDT]
+    addRewardStat: [LibQuestRegistry.getByIndex, "revert if !(questID != 0): Quest does not exist", LibQuestRegistry.genAlloAnchor, LibAllo.createStat]
+    setDisabled: [LibQuestRegistry.getByIndex, "revert if !(regID != 0): Quest does not exist", LibDisabled.set]
+    remove: [LibQuestRegistry.getByIndex, "revert if !(regID != 0): Quest does not exist", LibQuestRegistry.removeQuest]
     execute: ["revert if !(false): not implemented"]

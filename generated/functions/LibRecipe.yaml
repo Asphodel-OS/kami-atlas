@@ -47,6 +47,9 @@ LibRecipe.get:
 LibRecipe.getIO:
   sig: "(uint32 recipeIndex, uint256 rolls) internal view"
   steps: [LibRecipe.genInputID, LibRecipe.genOutputID, "get Keys", "get Values", "LibArray.multiply(uint256[],uint256)", "LibArray.multiply(uint256[],uint256)"]
+LibRecipe.getRequirements:
+  sig: "(uint32 recipeIndex) internal view"
+  steps: [LibRecipe.genReqAnchor, "LibConditional.queryFor(uint256)"]
 LibRecipe.logCraft:
   sig: "(uint256 accID, uint32 recipeIndex, uint256 amt, uint32[] craftedIndices, uint256[] craftedAmts) public"
   writes: [Value]
@@ -68,7 +71,8 @@ LibRecipe.remove:
     - LibRecipe.genOutputID
     - "remove Keys"
     - "remove Values"
+    - LibRecipe.getRequirements
     - "for each (i < requirements.length)": ["LibConditional.remove(uint256)"]
 LibRecipe.verifyRequirements:
   sig: "(uint32 recipeIndex, uint256 accID) public view"
-  steps: ["LibConditional.check(uint256[],uint256)", "revert if !LibConditional.check(components, reqIDs, accID): Recipe: reqs not met"]
+  steps: [LibRecipe.getRequirements, "LibConditional.check(uint256[],uint256)", "revert if !LibConditional.check(components, reqIDs, accID): Recipe: reqs not met"]

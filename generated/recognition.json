@@ -1225,6 +1225,7 @@
     "IDOwnsKami",
     "IdHolder",
     "Reroll",
+    "Type",
     "Value"
    ],
    "selectors": {
@@ -1432,6 +1433,7 @@
     "IDType",
     "IdSource",
     "IndexItem",
+    "IndexSkill",
     "Level",
     "SkillPoint",
     "Time",
@@ -1499,6 +1501,7 @@
     "IdSource",
     "IndexItem",
     "TimeLast",
+    "Type",
     "Value"
    ],
    "selectors": {
@@ -1790,6 +1793,7 @@
     "IdSource",
     "IndexItem",
     "IndexRoom",
+    "IndexSkill",
     "Level",
     "ProxyVIPScore",
     "SkillPoint",
@@ -3485,30 +3489,6 @@
      "key_types": {
       "kamiID": "uint256"
      }
-    },
-    "bonus.type": {
-     "id": "bonus.type(type_, holderID)",
-     "keys": {
-      "type_": null,
-      "holderID": "KAMI"
-     },
-     "kind": "anchor key",
-     "fields": [],
-     "encoding": "keccak256(abi.encodePacked(ns, keys\u2026))",
-     "key_order": [
-      "type_",
-      "holderID"
-     ],
-     "key_types": {
-      "type_": "string",
-      "holderID": "uint256"
-     },
-     "key_values": {
-      "type_": []
-     },
-     "pointed_at_by": [
-      "IDType"
-     ]
     }
    }
   },
@@ -5833,7 +5813,15 @@
     "holderID": "uint256"
    },
    "key_values": {
-    "type_": []
+    "type_": [
+     "TIMED",
+     "UPON_COOLDOWN_SET",
+     "UPON_DEATH",
+     "UPON_HARVEST_ACTION",
+     "UPON_HARVEST_STOP",
+     "UPON_KILL_OR_KILLED",
+     "UPON_LIQUIDATION"
+    ]
    },
    "held_by": [
     "ACCOUNT",
@@ -5899,6 +5887,59 @@
    "held_by": [
     "ACCOUNT",
     "KAMI"
+   ]
+  },
+  "bonus.type": {
+   "id": "bonus.type(type_, holderID)",
+   "keys": {
+    "type_": null,
+    "holderID": [
+     "ACCOUNT",
+     "KAMI"
+    ]
+   },
+   "kind": "anchor key",
+   "fields": [],
+   "encoding": "keccak256(abi.encodePacked(ns, keys\u2026))",
+   "key_order": [
+    "type_",
+    "holderID"
+   ],
+   "key_types": {
+    "type_": "string",
+    "holderID": "uint256"
+   },
+   "key_patterns": {
+    "type_": [
+     "STAT_*"
+    ]
+   },
+   "key_values": {
+    "type_": [
+     "ATK_RECOIL_BOOST",
+     "ATK_SPOILS_RATIO",
+     "ATK_THRESHOLD_RATIO",
+     "ATK_THRESHOLD_SHIFT",
+     "DEF_RECOIL_BOOST",
+     "DEF_SALVAGE_RATIO",
+     "DEF_THRESHOLD_RATIO",
+     "DEF_THRESHOLD_SHIFT",
+     "EQUIP_CAPACITY_SHIFT",
+     "FRIENDS_LIMIT",
+     "HARV_BOUNTY_BOOST",
+     "HARV_FERTILITY_BOOST",
+     "HARV_INTENSITY_BOOST",
+     "REST_METABOLISM_BOOST",
+     "STND_COOLDOWN_SHIFT",
+     "STND_STRAIN_BOOST"
+    ]
+   },
+   "held_by": [
+    "ACCOUNT",
+    "KAMI"
+   ],
+   "pointed_at_by": [
+    "IDType"
    ]
   },
   "droptable.item.log": {
@@ -6046,15 +6087,44 @@
    },
    "key_values": {
     "name": [
+     "ACCOUNT_STAMINA",
      "BASE_KAMI_NAME",
+     "BASE_URI",
+     "ERC20_RECEIVER_ADDRESS",
+     "FRIENDS_BASE_LIMIT",
      "FRIENDS_REQUEST_LIMIT",
      "GACHA_REROLL_PRICE",
+     "KAMI721_ADDRESS",
+     "KAMI_HARV_BOUNTY",
+     "KAMI_HARV_EFFICACY_BODY",
+     "KAMI_HARV_EFFICACY_HAND",
+     "KAMI_HARV_FERTILITY",
+     "KAMI_HARV_INTENSITY",
+     "KAMI_HARV_STRAIN",
+     "KAMI_LIQ_ANIMOSITY",
+     "KAMI_LIQ_EFFICACY",
+     "KAMI_LIQ_KARMA",
+     "KAMI_LIQ_KARMA_EFFICACY",
+     "KAMI_LIQ_RECOIL",
+     "KAMI_LIQ_SALVAGE",
+     "KAMI_LIQ_SPOILS",
+     "KAMI_LIQ_THRESHOLD",
+     "KAMI_LVL_REQ_BASE",
+     "KAMI_LVL_REQ_MULT_BASE",
      "KAMI_MARKET_ENABLED",
      "KAMI_MARKET_FEE_RATE",
      "KAMI_MARKET_FEE_RECIPIENT",
      "KAMI_MARKET_PURCHASE_COOLDOWN",
      "KAMI_MARKET_VAULT",
+     "KAMI_REST_METABOLISM",
+     "KAMI_STANDARD_COOLDOWN",
+     "KAMI_TREE_REQ",
+     "MAX_TRADES_PER_ACCOUNT",
+     "MINT_MAX_PUBLIC",
+     "MINT_MAX_TOTAL",
+     "MINT_MAX_WL",
      "MINT_PRICE_PUBLIC",
+     "MINT_PRICE_WL",
      "MINT_START_PUBLIC",
      "MINT_START_WL",
      "NEWBIE_VENDOR_ADDRESS",
@@ -6063,9 +6133,16 @@
      "NEWBIE_VENDOR_MIN_PRICE",
      "NEWBIE_VENDOR_TWAP_WINDOW",
      "ONYX_ADDRESS",
+     "ONYX_BURNER_ADDRESS",
+     "PORTAL_ITEM_EXPORT_TAX",
+     "PORTAL_ITEM_IMPORT_TAX",
      "PORTAL_TOKEN_EXPORT_DELAY",
      "SCORE_EPOCH",
+     "TRADE_CREATION_FEE",
+     "TRADE_DELIVERY_FEE",
+     "TRADE_TAX_RATE",
      "VIP_SCORE_ADDRESS",
+     "VIP_STAGE",
      "WORLD_PRIVATE"
     ]
    }

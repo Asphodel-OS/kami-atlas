@@ -4,6 +4,7 @@ LibKamiMarket._cancelListingsIfListed:
   writes: [Balance, IDOwnsKamiOrder, IndexKami, IndexKamiListing, Max, State, TimeEnd, TimeStart, Value, Values]
   events: [KAMI_MARKET_CANCEL]
   steps:
+    - LibKami.getByIndex
     - "LibKami.isState(uint256,string) \"LISTED\""
     - "if LibKami.isState(comps, kamiID, \"LISTED\")": [LibKamiMarket.cancelListingsForKami]
 LibKamiMarket._cleanup:
@@ -27,10 +28,13 @@ LibKamiMarket._setPurchaseCooldown:
     - "if cd > 0": [LibCooldown.modify]
 LibKamiMarket.calcFee:
   sig: "(uint256 price) internal view"
+  steps: ["LibConfig.getArray(\"KAMI_MARKET_FEE_RATE\")"]
 LibKamiMarket.cancelListing:
   sig: "(uint256 id) internal"
   writes: [Balance, IDOwnsKamiOrder, IndexKami, IndexKamiListing, Max, State, TimeEnd, TimeStart, Value, Values]
   steps:
+    - LibKamiMarket.getListingKamiIndex
+    - LibKami.getByIndex
     - "LibKami.isState(uint256,string) \"LISTED\""
     - "if LibKami.isState(comps, kamiID, \"LISTED\")": ["LibKami.setState(uint256,string) \"RESTING\""]
     - LibKamiMarket._markCancelled
@@ -39,10 +43,11 @@ LibKamiMarket.cancelListingsForKami:
   writes: [Balance, IDOwnsKamiOrder, IndexKami, IndexKamiListing, Max, State, TimeEnd, TimeStart, Value, Values]
   events: [KAMI_MARKET_CANCEL]
   steps:
+    - LibKami.getByIndex
     - "LibKami.isState(uint256,string) \"LISTED\""
     - LibQuery.query
     - "revert if orders.length == 0: KamiMarket: listing index missing"
-    - "for each (i < orders.length)": [LibKamiMarket.cancelListing, LibKamiMarket.emitCancel, LibKamiMarket.logCancel]
+    - "for each (i < orders.length)": [LibKamiMarket.getOwner, LibKamiMarket.cancelListing, LibKamiMarket.emitCancel, LibKamiMarket.logCancel]
 LibKamiMarket.cancelOffer:
   sig: "(uint256 id) internal"
   writes: [Balance, IDOwnsKamiOrder, IndexKami, IndexKamiListing, Max, State, TimeEnd, TimeStart, Value, Values]
@@ -132,8 +137,10 @@ LibKamiMarket.fillCollectionOffer:
     - Values
   events: [KAMI_MARKET_CANCEL]
   steps:
+    - LibKamiMarket.getOwner
     - LibAccount.getOwner
     - LibKamiMarket.getPrice
+    - LibKami.getByIndex
     - LibKamiMarket._cancelListingsIfListed
     - LibEquipment.unequipAll
     - LibKami.setOwner
@@ -168,9 +175,11 @@ LibKamiMarket.fillListing:
     - Value
     - Values
   steps:
+    - LibKamiMarket.getOwner
     - LibAccount.getOwner
     - LibKamiMarket.getPrice
     - LibKamiMarket.getListingKamiIndex
+    - LibKami.getByIndex
     - "LibKami.verifyState(uint256,string) \"LISTED\""
     - "LibKami.verifyAccount(uint256,uint256)"
     - LibEquipment.unequipAll
@@ -205,9 +214,11 @@ LibKamiMarket.fillOffer:
     - Values
   events: [KAMI_MARKET_CANCEL]
   steps:
+    - LibKamiMarket.getOwner
     - LibAccount.getOwner
     - LibKamiMarket.getPrice
     - LibKamiMarket.getKamiIndex
+    - LibKami.getByIndex
     - LibKamiMarket._cancelListingsIfListed
     - LibEquipment.unequipAll
     - LibKami.setOwner
@@ -232,6 +243,9 @@ LibKamiMarket.getOwner:
 LibKamiMarket.getPrice:
   sig: "(uint256 id) internal view"
   steps: ["get Value"]
+LibKamiMarket.getVault:
+  sig: "() internal view"
+  steps: ["LibConfig.getAddress(\"KAMI_MARKET_VAULT\")"]
 LibKamiMarket.isOrderActive:
   sig: "(uint256 id) internal view"
   steps: ["eqString State"]
@@ -276,6 +290,7 @@ LibKamiMarket.verifyIsType:
 LibKamiMarket.verifyKamiOwnedRestingOrListed:
   sig: "(uint32 kamiIndex, uint256 accID) internal view"
   steps:
+    - LibKami.getByIndex
     - "revert if kamiID == 0: KamiMarket: kami not found"
     - "LibKami.isState(uint256,string) \"RESTING\""
     - "LibKami.isState(uint256,string) \"LISTED\""
@@ -283,7 +298,7 @@ LibKamiMarket.verifyKamiOwnedRestingOrListed:
     - "LibKami.verifyAccount(uint256,uint256)"
 LibKamiMarket.verifyKamiResting:
   sig: "(uint32 kamiIndex, uint256 accID) internal view"
-  steps: ["revert if kamiID == 0: KamiMarket: kami not found", "LibKami.verifyState(uint256,string) \"RESTING\"", "LibKami.verifyAccount(uint256,uint256)"]
+  steps: [LibKami.getByIndex, "revert if kamiID == 0: KamiMarket: kami not found", "LibKami.verifyState(uint256,string) \"RESTING\"", "LibKami.verifyAccount(uint256,uint256)"]
 LibKamiMarket.verifyNotExpired:
   sig: "(uint256 id) internal view"
   steps:

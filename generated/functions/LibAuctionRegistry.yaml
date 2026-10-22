@@ -22,6 +22,18 @@ LibAuctionRegistry.genID:
   sig: "(uint32 index) internal pure"
 LibAuctionRegistry.genReqAnchor:
   sig: "(uint256 auctionID) internal pure"
+LibAuctionRegistry.get:
+  sig: "(uint32 index) internal view"
+  steps: [LibAuctionRegistry.genID, LibAuctionRegistry.isInstance]
+LibAuctionRegistry.getCurrencyIndex:
+  sig: "(uint256 id) internal view"
+  steps: ["get IndexCurrency"]
+LibAuctionRegistry.getReqs:
+  sig: "(uint256 id) internal view"
+  steps: [LibAuctionRegistry.genReqAnchor, "LibConditional.queryFor(uint256)"]
+LibAuctionRegistry.isInstance:
+  sig: "(uint256 id) internal view"
+  steps: ["LibEntityType.isShape(uint256,string) \"AUCTION\""]
 LibAuctionRegistry.remove:
   sig: "(uint256 id) internal"
   writes: [Balance, Decay, EntityType, For, IDAnchor, Index, IndexCurrency, IndexItem, LogicType, Max, Period, Rate, TimeStart, Type, Value]
@@ -37,4 +49,5 @@ LibAuctionRegistry.remove:
     - "remove Rate"
     - "remove TimeStart"
     - "remove Balance"
+    - LibAuctionRegistry.getReqs
     - "for each (i < reqs.length)": ["LibConditional.remove(uint256)"]

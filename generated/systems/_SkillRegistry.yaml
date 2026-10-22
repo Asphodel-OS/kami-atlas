@@ -18,6 +18,7 @@ _SkillRegistry:
     create:
       - "revert if !(index != 0): SkillCreate: index cannot be 0"
       - "revert if !(!LibString.eq(name, \"\")): SkillCreate: name empty"
+      - LibSkillRegistry.getByIndex
       - "revert if !(regID == 0): SkillCreate: already exists"
       - LibSkillRegistry.create
     addBonus: [LibSkillRegistry.getByIndex, LibSkillRegistry.getByIndex, "revert if !(LibSkillRegistry.getByIndex(components, skillIndex) != 0): Skill does not exist", LibSkillRegistry.addBonus]
@@ -26,5 +27,5 @@ _SkillRegistry:
       - LibSkillRegistry.getByIndex
       - "revert if !(LibSkillRegistry.getByIndex(components, skillIndex) != 0): Skill does not exist"
       - LibSkillRegistry.addRequirement
-    remove: ["revert if !(regID != 0): Skill does not exist", LibSkillRegistry.remove]
+    remove: [LibSkillRegistry.getByIndex, "revert if !(regID != 0): Skill does not exist", LibSkillRegistry.remove]
     execute: ["revert if !(false): not implemented"]

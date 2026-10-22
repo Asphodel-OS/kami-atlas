@@ -5,7 +5,9 @@ LibGacha._extractPets:
     - "for each (i < count)": ["getAt IDOwnsKami", "remove IDOwnsKami"]
 LibGacha.checkAndExtractIsCommit:
   sig: "(uint256[] ids) internal"
+  writes: [Type]
   steps:
+    - LibCommit.extractTypes
     - "for each (i < ids.length)": ["revert if !types[i].eq(\"GACHA_COMMIT\"): LibGacha: invalid commit ID"]
 LibGacha.commit:
   sig: "(uint256 amount, uint256 accID, uint256 revealBlock) internal"
@@ -23,10 +25,13 @@ LibGacha.getAllInGacha:
   steps: ["getEntitiesWithValue IDOwnsKami"]
 LibGacha.getNumFree:
   sig: "() internal view"
-  steps: [LibGacha.getNumInGacha]
+  steps: [LibGacha.getNumInGacha, LibGacha.getNumPending]
 LibGacha.getNumInGacha:
   sig: "() internal view"
   steps: ["size IDOwnsKami"]
+LibGacha.getNumPending:
+  sig: "() internal view"
+  steps: ["LibData.get(uint256,uint32,string) \"GACHA_COMMITS_PENDING\""]
 LibGacha.logMint:
   sig: "(uint256 accID, uint256 amount) public"
   writes: [Value]
@@ -38,7 +43,7 @@ LibGacha.logReroll:
 LibGacha.releasePending:
   sig: "(uint256 amount) internal"
   writes: [Value]
-  steps: ["LibData.set(uint256,uint32,string,uint256) \"GACHA_COMMITS_PENDING\""]
+  steps: [LibGacha.getNumPending, "LibData.set(uint256,uint32,string,uint256) \"GACHA_COMMITS_PENDING\""]
 LibGacha.selectPets:
   sig: "(uint256[] commitIDs) internal"
   writes: [BlockReveal, IDOwnsKami]

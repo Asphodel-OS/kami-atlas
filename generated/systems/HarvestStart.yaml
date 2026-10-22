@@ -12,12 +12,31 @@ HarvestStart:
     "executeTyped(uint256,uint32,uint256,uint256)": "0xc8372a87"
   deployed: true
   writes: [EntityType, Health, IDAnchor, IDOwnsTax, IDType, IdHolder, IdSource, IdTarget, Level, State, Time, TimeLast, TimeNext, TimeReset, TimeStart, Value]
-  reads: [Affinity, CacheOperator, For, Harmony, HasFlag, IDOwnsKami, Index, IndexRoom, IsComplete, LogicType, Power, SkillPoint, Slots, Stamina, Subtype, Type, Violence]
+  reads:
+    - Affinity
+    - CacheOperator
+    - For
+    - HasFlag
+    - IDOwnsKami
+    - Index
+    - IndexBackground
+    - IndexBody
+    - IndexColor
+    - IndexFace
+    - IndexHand
+    - IndexRoom
+    - IsComplete
+    - LogicType
+    - SkillPoint
+    - Subtype
+    - Type
   stats: [HARMONY, HEALTH, POWER, VIOLENCE]
+  config: [KAMI_HARV_BOUNTY, KAMI_HARV_FERTILITY, KAMI_HARV_INTENSITY, KAMI_HARV_STRAIN, KAMI_REST_METABOLISM, KAMI_STANDARD_COOLDOWN]
   bonuses: [HARV_BOUNTY_BOOST, HARV_FERTILITY_BOOST, HARV_INTENSITY_BOOST, REST_METABOLISM_BOOST, STND_COOLDOWN_SHIFT, STND_STRAIN_BOOST, UPON_COOLDOWN_SET]
   access_not_written: [IDOwnsInventory, IndexItem, Rate]
   steps:
     - LibAccount.getByOperator
+    - LibNode.getByIndex
     - "revert if nodeID == 0: node does not exist"
     - "LibKami.verifyAccount(uint256,uint256)"
     - "LibKami.verifyState(uint256,string) \"RESTING\""

@@ -32,7 +32,7 @@ LibItem.applyAllos:
     - TimeNext
     - Type
     - Value
-  steps: ["LibAllo.distribute(uint256[],uint256,uint256)"]
+  steps: [LibItem.getAlloFor, "LibAllo.distribute(uint256[],uint256,uint256)"]
 LibItem.bypassBonusReset:
   sig: "(uint32 index) internal view"
   steps: [LibItem.genID, "LibFlag.has(\"BYPASS_BONUS_RESET\")"]
@@ -56,7 +56,7 @@ LibItem.disable:
 LibItem.emitCastEvent:
   sig: "(uint256 accID, uint256 targetID, uint32 itemIndex) internal"
   events: [KAMI_CAST]
-  steps: [LibNode.getIndex, LibItem._encodeCastEvent, LibItem._castEventSchema, "LibEmitter.emitEvent(\"KAMI_CAST\")"]
+  steps: [LibHarvest.getForKami, LibHarvest.getNode, LibNode.getIndex, LibItem._encodeCastEvent, LibItem._castEventSchema, "LibEmitter.emitEvent(\"KAMI_CAST\")"]
 LibItem.enable:
   sig: "(uint32 index) internal"
   writes: [IsDisabled]
@@ -72,6 +72,7 @@ LibItem.genReqAnchor:
 LibItem.getAllAllos:
   sig: "(uint32 index) internal view"
   steps:
+    - LibItem.getAllReferences
     - "for each (i < refs.length)": [LibItem.genAlloAnchor]
     - "LibAllo.queryFor(uint256[])"
 LibItem.getAllReferences:
@@ -80,14 +81,27 @@ LibItem.getAllReferences:
 LibItem.getAllRequirements:
   sig: "(uint32 index) internal view"
   steps:
+    - LibItem.getAllReferences
     - "for each (i < refs.length)": [LibItem.genReqAnchor]
     - "LibConditional.queryFor(uint256[])"
+LibItem.getAlloFor:
+  sig: "(uint32 index, string useCase) internal view"
+  steps: [LibItem.genRefAnchor, "LibReference.genID(string,uint256)", LibItem.genAlloAnchor, "LibAllo.queryFor(uint256)"]
 LibItem.getByIndex:
   sig: "(uint32 index) internal view"
   steps: [LibItem.genID, "has IndexItem"]
+LibItem.getIndex:
+  sig: "(uint256 id) internal view"
+  steps: ["get IndexItem"]
+LibItem.getName:
+  sig: "(uint32 index) internal view"
+  steps: [LibItem.genID, "get Name"]
 LibItem.getReqsFor:
   sig: "(uint32 index, string useCase) internal view"
   steps: [LibItem.genRefAnchor, "LibReference.genID(string,uint256)", LibItem.genReqAnchor, "LibConditional.queryFor(uint256)"]
+LibItem.getScale:
+  sig: "(uint32 index) internal view"
+  steps: [LibItem.genID, "safeGet Scale"]
 LibItem.getTokenAddr:
   sig: "(uint32 index) internal view"
   steps: [LibItem.genID, "safeGet TokenAddress"]
@@ -176,10 +190,10 @@ LibItem.verifyEnabled:
   steps: [LibItem.genID, LibDisabled.get, "revert if LibDisabled.get(components, id): item is disabled"]
 LibItem.verifyForShape:
   sig: "(uint32 index, string shape) public view"
-  steps: [LibItem.genID, "LibFor.get(uint256)", "eq For", "revert if !LibFor.get(components, genID(index)).eq(shape): not for <shape>"]
+  steps: [LibItem.genID, "LibFor.get(uint256)", "revert if !LibFor.get(components, genID(index)).eq(shape): not for <shape>"]
 LibItem.verifyForShapeOr:
   sig: "(uint32 index, string a, string b) public view"
-  steps: ["eq For", "revert if !shape.eq(a) && !shape.eq(b): string.concat(\"not for \", a, \" or \", b)"]
+  steps: [LibItem.genID, "LibFor.get(uint256)", "revert if !shape.eq(a) && !shape.eq(b): string.concat(\"not for \", a, \" or \", b)"]
 LibItem.verifyRequirements:
   sig: "(uint32 index, string usecase, uint256 targetID) public view"
   steps: [LibItem.getReqsFor, "LibConditional.check(uint256[],uint256)", "revert if !LibConditional.check(components, getReqsFor(components, index, useca…: Item: requirements not met"]

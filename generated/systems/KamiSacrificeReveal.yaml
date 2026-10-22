@@ -11,9 +11,9 @@ KamiSacrificeReveal:
     "executeTyped(uint256)": "0x3e991df3"
     "executeTypedBatch(uint256[])": "0x4b9338a7"
   deployed: true
-  writes: [EntityType, IDOwnsInventory, IdHolder, IdSource, IndexItem, TimeLast, Value]
+  writes: [EntityType, IDOwnsInventory, IdHolder, IdSource, IndexItem, TimeLast, Type, Value]
   reads: [BlockReveal, CacheOperator, Keys, TokenAddress]
   events: [SACRIFICE_REVEAL]
   data: [SACRIFICE_ITEM_TOTAL]
-  access_not_written: [Balance, BlockReveal, Keys, Time, TimeLastAction, Type, Values, Weights]
+  access_not_written: [Balance, BlockReveal, Keys, Time, TimeLastAction, Values, Weights]
   steps: [LibAccount.getByOperator, LibSacrifice.checkAndExtractIsCommit, LibCommit.filterInvalid, LibSacrifice.reveal, LibAccount.updateLastTs]

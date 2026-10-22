@@ -11,33 +11,16 @@ AccountMove:
     "executeTyped(uint32)": "0x09c90324"
   deployed: true
   writes: [Experience, IndexRoom, Stamina, TimeLast, TimeLastAction, Value]
-  reads:
-    - CacheOperator
-    - EntityType
-    - Exits
-    - For
-    - Harmony
-    - HasFlag
-    - Health
-    - IDOwnsKami
-    - IdSource
-    - Index
-    - IsComplete
-    - Level
-    - Location
-    - LogicType
-    - Power
-    - SkillPoint
-    - Slots
-    - State
-    - TimeNext
-    - Type
-    - Violence
+  reads: [CacheOperator, EntityType, Exits, For, HasFlag, IDOwnsKami, IDType, IdSource, Index, IsComplete, Level, Location, LogicType, SkillPoint, State, TimeNext, Type]
   events: [MOVE]
   stats: [STAMINA]
+  config: [ACCOUNT_STAMINA]
   data: [MOVE]
   steps:
     - LibAccount.getByOperator
+    - LibAccount.getRoom
+    - LibRoom.getByIndex
+    - LibRoom.getByIndex
     - LibRoom.isReachable
     - "revert if !LibRoom.isReachable(components, toIndex, currRoomID, toRoomID): AccMove: unreachable room"
     - LibRoom.isAccessible

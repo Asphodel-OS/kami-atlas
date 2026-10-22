@@ -7,6 +7,9 @@ LibConfig.genID:
 LibConfig.getAddress:
   sig: "(string field) internal view"
   steps: ["LibConfig.get(string)"]
+LibConfig.getArray:
+  sig: "(string name) internal view"
+  steps: [LibConfig.genID, "get Value", LibPack.unpackArrU32]
 LibConfig.getBool:
   sig: "(string name) internal view"
   steps: [LibConfig.has]

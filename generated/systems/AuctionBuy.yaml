@@ -11,9 +11,32 @@ AuctionBuy:
     "executeTyped(uint32,uint32)": "0x276aaa75"
   deployed: true
   writes: [Balance, EntityType, IDOwnsInventory, IndexItem, TimeLast, Value]
-  reads: [CacheOperator, Decay, For, HasFlag, IDOwnsKami, Index, IndexRoom, IsComplete, Level, LogicType, Max, Period, Rate, SkillPoint, State, TimeNext, TimeStart, TokenAddress, Type]
+  reads:
+    - CacheOperator
+    - Decay
+    - For
+    - HasFlag
+    - IDAnchor
+    - IDOwnsKami
+    - IdSource
+    - Index
+    - IndexCurrency
+    - IndexRoom
+    - IsComplete
+    - Level
+    - LogicType
+    - Max
+    - Period
+    - Rate
+    - SkillPoint
+    - State
+    - TimeNext
+    - TimeStart
+    - TokenAddress
+    - Type
   events: [AUCTION_BUY]
-  data: [ITEM_AUCTION_BUY, ITEM_AUCTION_SPEND, ITEM_COUNT]
+  config: [KAMI721_ADDRESS]
+  data: [GACHA_COMMITS_PENDING, ITEM_AUCTION_BUY, ITEM_AUCTION_SPEND, ITEM_COUNT]
   access_not_written: [IDType, IdHolder, Index, TokenAllowance, Type]
   steps:
     - LibAccount.getByOwnerOrOperator
@@ -28,6 +51,7 @@ AuctionBuy:
       else:
         - "if itemIndex == REROLL_TICKET_INDEX": [LibGacha.getNumFree, LibGacha.getNumFree, "revert if !(LibGacha.getNumFree(components) > 0): gacha pool exhausted"]
     - LibAuction.calcBuy
+    - LibAuctionRegistry.getCurrencyIndex
     - "LibInventory.decFor(uint256,uint32,uint256)"
     - "LibInventory.incFor(uint256,uint32,uint256)"
     - LibAuction.incBalance

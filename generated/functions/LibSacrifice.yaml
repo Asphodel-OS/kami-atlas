@@ -20,10 +20,12 @@ LibSacrifice._select:
 LibSacrifice.burn:
   sig: "(uint256 kamiID) internal"
   writes: [Health, IDOwnsKami, State]
-  steps: [LibKami721.unstake, LibKami.kill, "set IDOwnsKami"]
+  steps: [LibKami.getIndex, LibKami721.unstake, LibKami.kill, "set IDOwnsKami"]
 LibSacrifice.checkAndExtractIsCommit:
   sig: "(uint256[] ids) internal"
+  writes: [Type]
   steps:
+    - LibCommit.extractTypes
     - "for each (i < ids.length)": ["revert if !LibString.eq(types[i], \"KAMI_SACRIFICE_COMMIT\"): not sacrifice commit"]
 LibSacrifice.commit:
   sig: "(uint256 kamiID, uint256 accID) internal"

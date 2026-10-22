@@ -133,6 +133,7 @@ logs:
     written_in: [LibGacha.commit, LibGacha.releasePending]
     written_by: [KamiGachaMint, KamiGachaReroll, KamiGachaReveal]
     read_in: [LibGacha.getNumPending]
+    read_by: [AuctionBuy, KamiGachaMint, KamiGachaReroll, KamiGachaReveal]
   GOAL_CONTRIBUTION:
     family: GOAL
     holder: [ACCOUNT]

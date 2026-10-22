@@ -34,6 +34,9 @@ LibFriend.getFriendship:
 LibFriend.getRequestCount:
   sig: "(uint256 accID) internal view"
   steps: ["LibFriend.genCounterPtr(\"REQUEST\")", "size IDAnchor"]
+LibFriend.getState:
+  sig: "(uint256 id) internal view"
+  steps: ["get State"]
 LibFriend.getTarget:
   sig: "(uint256 id) internal view"
   steps: ["get IdTarget"]

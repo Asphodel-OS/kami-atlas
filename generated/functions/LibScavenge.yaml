@@ -29,7 +29,7 @@ LibScavenge.distributeRewards:
     - Type
     - Value
   events: [SCAVENGE_REWARDS]
-  steps: ["LibAllo.distribute(uint256[],uint256,uint256)", "get Type", "get Index", LibScavenge.emitLog]
+  steps: [LibScavenge.getRewards, "LibAllo.distribute(uint256[],uint256,uint256)", "get Type", "get Index", LibScavenge.emitLog]
 LibScavenge.emitLog:
   sig: "(uint256 regID, string scavengeType, uint32 nodeIndex, uint256 holderID, uint256[] commitIDs) internal"
   events: [SCAVENGE_REWARDS]
@@ -43,6 +43,15 @@ LibScavenge.genInstanceID:
   sig: "(string field, uint32 index, uint256 holderID) internal pure"
 LibScavenge.genRegID:
   sig: "(string field, uint32 index) internal pure"
+LibScavenge.getBase:
+  sig: "(uint256 id) internal view"
+  steps: ["get Type", "get Index", "get Affinity"]
+LibScavenge.getRegistryID:
+  sig: "(string field, uint32 index) internal view"
+  steps: [LibScavenge.genRegID, "has IsRegistry"]
+LibScavenge.getRewards:
+  sig: "(uint256 regID) internal view"
+  steps: [LibScavenge.genAlloAnchor, "LibAllo.queryFor(uint256)"]
 LibScavenge.incFor:
   sig: "(string field, uint32 index, uint256 amt, uint256 holderID) internal"
   steps: [LibScavenge.genInstanceID, "inc Value"]
@@ -53,7 +62,7 @@ LibScavenge.logClaim:
 LibScavenge.remove:
   sig: "(uint256 id) internal"
   writes: [Affinity, EntityType, IDAnchor, IdSource, Index, IsRegistry, Keys, Subtype, Time, Type, Value, Weights]
-  steps: ["LibEntityType.remove(uint256)", "remove IsRegistry", "remove Affinity", "remove Index", "remove Value", "remove Type", "LibAllo.remove(uint256[])"]
+  steps: ["LibEntityType.remove(uint256)", "remove IsRegistry", "remove Affinity", "remove Index", "remove Value", "remove Type", LibScavenge.getRewards, "LibAllo.remove(uint256[])"]
 LibScavenge.verifyIsScavenge:
   sig: "(uint256 id) internal view"
   steps: ["LibEntityType.isShape(uint256,string) \"SCAVENGE\"", "revert if !LibEntityType.isShape(components, id, \"SCAVENGE\"): not a scav"]

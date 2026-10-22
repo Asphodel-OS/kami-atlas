@@ -24,7 +24,7 @@ TokenPortal:
   writes: [EntityType, HasFlag, IDOwnsInventory, IDOwnsWithdrawal, IndexItem, IsDisabled, Scale, Tax, TimeEnd, TimeLast, TimeStart, TokenAddress, TokenAllowance, Value]
   reads: [AddressOperator, CacheOperator, TokenHolder, Type]
   events: [PORTAL_TOKEN_CANCEL, PORTAL_TOKEN_CLAIM, PORTAL_TOKEN_DEPOSIT, PORTAL_TOKEN_WITHDRAW]
-  config: [PORTAL_TOKEN_EXPORT_DELAY]
+  config: [PORTAL_ITEM_EXPORT_TAX, PORTAL_ITEM_IMPORT_TAX, PORTAL_TOKEN_EXPORT_DELAY]
   flags: [PORTAL_TO_OPERATOR]
   data:
     - ITEM_COUNT
@@ -52,6 +52,7 @@ TokenPortal:
       - TokenPortalSystem.resolveReceiptCaller
       - LibDisabled.verifyEnabled
       - LibTokenPortal.verifyTimeEnd
+      - LibItem.getIndex
       - "revert if !(itemIndex != 0): Item Registry: item not registered"
       - "revert if !(tokenAddress != address(0)): Token Portal: item not registered"
       - "if toOperator": ["revert if !(operator != address(0)): Token Portal: no operator"]
@@ -61,15 +62,22 @@ TokenPortal:
     cancel:
       - TokenPortalSystem.resolveReceiptCaller
       - LibDisabled.verifyEnabled
+      - LibItem.getIndex
       - "revert if !(itemIndex != 0): Item Registry: item not registered"
       - LibTokenPortal.cancel
       - LibAccount.updateLastTs
     adminPause: [LibDisabled.set]
     adminUnpause: [LibDisabled.verifyDisabled, LibDisabled.set]
-    adminCancel: ["revert if !(accID != 0): Token Portal: no receipt", LibDisabled.set, LibTokenPortal.cancel]
+    adminCancel: [LibTokenPortal.getReceiptAccount, "revert if !(accID != 0): Token Portal: no receipt", LibItem.getIndex, LibDisabled.set, LibTokenPortal.cancel]
     adminToggleEnabled: []
     setLaneItem: ["revert if !(itemAddrs[index] != address(0)): Token Portal: item not registered"]
-    initItem: [LibItem.getByIndex, "revert if id == 0: TokenPortal: item does not exist", "LibItem.verifyType(uint32,string) \"ERC20\"", LibItem.verifyToken]
+    initItem:
+      - LibItem.getByIndex
+      - "revert if id == 0: TokenPortal: item does not exist"
+      - "LibItem.verifyType(uint32,string) \"ERC20\""
+      - LibItem.verifyToken
+      - LibItem.getTokenAddr
+      - LibItem.getScale
     setItem:
       - LibItem.getByIndex
       - "revert if id == 0: TokenPortal: item does not exist"

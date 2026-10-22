@@ -27,21 +27,23 @@ _ListingRegistry:
       - LibItem.getByIndex
       - LibItem.getByIndex
       - "revert if !(LibItem.getByIndex(components, itemIndex) != 0): Item: does not exist"
+      - LibListingRegistry.get
       - "revert if !(id == 0): Listing already exists"
       - LibListingRegistry.create
-    remove: ["revert if !(id != 0): Listing does not exist", LibListingRegistry.remove]
-    removeBuy: ["revert if !(id != 0): Listing does not exist", LibListingRegistry.genBuyID, LibListingRegistry.removePrice]
-    removeSell: ["revert if !(id != 0): Listing does not exist", LibListingRegistry.genSellID, LibListingRegistry.removePrice]
-    setBuyFixed: ["revert if !(id != 0): Listing does not exist", LibListingRegistry.setBuyFixed]
+    remove: [LibListingRegistry.get, "revert if !(id != 0): Listing does not exist", LibListingRegistry.remove]
+    removeBuy: [LibListingRegistry.get, "revert if !(id != 0): Listing does not exist", LibListingRegistry.genBuyID, LibListingRegistry.removePrice]
+    removeSell: [LibListingRegistry.get, "revert if !(id != 0): Listing does not exist", LibListingRegistry.genSellID, LibListingRegistry.removePrice]
+    setBuyFixed: [LibListingRegistry.get, "revert if !(id != 0): Listing does not exist", LibListingRegistry.setBuyFixed]
     setBuyGDA:
+      - LibListingRegistry.get
       - "revert if !(id != 0): Listing does not exist"
       - "revert if !(period > 0): period must be positive"
       - "revert if !(decay > 0 && decay < 1e6): decay must be between 0 and 1"
       - "revert if !(rate > 0): rate must be positive"
       - LibListingRegistry.setBuyGDA
       - "if reset": [LibListingRegistry.reset]
-    setSellFixed: ["revert if !(id != 0): Listing does not exist", LibListingRegistry.setSellFixed]
-    setSellScaled: ["revert if !(id != 0): Listing does not exist", "revert if !(0 <= scale && scale <= 1e9): scale must be between 0 and 1", LibListingRegistry.setSellScaled]
+    setSellFixed: [LibListingRegistry.get, "revert if !(id != 0): Listing does not exist", LibListingRegistry.setSellFixed]
+    setSellScaled: [LibListingRegistry.get, "revert if !(id != 0): Listing does not exist", "revert if !(0 <= scale && scale <= 1e9): scale must be between 0 and 1", LibListingRegistry.setSellScaled]
     addRequirement:
       - LibNPC.get
       - LibNPC.get
@@ -49,6 +51,7 @@ _ListingRegistry:
       - LibItem.getByIndex
       - LibItem.getByIndex
       - "revert if !(LibItem.getByIndex(components, itemIndex) != 0): Item: does not exist"
+      - LibListingRegistry.get
       - "revert if !(id != 0): Listing does not exist"
       - LibListingRegistry.setRequirement
     execute: ["revert if !(false): not implemented"]

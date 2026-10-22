@@ -9,8 +9,9 @@ EchoKamis:
     "executeTyped()": "0xe1df4ba6"
   deployed: true
   writes: ["Component[by id]"]
-  reads: [CacheOperator]
+  reads: [CacheOperator, IDOwnsKami]
   write_access: "*"
   steps:
     - LibAccount.getByOperator
+    - LibAccount.getKamis
     - "for each (i < kamiIDs.length)": [LibEcho.kami]

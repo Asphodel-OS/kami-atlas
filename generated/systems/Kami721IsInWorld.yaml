@@ -9,8 +9,8 @@ Kami721IsInWorld:
     "executeTyped()": "0xe1df4ba6"
     "isInWorld(uint256)": "0xb5f3365f"
   deployed: true
-  reads: [State]
+  reads: [EntityType, State]
   steps:
-    isInWorld: [LibKami.isInWorld]
+    isInWorld: [LibKami.getByIndex, LibKami.isInWorld]
     execute: ["revert if !(false): Kami721IsInWorld: no execute"]
     executeTyped: ["revert if !(false): Kami721IsInWorld: no execute"]

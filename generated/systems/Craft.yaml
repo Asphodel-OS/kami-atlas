@@ -13,10 +13,10 @@ Craft:
   reads:
     - CacheOperator
     - For
-    - Harmony
     - HasFlag
-    - Health
+    - IDAnchor
     - IDOwnsKami
+    - IDType
     - IdSource
     - Index
     - IndexRecipe
@@ -25,16 +25,14 @@ Craft:
     - Keys
     - Level
     - LogicType
-    - Power
     - SkillPoint
-    - Slots
     - State
     - TimeNext
     - TokenAddress
     - Type
     - Values
-    - Violence
   stats: [STAMINA]
+  config: [ACCOUNT_STAMINA]
   data: [CRAFT_ITEM, CRAFT_TOTAL, ITEM_COUNT]
   steps:
     - LibRecipe.get

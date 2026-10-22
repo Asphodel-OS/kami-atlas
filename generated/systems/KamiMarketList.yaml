@@ -38,6 +38,7 @@ KamiMarketList:
     - LibKamiMarket.verifyEnabled
     - LibKamiMarket.verifyKamiResting
     - "revert if !(price > 0): KamiMarketList: price must be > 0"
+    - LibKami.getByIndex
     - LibSoulbound.verify
     - LibEquipment.unequipAll
     - "LibKami.setState(uint256,string) \"LISTED\""

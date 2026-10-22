@@ -205,6 +205,12 @@ class Index:
         """Component names a function can return: the component ID constants in its return statements, following
         one level of helper calls (getIndexComp -> IndexBodyCompID…; getStatComp -> typeToCompID -> HealthCompID…)."""
         if fid not in self.fn or depth > 2: return set()
+        # only a function whose return type is a contract can hand back a component. Without this, LibConfig.getArray
+        # (`return LibPack.unpackArrU32(ValueComponent(getAddrByID(comps, ValueCompID)).get(id))`) counted as returning
+        # ValueComponent, the local it was assigned to became a component alias, and the call itself was never
+        # recorded: no caller of the config getters, so most config keys never reached is.config's key values.
+        rps = (self.fn[fid][1].get('returnParameters') or {}).get('parameters') or []
+        if not any((p.get('typeDescriptions') or {}).get('typeIdentifier', '').startswith('t_contract') for p in rps): return set()
         out = set()
         for n in walk(self.fn[fid][1].get('body') or {}):
             if n.get('nodeType') != 'Return' or not n.get('expression'): continue

@@ -27,7 +27,7 @@ _GoalRegistry:
       - "revert if !(!LibString.eq(objective.type_, \"\")): Goal type cannot be empty"
       - "revert if !(!LibString.eq(objective.logic, \"\")): Goal logic cannot be empty"
       - LibGoal.create
-    setDisabled: ["revert if !(goalID != 0): Goal does not exist", LibDisabled.set]
+    setDisabled: [LibGoal.getByIndex, "revert if !(goalID != 0): Goal does not exist", LibDisabled.set]
     addRequirement:
       - LibGoal.getByIndex
       - LibGoal.getByIndex
@@ -35,10 +35,10 @@ _GoalRegistry:
       - "revert if !(!LibString.eq(requirement.type_, \"\")): Req type cannot be empty"
       - "revert if !(!LibString.eq(requirement.logic, \"\")): Req logic cannot be empty"
       - LibGoal.addRequirement
-    addRewardBasic: ["revert if !(goalID != 0): Goal does not exist", LibGoal.createTier, "LibGoal.genAlloAnchor(uint256)", LibAllo.createBasic]
-    addRewardDT: ["revert if !(goalID != 0): Goal does not exist", LibGoal.createTier, "LibGoal.genAlloAnchor(uint256)", LibAllo.createDT]
-    addRewardStat: ["revert if !(goalID != 0): Goal does not exist", LibGoal.createTier, "LibGoal.genAlloAnchor(uint256)", LibAllo.createStat]
-    addRewardDisplay: ["revert if !(goalID != 0): Goal does not exist", "LibGoal.createTier(\"Community\")", "LibGoal.genAlloAnchor(uint256)", LibAllo.createEmpty]
+    addRewardBasic: [LibGoal.getByIndex, "revert if !(goalID != 0): Goal does not exist", LibGoal.createTier, "LibGoal.genAlloAnchor(uint256)", LibAllo.createBasic]
+    addRewardDT: [LibGoal.getByIndex, "revert if !(goalID != 0): Goal does not exist", LibGoal.createTier, "LibGoal.genAlloAnchor(uint256)", LibAllo.createDT]
+    addRewardStat: [LibGoal.getByIndex, "revert if !(goalID != 0): Goal does not exist", LibGoal.createTier, "LibGoal.genAlloAnchor(uint256)", LibAllo.createStat]
+    addRewardDisplay: [LibGoal.getByIndex, "revert if !(goalID != 0): Goal does not exist", "LibGoal.createTier(\"Community\")", "LibGoal.genAlloAnchor(uint256)", LibAllo.createEmpty]
     remove: [LibGoal.getByIndex, LibGoal.getByIndex, "revert if !(LibGoal.getByIndex(components, goalIndex) != 0): Goal does not exist", LibGoal.remove]
     removeRewards: [LibGoal.getByIndex, LibGoal.getByIndex, "revert if !(LibGoal.getByIndex(components, goalIndex) != 0): Goal does not exist", LibGoal.removeRewards]
     execute: ["revert if !(false): not implemented"]

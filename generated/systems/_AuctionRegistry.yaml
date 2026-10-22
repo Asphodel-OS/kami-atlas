@@ -15,6 +15,7 @@ _AuctionRegistry:
   write_access: "*"
   steps:
     create:
+      - LibAuctionRegistry.get
       - "revert if !(id == 0): auction already exists"
       - "revert if !(priceTarget > 0): price target must be positive"
       - "revert if !(period > 0): period must be positive"
@@ -28,6 +29,6 @@ _AuctionRegistry:
       - LibItem.getByIndex
       - "revert if !(LibItem.getByIndex(components, payItemIndex) != 0): auction pay item does not exist"
       - LibAuctionRegistry.create
-    remove: ["revert if !(id != 0): AuctionRegistry: auction does not exist", LibAuctionRegistry.remove]
-    addRequirement: ["revert if !(id != 0): AuctionBuy: auction does not exist", LibAuctionRegistry.addRequirement]
+    remove: [LibAuctionRegistry.get, "revert if !(id != 0): AuctionRegistry: auction does not exist", LibAuctionRegistry.remove]
+    addRequirement: [LibAuctionRegistry.get, "revert if !(id != 0): AuctionBuy: auction does not exist", LibAuctionRegistry.addRequirement]
     execute: ["revert if !(false): not implemented"]

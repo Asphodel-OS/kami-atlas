@@ -370,7 +370,6 @@ INSERT INTO domain.kind (name, kind, table_name, entity_type, layer, parent_type
   ('scavenge.instance', 'record', 'rec_scavenge_instance', NULL, NULL, ARRAY['ACCOUNT', 'NODE']::text[], 'scavenge.instance'),
   ('operator.cache', 'record', 'rec_operator_cache', NULL, NULL, ARRAY['ACCOUNT']::text[], 'operator.cache'),
   ('SOULBOUND', 'record', 'rec_soulbound', NULL, NULL, ARRAY['KAMI']::text[], 'SOULBOUND'),
-  ('bonus.type', 'record', 'rec_bonus_type', NULL, NULL, ARRAY['KAMI']::text[], 'bonus.type'),
   ('trade.buy', 'record', 'rec_trade_buy', NULL, NULL, ARRAY['TRADE']::text[], 'trade.buy'),
   ('trade.sell', 'record', 'rec_trade_sell', NULL, NULL, ARRAY['TRADE']::text[], 'trade.sell'),
   ('quest.objective.snapshot', 'record', 'rec_quest_objective_snapshot', NULL, NULL, ARRAY['QUEST']::text[], 'quest.objective.snapshot'),
@@ -400,6 +399,7 @@ INSERT INTO domain.kind (name, kind, table_name, entity_type, layer, parent_type
   ('registry.trait.type', 'record', 'rec_registry_trait_type', NULL, NULL, ARRAY['TRAIT']::text[], 'registry.trait.type'),
   ('bonus.ending.type', 'record', 'rec_bonus_ending_type', NULL, NULL, ARRAY['ACCOUNT', 'KAMI']::text[], 'bonus.ending.type'),
   ('bonus.instance', 'record', 'rec_bonus_instance', NULL, NULL, ARRAY['ACCOUNT', 'BONUS', 'KAMI']::text[], 'bonus.instance'),
+  ('bonus.type', 'record', 'rec_bonus_type', NULL, NULL, ARRAY['ACCOUNT', 'KAMI']::text[], 'bonus.type'),
   ('droptable.item.log', 'record', 'rec_droptable_item_log', NULL, NULL, ARRAY['ACCOUNT', 'ALLOCATION']::text[], 'droptable.item.log'),
   ('flag.type', 'record', 'rec_flag_type', NULL, NULL, NULL, 'flag.type'),
   ('has.flag', 'record', 'rec_has_flag', NULL, NULL, ARRAY['ACCOUNT', 'ITEM', 'KAMI', 'QUEST', 'ROOM']::text[], 'has.flag'),
@@ -433,7 +433,6 @@ INSERT INTO domain.record_spec (ns, table_name, parent_type, encoding, key_order
   ('scavenge.instance', 'rec_scavenge_instance', 'ACCOUNT', 'packed', ARRAY['field', 'index', 'holderID']::text[], ARRAY['string', 'uint32', 'uint256']::text[], ARRAY['key_field', 'key_index', 'key_holder_id']::text[], '{"field": [], "holderID": ["ACCOUNT"], "index": ["NODE"]}'::jsonb, '{"field": ["NODE"]}'::jsonb, '{}'::jsonb, ARRAY['Value']::text[]),
   ('operator.cache', 'rec_operator_cache', 'ACCOUNT', 'address', ARRAY['addr']::text[], ARRAY['']::text[], ARRAY['key_addr']::text[], '{"addr": []}'::jsonb, '{}'::jsonb, '{}'::jsonb, ARRAY['CacheOperator']::text[]),
   ('SOULBOUND', 'rec_soulbound', 'KAMI', 'abi_ns_last', ARRAY['kamiID']::text[], ARRAY['uint256']::text[], ARRAY['key_kami_id']::text[], '{"kamiID": ["KAMI"]}'::jsonb, '{}'::jsonb, '{}'::jsonb, ARRAY['Value']::text[]),
-  ('bonus.type', 'rec_bonus_type', 'KAMI', 'packed', ARRAY['type_', 'holderID']::text[], ARRAY['string', 'uint256']::text[], ARRAY['key_type', 'key_holder_id']::text[], '{"holderID": ["KAMI"], "type_": []}'::jsonb, '{"type_": []}'::jsonb, '{}'::jsonb, '{}'::text[]),
   ('trade.buy', 'rec_trade_buy', 'TRADE', 'packed', ARRAY['tradeID']::text[], ARRAY['uint256']::text[], ARRAY['key_trade_id']::text[], '{"tradeID": ["TRADE"]}'::jsonb, '{}'::jsonb, '{}'::jsonb, ARRAY['Keys', 'Values']::text[]),
   ('trade.sell', 'rec_trade_sell', 'TRADE', 'packed', ARRAY['tradeID']::text[], ARRAY['uint256']::text[], ARRAY['key_trade_id']::text[], '{"tradeID": ["TRADE"]}'::jsonb, '{}'::jsonb, '{}'::jsonb, ARRAY['Keys', 'Values']::text[]),
   ('quest.objective.snapshot', 'rec_quest_objective_snapshot', 'QUEST', 'packed', ARRAY['questID', 'logicType', '_type', 'index']::text[], ARRAY['uint256', 'string', 'string', 'uint32']::text[], ARRAY['key_quest_id', 'key_logic_type', 'key__type', 'key_index']::text[], '{"_type": [], "index": [], "logicType": [], "questID": ["QUEST"]}'::jsonb, '{"_type": [], "logicType": []}'::jsonb, '{}'::jsonb, ARRAY['IDAnchor', 'Value']::text[]),
@@ -461,12 +460,13 @@ INSERT INTO domain.record_spec (ns, table_name, parent_type, encoding, key_order
   ('recipe.requirement', 'rec_recipe_requirement', 'RECIPE', 'packed', ARRAY['recipeIndex']::text[], ARRAY['uint32']::text[], ARRAY['key_recipe_index']::text[], '{"recipeIndex": ["RECIPE"]}'::jsonb, '{}'::jsonb, '{}'::jsonb, '{}'::text[]),
   ('scavenge.reward', 'rec_scavenge_reward', 'SCAVENGE', 'packed', ARRAY['regID']::text[], ARRAY['uint256']::text[], ARRAY['key_reg_id']::text[], '{"regID": ["SCAVENGE"]}'::jsonb, '{}'::jsonb, '{}'::jsonb, '{}'::text[]),
   ('registry.trait.type', 'rec_registry_trait_type', 'TRAIT', 'packed', ARRAY['_type']::text[], ARRAY['string']::text[], ARRAY['key__type']::text[], '{"_type": ["TRAIT"]}'::jsonb, '{"_type": ["BACKGROUND", "BODY", "COLOR", "FACE", "HAND"]}'::jsonb, '{}'::jsonb, '{}'::text[]),
-  ('bonus.ending.type', 'rec_bonus_ending_type', NULL, 'packed', ARRAY['type_', 'holderID']::text[], ARRAY['string', 'uint256']::text[], ARRAY['key_type', 'key_holder_id']::text[], '{"holderID": ["ACCOUNT", "KAMI"], "type_": []}'::jsonb, '{"type_": []}'::jsonb, '{}'::jsonb, '{}'::text[]),
+  ('bonus.ending.type', 'rec_bonus_ending_type', NULL, 'packed', ARRAY['type_', 'holderID']::text[], ARRAY['string', 'uint256']::text[], ARRAY['key_type', 'key_holder_id']::text[], '{"holderID": ["ACCOUNT", "KAMI"], "type_": []}'::jsonb, '{"type_": ["TIMED", "UPON_COOLDOWN_SET", "UPON_DEATH", "UPON_HARVEST_ACTION", "UPON_HARVEST_STOP", "UPON_KILL_OR_KILLED", "UPON_LIQUIDATION"]}'::jsonb, '{}'::jsonb, '{}'::text[]),
   ('bonus.instance', 'rec_bonus_instance', NULL, 'packed', ARRAY['regID', 'holderID', 'duration']::text[], ARRAY['uint256', 'uint256', 'uint256']::text[], ARRAY['key_reg_id', 'key_holder_id', 'key_duration']::text[], '{"duration": [], "holderID": ["ACCOUNT", "KAMI"], "regID": ["BONUS"]}'::jsonb, '{}'::jsonb, '{}'::jsonb, ARRAY['IDAnchor', 'IDType', 'IdSource', 'Level', 'Time']::text[]),
+  ('bonus.type', 'rec_bonus_type', NULL, 'packed', ARRAY['type_', 'holderID']::text[], ARRAY['string', 'uint256']::text[], ARRAY['key_type', 'key_holder_id']::text[], '{"holderID": ["ACCOUNT", "KAMI"], "type_": []}'::jsonb, '{"type_": ["ATK_RECOIL_BOOST", "ATK_SPOILS_RATIO", "ATK_THRESHOLD_RATIO", "ATK_THRESHOLD_SHIFT", "DEF_RECOIL_BOOST", "DEF_SALVAGE_RATIO", "DEF_THRESHOLD_RATIO", "DEF_THRESHOLD_SHIFT", "EQUIP_CAPACITY_SHIFT", "FRIENDS_LIMIT", "HARV_BOUNTY_BOOST", "HARV_FERTILITY_BOOST", "HARV_INTENSITY_BOOST", "REST_METABOLISM_BOOST", "STND_COOLDOWN_SHIFT", "STND_STRAIN_BOOST"]}'::jsonb, '{"type_": ["STAT_*"]}'::jsonb, '{}'::text[]),
   ('droptable.item.log', 'rec_droptable_item_log', NULL, 'packed', ARRAY['holderID', 'dtID']::text[], ARRAY['uint256', 'uint256']::text[], ARRAY['key_holder_id', 'key_dt_id']::text[], '{"dtID": ["ALLOCATION"], "holderID": ["ACCOUNT"]}'::jsonb, '{}'::jsonb, '{}'::jsonb, ARRAY['Time', 'Values']::text[]),
   ('flag.type', 'rec_flag_type', NULL, 'packed', ARRAY['parentType', 'flagType']::text[], ARRAY['string', 'string']::text[], ARRAY['key_parent_type', 'key_flag_type']::text[], '{"flagType": [], "parentType": []}'::jsonb, '{"flagType": ["REPEATABLE"], "parentType": ["AUTH", "ITEM", "QUEST", "ROOM"]}'::jsonb, '{}'::jsonb, '{}'::text[]),
   ('has.flag', 'rec_has_flag', NULL, 'packed', ARRAY['id', 'flagType']::text[], ARRAY['uint256', 'string']::text[], ARRAY['key_id', 'key_flag_type']::text[], '{"flagType": [], "id": ["ACCOUNT", "ITEM", "QUEST", "ROOM"]}'::jsonb, '{"flagType": ["BYPASS_BONUS_RESET", "CAN_RESET_SKILLS", "ITEM_UNBURNABLE", "MINT_WHITELISTED", "NEWBIE_VENDOR_PURCHASED", "NOT_NAMEABLE", "NOT_TRADABLE", "PORTAL_TO_OPERATOR", "REPEATABLE", "WORLD_WHITELIST"]}'::jsonb, '{}'::jsonb, ARRAY['HasFlag', 'IDOwnsFlag', 'IDType', 'Type']::text[]),
-  ('is.config', 'rec_is_config', NULL, 'packed', ARRAY['name']::text[], ARRAY['string']::text[], ARRAY['key_name']::text[], '{"name": []}'::jsonb, '{"name": ["BASE_KAMI_NAME", "FRIENDS_REQUEST_LIMIT", "GACHA_REROLL_PRICE", "KAMI_MARKET_ENABLED", "KAMI_MARKET_FEE_RATE", "KAMI_MARKET_FEE_RECIPIENT", "KAMI_MARKET_PURCHASE_COOLDOWN", "KAMI_MARKET_VAULT", "MINT_PRICE_PUBLIC", "MINT_START_PUBLIC", "MINT_START_WL", "NEWBIE_VENDOR_ADDRESS", "NEWBIE_VENDOR_CYCLE", "NEWBIE_VENDOR_ENABLED", "NEWBIE_VENDOR_MIN_PRICE", "NEWBIE_VENDOR_TWAP_WINDOW", "ONYX_ADDRESS", "PORTAL_TOKEN_EXPORT_DELAY", "SCORE_EPOCH", "VIP_SCORE_ADDRESS", "WORLD_PRIVATE"]}'::jsonb, '{}'::jsonb, ARRAY['Value']::text[]),
+  ('is.config', 'rec_is_config', NULL, 'packed', ARRAY['name']::text[], ARRAY['string']::text[], ARRAY['key_name']::text[], '{"name": []}'::jsonb, '{"name": ["ACCOUNT_STAMINA", "BASE_KAMI_NAME", "BASE_URI", "ERC20_RECEIVER_ADDRESS", "FRIENDS_BASE_LIMIT", "FRIENDS_REQUEST_LIMIT", "GACHA_REROLL_PRICE", "KAMI721_ADDRESS", "KAMI_HARV_BOUNTY", "KAMI_HARV_EFFICACY_BODY", "KAMI_HARV_EFFICACY_HAND", "KAMI_HARV_FERTILITY", "KAMI_HARV_INTENSITY", "KAMI_HARV_STRAIN", "KAMI_LIQ_ANIMOSITY", "KAMI_LIQ_EFFICACY", "KAMI_LIQ_KARMA", "KAMI_LIQ_KARMA_EFFICACY", "KAMI_LIQ_RECOIL", "KAMI_LIQ_SALVAGE", "KAMI_LIQ_SPOILS", "KAMI_LIQ_THRESHOLD", "KAMI_LVL_REQ_BASE", "KAMI_LVL_REQ_MULT_BASE", "KAMI_MARKET_ENABLED", "KAMI_MARKET_FEE_RATE", "KAMI_MARKET_FEE_RECIPIENT", "KAMI_MARKET_PURCHASE_COOLDOWN", "KAMI_MARKET_VAULT", "KAMI_REST_METABOLISM", "KAMI_STANDARD_COOLDOWN", "KAMI_TREE_REQ", "MAX_TRADES_PER_ACCOUNT", "MINT_MAX_PUBLIC", "MINT_MAX_TOTAL", "MINT_MAX_WL", "MINT_PRICE_PUBLIC", "MINT_PRICE_WL", "MINT_START_PUBLIC", "MINT_START_WL", "NEWBIE_VENDOR_ADDRESS", "NEWBIE_VENDOR_CYCLE", "NEWBIE_VENDOR_ENABLED", "NEWBIE_VENDOR_MIN_PRICE", "NEWBIE_VENDOR_TWAP_WINDOW", "ONYX_ADDRESS", "ONYX_BURNER_ADDRESS", "PORTAL_ITEM_EXPORT_TAX", "PORTAL_ITEM_IMPORT_TAX", "PORTAL_TOKEN_EXPORT_DELAY", "SCORE_EPOCH", "TRADE_CREATION_FEE", "TRADE_DELIVERY_FEE", "TRADE_TAX_RATE", "VIP_SCORE_ADDRESS", "VIP_STAGE", "WORLD_PRIVATE"]}'::jsonb, '{}'::jsonb, ARRAY['Value']::text[]),
   ('room.gate.from', 'rec_room_gate_from', NULL, 'packed', ARRAY['index']::text[], ARRAY['uint32']::text[], ARRAY['key_index']::text[], '{"index": []}'::jsonb, '{}'::jsonb, '{}'::jsonb, '{}'::text[]),
   ('room.gate.to', 'rec_room_gate_to', NULL, 'packed', ARRAY['index']::text[], ARRAY['uint32']::text[], ARRAY['key_index']::text[], '{"index": ["ROOM"]}'::jsonb, '{}'::jsonb, '{}'::jsonb, '{}'::text[]),
   ('sacrifice.log', 'rec_sacrifice_log', NULL, 'packed', ARRAY['holderID', 'dtID']::text[], ARRAY['uint256', 'uint256']::text[], ARRAY['key_holder_id', 'key_dt_id']::text[], '{"dtID": [], "holderID": ["ACCOUNT"]}'::jsonb, '{}'::jsonb, '{}'::jsonb, ARRAY['Time', 'Values']::text[]),
@@ -1092,14 +1092,6 @@ CREATE TABLE IF NOT EXISTS domain.rec_soulbound (
   value bigint
 );
 CREATE INDEX IF NOT EXISTS idx_domain_rec_soulbound_parent ON domain.rec_soulbound(parent);
-CREATE TABLE IF NOT EXISTS domain.rec_bonus_type (
-  id bytea PRIMARY KEY,
-  block_number integer NOT NULL,
-  parent bytea,
-  key_type text,
-  key_holder_id bytea
-);
-CREATE INDEX IF NOT EXISTS idx_domain_rec_bonus_type_parent ON domain.rec_bonus_type(parent);
 CREATE TABLE IF NOT EXISTS domain.rec_trade_buy (
   id bytea PRIMARY KEY,
   block_number integer NOT NULL,
@@ -1342,6 +1334,14 @@ CREATE TABLE IF NOT EXISTS domain.rec_bonus_instance (
   time integer
 );
 CREATE INDEX IF NOT EXISTS idx_domain_rec_bonus_instance_parent ON domain.rec_bonus_instance(parent);
+CREATE TABLE IF NOT EXISTS domain.rec_bonus_type (
+  id bytea PRIMARY KEY,
+  block_number integer NOT NULL,
+  parent bytea,
+  key_type text,
+  key_holder_id bytea
+);
+CREATE INDEX IF NOT EXISTS idx_domain_rec_bonus_type_parent ON domain.rec_bonus_type(parent);
 CREATE TABLE IF NOT EXISTS domain.rec_droptable_item_log (
   id bytea PRIMARY KEY,
   block_number integer NOT NULL,
@@ -2172,17 +2172,6 @@ BEGIN
 END $$;
 -- +goose StatementEnd
 -- +goose StatementBegin
-CREATE OR REPLACE FUNCTION domain.refresh_rec_bonus_type(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
-BEGIN
-  UPDATE domain.rec_bonus_type r SET block_number = x.block_number
-  FROM (SELECT domain.id32(e.id) AS id, max(s.block_number) AS block_number
-  FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
-  WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
-  GROUP BY e.id) x
-  WHERE r.id = x.id;
-END $$;
--- +goose StatementEnd
--- +goose StatementBegin
 CREATE OR REPLACE FUNCTION domain.refresh_rec_trade_buy(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
 BEGIN
   UPDATE domain.rec_trade_buy r SET block_number = x.block_number, keys = x.keys, values_ = x.values_
@@ -2495,6 +2484,17 @@ CREATE OR REPLACE FUNCTION domain.refresh_rec_bonus_instance(ids bytea[]) RETURN
 BEGIN
   UPDATE domain.rec_bonus_instance r SET block_number = x.block_number, id_anchor = x.id_anchor, id_type = x.id_type, id_source = x.id_source, level = x.level, time = x.time
   FROM (SELECT domain.id32(e.id) AS id, max(s.block_number) AS block_number, domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\xb045c5017717023376f3cca4fc00dc4ee26e151a86d28f1db156cf5222daccd1'))[1]) AS id_anchor, domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\x998873aedc8c829f7e25178374ed9431f396bd26c559d29a5ea6de65722045cc'))[1]) AS id_type, domain.id32((array_agg(s.value) FILTER (WHERE c.id = '\xc81ce03c0ce7d95786aa8f43fb06c16da8357e856cb08b2052b4bf1807cf8ab3'))[1]) AS id_source, domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\xf8911dfd3f908e7a27ff20b80381dc7334f6abc557cdd58de4a9bfb47ebde734'))[1]) AS level, domain.to_integer((array_agg(s.value) FILTER (WHERE c.id = '\x040fc38fe5717491c84059f73f7686f4157d14971215773d341a2ede964d65ac'))[1]) AS time
+  FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
+  WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
+  GROUP BY e.id) x
+  WHERE r.id = x.id;
+END $$;
+-- +goose StatementEnd
+-- +goose StatementBegin
+CREATE OR REPLACE FUNCTION domain.refresh_rec_bonus_type(ids bytea[]) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
+  UPDATE domain.rec_bonus_type r SET block_number = x.block_number
+  FROM (SELECT domain.id32(e.id) AS id, max(s.block_number) AS block_number
   FROM ecs.state s JOIN ecs.entities e ON e.idx = s.entity_idx JOIN ecs.components c ON c.idx = s.component_idx
   WHERE NOT s.removed AND e.idx = ANY(SELECT idx FROM ecs.entities WHERE id = ANY(SELECT ltrim(x, '\x00'::bytea) FROM unnest(ids) x))
   GROUP BY e.id) x

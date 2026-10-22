@@ -33,10 +33,29 @@ KamiCastItem:
     - TimeNext
     - Type
     - Value
-  reads: [Affinity, CacheOperator, For, Harmony, IDOwnsKami, Index, IndexNode, IsComplete, IsDisabled, LogicType, Power, SkillPoint, Slots, Subtype, TimeReset, TokenAddress, Violence]
+  reads:
+    - Affinity
+    - CacheOperator
+    - For
+    - IDOwnsKami
+    - Index
+    - IndexBackground
+    - IndexBody
+    - IndexColor
+    - IndexFace
+    - IndexHand
+    - IndexNode
+    - IsComplete
+    - IsDisabled
+    - LogicType
+    - SkillPoint
+    - Subtype
+    - TimeReset
+    - TokenAddress
   write_access: "*"
   events: [KAMI_CAST]
   stats: [HARMONY, HEALTH, POWER, STAMINA, VIOLENCE]
+  config: [ACCOUNT_STAMINA, KAMI_HARV_BOUNTY, KAMI_HARV_FERTILITY, KAMI_HARV_INTENSITY, KAMI_HARV_STRAIN, KAMI_REST_METABOLISM, VIP_SCORE_ADDRESS, VIP_STAGE]
   bonuses:
     - HARV_BOUNTY_BOOST
     - HARV_FERTILITY_BOOST

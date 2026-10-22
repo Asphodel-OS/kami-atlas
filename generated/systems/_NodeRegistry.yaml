@@ -23,12 +23,13 @@ _NodeRegistry:
     create: [LibNode.getByIndex, "revert if !(id == 0): Node: already exists", LibNode.create]
     remove: [LibNode.remove]
     addBonus: [LibNode.addBonus]
-    addRequirement: ["revert if !(nodeID != 0): Node does not exist", "revert if !(!LibString.eq(type_, \"\")): Requirement type cannot be empty", LibNode.addRequirement]
-    addScavenge: ["revert if !(nodeID != 0): Node: does not exist", LibScavenge.create]
+    addRequirement: [LibNode.getByIndex, "revert if !(nodeID != 0): Node does not exist", "revert if !(!LibString.eq(type_, \"\")): Requirement type cannot be empty", LibNode.addRequirement]
+    addScavenge: [LibNode.getByIndex, "revert if !(nodeID != 0): Node: does not exist", LibNode.getAffinity, LibScavenge.create]
     addScavRewardBasic:
       - LibNode.getByIndex
       - LibNode.getByIndex
       - "revert if !(LibNode.getByIndex(components, nodeIndex) != 0): Node: does not exist"
+      - LibNode.getScavBar
       - "revert if !(scavID != 0): Node: scav bar does not exist"
       - LibScavenge.genAlloAnchor
       - LibAllo.createBasic
@@ -36,6 +37,7 @@ _NodeRegistry:
       - LibNode.getByIndex
       - LibNode.getByIndex
       - "revert if !(LibNode.getByIndex(components, nodeIndex) != 0): Node: does not exist"
+      - LibNode.getScavBar
       - "revert if !(scavID != 0): Node: scav bar does not exist"
       - LibScavenge.genAlloAnchor
       - LibAllo.createDT
@@ -43,6 +45,7 @@ _NodeRegistry:
       - LibNode.getByIndex
       - LibNode.getByIndex
       - "revert if !(LibNode.getByIndex(components, index) != 0): Node: does not exist"
+      - LibNode.getScavBar
       - "revert if !(scavID != 0): Node: no scavenge bar"
       - LibScavenge.remove
     execute: ["revert if !(false): not implemented"]

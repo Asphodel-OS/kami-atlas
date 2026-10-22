@@ -32,6 +32,7 @@ Affinity:
     - KamiOnyxRevive
     - KamiSacrificeCommit
     - KamiUseItem
+    - ScavengeClaim
     - SkillRespec
     - SkillUpgrade
     - _HarvestAdmin
@@ -44,6 +45,7 @@ Blacklist:
   type: "uint32[]"
   comment: "list of blacklisted IDs"
   written_by: [_RelationshipRegistry]
+  read_by: [RelationshipAdvance]
 BlockReveal:
   id: component.block.reveal
   client_name: RevealBlock
@@ -127,6 +129,7 @@ Cost:
   id: component.cost
   type: uint256
   written_by: [_SkillRegistry]
+  read_by: [KamiOnyxRespec, SkillRespec, SkillUpgrade]
 Decay:
   id: component.decay
   type: int32
@@ -216,7 +219,21 @@ EntityType:
     - _SnapshotT2
     - _TraitRegistry
     - __LocalSetup
-  read_by: [AccountMove, AccountSetName, AccountSetOperator, Chat, Getter, Kami721Stake, KamiLevel, NewbieVendorBuy, _AdminSetFlag, _HarvestAdmin, _KamiMarketRegistry]
+  read_by:
+    - AccountMove
+    - AccountSetName
+    - AccountSetOperator
+    - Chat
+    - Getter
+    - Kami721IsInWorld
+    - Kami721Metadata
+    - Kami721Stake
+    - KamiLevel
+    - KamiMarketCancel
+    - NewbieVendorBuy
+    - _AdminSetFlag
+    - _HarvestAdmin
+    - _KamiMarketRegistry
 Exits:
   id: component.exits
   type: "uint32[]"
@@ -274,22 +291,6 @@ Harmony:
   type: Stat
   comment: "Harmony stat of a kami, equip or mod. Harmony is the defense against violence."
   written_by: [KamiGachaMint, _ItemRegistry, _TraitRegistry]
-  read_by:
-    - AccountMove
-    - Craft
-    - HarvestCollect
-    - HarvestLiquidate
-    - HarvestStart
-    - HarvestStop
-    - KamiCastItem
-    - KamiLevel
-    - KamiOnyxRespec
-    - KamiOnyxRevive
-    - KamiSacrificeCommit
-    - KamiUseItem
-    - SkillRespec
-    - SkillUpgrade
-    - _HarvestAdmin
 HasFlag:
   id: component.has.flag
   type: bool
@@ -348,7 +349,6 @@ Health:
     - _HarvestAdmin
     - _ItemRegistry
     - _TraitRegistry
-  read_by: [AccountMove, Craft]
 IDAnchor:
   id: component.id.anchor
   client_name: AnchorID
@@ -395,6 +395,7 @@ IDAnchor:
     - _RoomRegistry
     - _SkillRegistry
     - _TraitRegistry
+  read_by: [AuctionBuy, Craft, GoalContribute, ListingBuy, ListingSell]
 IDFrom:
   id: component.id.from
   client_name: FromID
@@ -478,6 +479,7 @@ IDOwnsKami:
     - AuctionBuy
     - Chat
     - Craft
+    - EchoKamis
     - Getter
     - GoalClaim
     - GoalContribute
@@ -536,6 +538,7 @@ IDOwnsTax:
   type: uint256
   indexed: true
   written_by: [HarvestStart]
+  read_by: [HarvestCollect, HarvestStop]
 IDOwnsTrade:
   id: component.id.trade.owns
   client_name: OwnsTradeID
@@ -593,6 +596,7 @@ IDType:
     - _PoolRegistry
     - _QuestRegistry
     - _RoomRegistry
+  read_by: [AccountMove, Craft, FriendAccept, Getter, KamiLevel, KamiOnyxRevive, __LocalSetup]
 IdHolder:
   id: component.id.holder
   client_name: HolderID
@@ -622,6 +626,7 @@ IdHolder:
     - SkillRespec
     - _PoolRegistry
     - __LocalSetup
+  read_by: [KamiLevel, KamiOnyxRespec, KamiOnyxRevive, SkillUpgrade, _HarvestAdmin]
 IdSource:
   id: component.id.source
   client_name: SourceID
@@ -665,7 +670,7 @@ IdSource:
     - _RoomRegistry
     - _SkillRegistry
     - __LocalSetup
-  read_by: [AccountMove, Craft, Getter, KamiLevel, KamiOnyxRevive]
+  read_by: [AccountMove, AuctionBuy, Chat, Craft, Getter, GoalContribute, KamiLevel, KamiName, KamiOnyxRename, KamiOnyxRevive, ListingBuy, ListingSell, QuestAccept]
 IdTarget:
   id: component.id.target
   client_name: TargetID
@@ -688,21 +693,66 @@ IndexBackground:
   type: uint32
   comment: "Body is a trait, non-fungible"
   written_by: [KamiGachaMint, _TraitRegistry]
-  read_by: [Getter]
+  read_by:
+    - Getter
+    - HarvestCollect
+    - HarvestLiquidate
+    - HarvestStart
+    - HarvestStop
+    - Kami721Metadata
+    - KamiCastItem
+    - KamiLevel
+    - KamiOnyxRespec
+    - KamiOnyxRevive
+    - KamiSacrificeCommit
+    - KamiUseItem
+    - SkillRespec
+    - SkillUpgrade
+    - _HarvestAdmin
 IndexBody:
   id: component.index.body
   client_name: BodyIndex
   type: uint32
   comment: "Body is a trait, non-fungible"
   written_by: [KamiGachaMint, _TraitRegistry]
-  read_by: [Getter]
+  read_by:
+    - Getter
+    - HarvestCollect
+    - HarvestLiquidate
+    - HarvestStart
+    - HarvestStop
+    - Kami721Metadata
+    - KamiCastItem
+    - KamiLevel
+    - KamiOnyxRespec
+    - KamiOnyxRevive
+    - KamiSacrificeCommit
+    - KamiUseItem
+    - SkillRespec
+    - SkillUpgrade
+    - _HarvestAdmin
 IndexColor:
   id: component.index.color
   client_name: ColorIndex
   type: uint32
   comment: "Body is a trait, non-fungible"
   written_by: [KamiGachaMint, _TraitRegistry]
-  read_by: [Getter]
+  read_by:
+    - Getter
+    - HarvestCollect
+    - HarvestLiquidate
+    - HarvestStart
+    - HarvestStop
+    - Kami721Metadata
+    - KamiCastItem
+    - KamiLevel
+    - KamiOnyxRespec
+    - KamiOnyxRevive
+    - KamiSacrificeCommit
+    - KamiUseItem
+    - SkillRespec
+    - SkillUpgrade
+    - _HarvestAdmin
 Index:
   id: component.index
   type: uint32
@@ -731,14 +781,29 @@ IndexCurrency:
   type: uint32
   comment: "the item index of used on entities like listings and auctions where another Index determins"
   written_by: [_AuctionRegistry, _ListingRegistry]
-  read_by: [ListingBuy, ListingSell]
+  read_by: [AuctionBuy, ListingBuy, ListingSell]
 IndexFace:
   id: component.index.face
   client_name: FaceIndex
   type: uint32
   comment: "Body is a trait, non-fungible"
   written_by: [KamiGachaMint, _TraitRegistry]
-  read_by: [Getter]
+  read_by:
+    - Getter
+    - HarvestCollect
+    - HarvestLiquidate
+    - HarvestStart
+    - HarvestStop
+    - Kami721Metadata
+    - KamiCastItem
+    - KamiLevel
+    - KamiOnyxRespec
+    - KamiOnyxRevive
+    - KamiSacrificeCommit
+    - KamiUseItem
+    - SkillRespec
+    - SkillUpgrade
+    - _HarvestAdmin
 IndexFaction:
   id: component.index.faction
   client_name: FactionIndex
@@ -751,7 +816,22 @@ IndexHand:
   type: uint32
   comment: "Body is a trait, non-fungible"
   written_by: [KamiGachaMint, _TraitRegistry]
-  read_by: [Getter]
+  read_by:
+    - Getter
+    - HarvestCollect
+    - HarvestLiquidate
+    - HarvestStart
+    - HarvestStop
+    - Kami721Metadata
+    - KamiCastItem
+    - KamiLevel
+    - KamiOnyxRespec
+    - KamiOnyxRevive
+    - KamiSacrificeCommit
+    - KamiUseItem
+    - SkillRespec
+    - SkillUpgrade
+    - _HarvestAdmin
 IndexItem:
   id: component.index.item
   client_name: ItemIndex
@@ -813,7 +893,7 @@ IndexKami:
   indexed: true
   comment: "ERC721 index of a kami"
   written_by: [Kami721Stake, KamiGachaMint, KamiMarketAcceptOffer, KamiMarketBuy, KamiMarketCancel, KamiMarketOffer, KamiSend]
-  read_by: [Getter, KamiLevel]
+  read_by: [Getter, KamiLevel, KamiSacrificeCommit]
 IndexKamiListing:
   id: component.index.kami.listing
   client_name: KamiListingIndex
@@ -833,7 +913,7 @@ IndexNode:
   type: uint32
   comment: "represents the human-set Node Index on a Node entity"
   written_by: [_NodeRegistry]
-  read_by: [KamiCastItem]
+  read_by: [HarvestCollect, HarvestLiquidate, HarvestStop, KamiCastItem, _HarvestAdmin]
 IndexQuest:
   id: component.index.quest
   client_name: QuestIndex
@@ -905,7 +985,7 @@ IndexSkill:
   client_name: SkillIndex
   type: uint32
   comment: "represents the autogenerated Skill Index of a Registry entity"
-  written_by: [SkillUpgrade, _SkillRegistry]
+  written_by: [KamiOnyxRespec, SkillRespec, SkillUpgrade, _SkillRegistry]
 IsComplete:
   id: component.is.complete
   type: bool
@@ -921,6 +1001,7 @@ IsRegistry:
   type: bool
   comment: "identifies an entity as Registry entry"
   written_by: [_FactionRegistry, _GoalRegistry, _ItemRegistry, _NodeRegistry, _QuestRegistry, _RecipeRegistry, _RelationshipRegistry, _SkillRegistry, _TraitRegistry]
+  read_by: [HarvestCollect, HarvestStop]
 Keys:
   id: component.keys
   type: "uint32[]"
@@ -973,7 +1054,7 @@ Max:
   id: component.max
   type: uint256
   written_by: [Kami721Stake, KamiMarketAcceptOffer, KamiMarketBuy, KamiMarketCancel, KamiMarketOffer, KamiSend, _AuctionRegistry, _SkillRegistry]
-  read_by: [AuctionBuy]
+  read_by: [AuctionBuy, SkillUpgrade]
 MediaURI:
   id: component.mediaURI
   type: string
@@ -1012,22 +1093,6 @@ Power:
   type: Stat
   comment: "data harvesting power of a pet (in bytes/hr)"
   written_by: [KamiGachaMint, _ItemRegistry, _TraitRegistry]
-  read_by:
-    - AccountMove
-    - Craft
-    - HarvestCollect
-    - HarvestLiquidate
-    - HarvestStart
-    - HarvestStop
-    - KamiCastItem
-    - KamiLevel
-    - KamiOnyxRespec
-    - KamiOnyxRevive
-    - KamiSacrificeCommit
-    - KamiUseItem
-    - SkillRespec
-    - SkillUpgrade
-    - _HarvestAdmin
 ProxyPermissionsERC721:
   id: components.proxy.Permissions.ERC721
   type: bool
@@ -1069,41 +1134,12 @@ Slots:
   type: Stat
   comment: "the number of base mod slots on a kami or equipment"
   written_by: [KamiGachaMint, _ItemRegistry, _TraitRegistry]
-  read_by:
-    - AccountMove
-    - Craft
-    - HarvestCollect
-    - HarvestLiquidate
-    - HarvestStart
-    - HarvestStop
-    - KamiCastItem
-    - KamiLevel
-    - KamiOnyxRespec
-    - KamiOnyxRevive
-    - KamiSacrificeCommit
-    - KamiUseItem
-    - SkillRespec
-    - SkillUpgrade
-    - _HarvestAdmin
 Stamina:
   id: component.stat.stamina
   type: Stat
   comment: "the total stamina of an entity"
   written_by: [AccountMove, AccountRegister, AccountUseItem, Craft, KamiCastItem, _ItemRegistry, _RecipeRegistry, __LocalSetup]
-  read_by:
-    - Getter
-    - HarvestCollect
-    - HarvestLiquidate
-    - HarvestStart
-    - HarvestStop
-    - KamiLevel
-    - KamiOnyxRespec
-    - KamiOnyxRevive
-    - KamiSacrificeCommit
-    - KamiUseItem
-    - SkillRespec
-    - SkillUpgrade
-    - _HarvestAdmin
+  read_by: [Getter]
 State:
   id: component.state
   type: string
@@ -1403,7 +1439,9 @@ Type:
     - KamiCastItem
     - KamiGachaMint
     - KamiGachaReroll
+    - KamiGachaReveal
     - KamiSacrificeCommit
+    - KamiSacrificeReveal
     - KamiUseItem
     - QuestComplete
     - ScavengeClaim
@@ -1494,7 +1532,7 @@ Value:
     - _SkillRegistry
     - _SnapshotT2
     - __LocalSetup
-  read_by: [FriendAccept, FriendRequest, Getter]
+  read_by: [FriendAccept, FriendRequest, Getter, Kami721Metadata, Kami721Transfer]
 Values:
   id: component.values
   type: "uint256[]"
@@ -1518,22 +1556,6 @@ Violence:
   type: Stat
   comment: "Violence stat of a kami, equip or mod. Violence allows a kami to reap others at higher energy capacities."
   written_by: [KamiGachaMint, _ItemRegistry, _TraitRegistry]
-  read_by:
-    - AccountMove
-    - Craft
-    - HarvestCollect
-    - HarvestLiquidate
-    - HarvestStart
-    - HarvestStop
-    - KamiCastItem
-    - KamiLevel
-    - KamiOnyxRespec
-    - KamiOnyxRevive
-    - KamiSacrificeCommit
-    - KamiUseItem
-    - SkillRespec
-    - SkillUpgrade
-    - _HarvestAdmin
 Weights:
   id: component.weights
   type: "uint256[]"
@@ -1543,3 +1565,4 @@ Whitelist:
   type: "uint32[]"
   comment: "list of whitelisted IDs"
   written_by: [_RelationshipRegistry]
+  read_by: [RelationshipAdvance]

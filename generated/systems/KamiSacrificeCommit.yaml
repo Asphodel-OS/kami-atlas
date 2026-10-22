@@ -11,16 +11,19 @@ KamiSacrificeCommit:
     "executeTyped(uint32)": "0x09c90324"
   deployed: true
   writes: [BlockReveal, EntityType, For, Health, IDAnchor, IDOwnsEquipment, IDOwnsInventory, IDOwnsKami, IDType, IdHolder, IdSource, IndexItem, Level, State, Time, TimeLast, Type, Value]
-  reads: [Affinity, CacheOperator, Harmony, Power, Slots, Stamina, TimeReset, TokenAddress, Violence]
+  reads: [Affinity, CacheOperator, IndexBackground, IndexBody, IndexColor, IndexFace, IndexHand, IndexKami, TimeReset, TokenAddress]
   stats: [HARMONY, HEALTH, POWER, VIOLENCE]
+  config: [KAMI721_ADDRESS, KAMI_HARV_BOUNTY, KAMI_HARV_FERTILITY, KAMI_HARV_INTENSITY, KAMI_HARV_STRAIN, KAMI_REST_METABOLISM]
   bonuses: [HARV_BOUNTY_BOOST, HARV_FERTILITY_BOOST, HARV_INTENSITY_BOOST, REST_METABOLISM_BOOST, STND_STRAIN_BOOST]
   data: [KAMI_SACRIFICE, KAMI_SACRIFICE_TOTAL, SACRIFICE_RARE_PITY, SACRIFICE_RARE_PITY_TOTAL, SACRIFICE_UNCOMMON_PITY, SACRIFICE_UNCOMMON_PITY_TOTAL]
   access_not_written: [ProxyPermissionsERC721, TimeLastAction]
   steps:
+    - LibKami.getByIndex
     - LibAccount.getByOperator
     - "revert if !(kamiID != 0): kami does not exist"
     - "LibKami.verifyAccount(uint256,uint256)"
     - LibSoulbound.verify
+    - LibKami.getState
     - "revert if !(LibString.eq(state, \"RESTING\")): kami must be resting"
     - "LibKami.sync(uint256)"
     - LibSacrifice.commit

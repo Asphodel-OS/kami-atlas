@@ -16,6 +16,7 @@ LibBonus.assignTemporary:
   sig: "(uint256 regAnchorID, uint256 holderID) internal"
   writes: [IDAnchor, IDType, IdSource, Level, Time]
   steps:
+    - "LibBonus.queryByParent(uint256)"
     - "for each (i < regIDs.length)": [LibBonus.assign]
     - "set Level"
 LibBonus.calcSingle:
@@ -41,7 +42,7 @@ LibBonus.get:
     - "for each (i < ids.length)": [LibBonus.calcSingle]
 LibBonus.getFor:
   sig: "(string type_, uint256 holderID) internal view"
-  steps: [LibBonus.get]
+  steps: [LibBonus.queryByType, LibBonus.get]
 LibBonus.getForUint256:
   sig: "(string type_, uint256 holderID) internal view"
   steps: [LibBonus.getFor]
@@ -49,8 +50,18 @@ LibBonus.incBy:
   sig: "(uint256 regAnchorID, uint256 anchorID, uint256 holderID, uint256 amt) internal"
   writes: [IDAnchor, IDType, IdSource, Level, Time]
   steps:
+    - "LibBonus.queryByParent(uint256)"
     - "for each (i < regIDs.length)": [LibBonus.assign]
     - "inc Level"
+"LibBonus.queryByParent(uint256)":
+  sig: "(uint256 anchorID) internal view"
+  steps: ["getEntitiesWithValue IDAnchor"]
+"LibBonus.queryByParent(uint256[])":
+  sig: "(uint256[] anchorIDs) internal view"
+  steps: ["getEntitiesWithValue IDAnchor"]
+LibBonus.queryByType:
+  sig: "(string type_, uint256 holderID) internal view"
+  steps: [LibBonus.genTypeID, "getEntitiesWithValue IDType"]
 LibBonus.regCreate:
   sig: "(uint256 sourceID, uint256 anchorID, string type_, string endAnchor, uint256 duration, int256 value) internal"
   writes: [EntityType, IDAnchor, IdSource, IsRegistry, Subtype, Time, Type, Value]
@@ -74,11 +85,11 @@ LibBonus.regRemove:
 "LibBonus.regRemoveByAnchor(uint256)":
   sig: "(uint256 anchorID) internal"
   writes: [EntityType, IDAnchor, IdSource, IsRegistry, Subtype, Time, Type, Value]
-  steps: [LibBonus.regRemove]
+  steps: ["LibBonus.queryByParent(uint256)", LibBonus.regRemove]
 "LibBonus.regRemoveByAnchor(uint256[])":
   sig: "(uint256[] anchorIDs) internal"
   writes: [EntityType, IDAnchor, IdSource, IsRegistry, Subtype, Time, Type, Value]
-  steps: [LibBonus.regRemove]
+  steps: ["LibBonus.queryByParent(uint256[])", LibBonus.regRemove]
 LibBonus.resetTimed:
   sig: "(uint256 holderID) public"
   writes: [IDAnchor, IDType, IdSource, Level, Time]
@@ -112,4 +123,4 @@ LibBonus.setTypeIDFromReg:
 LibBonus.unassignBy:
   sig: "(string endType, uint256 holderID) internal"
   writes: [IDAnchor, IDType, IdSource, Level, Time]
-  steps: ["LibBonus.unassign(uint256[])"]
+  steps: [LibBonus.genEndAnchor, "LibBonus.queryByParent(uint256)", "LibBonus.unassign(uint256[])"]

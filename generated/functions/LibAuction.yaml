@@ -21,13 +21,14 @@ LibAuction.logBuy:
     - "LibEmitter.emitEvent(\"AUCTION_BUY\")"
 LibAuction.meetsRequirements:
   sig: "(uint256 id, uint256 accID) internal view"
-  steps: ["LibConditional.check(uint256[],uint256)"]
+  steps: [LibAuctionRegistry.getReqs, "LibConditional.check(uint256[],uint256)"]
 LibAuction.verifyBuyParams:
   sig: "(uint32 itemIndex, uint32 amt) internal view"
   steps:
     - "revert if amt < 1: LibAuction: purchase amount must be positive"
     - LibItem.getByIndex
     - "revert if itemID == 0: LibAuction: item does not exist"
+    - LibAuctionRegistry.get
     - "revert if id == 0: LibAuction: auction does not exist for item index"
     - LibAuction.exceedsLimit
     - "revert if exceedsLimit(comps, id, amt): LibAuction: amount exceeds auction limit"

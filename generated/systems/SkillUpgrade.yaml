@@ -11,8 +11,31 @@ SkillUpgrade:
     "executeTyped(uint256,uint32)": "0xe60f3a76"
   deployed: true
   writes: [EntityType, Health, IDAnchor, IDOwnsSkill, IDType, IdSource, IndexSkill, Level, SkillPoint, Time, TimeLast, Value]
-  reads: [Affinity, CacheOperator, For, Harmony, HasFlag, IDOwnsKami, Index, IndexRoom, IsComplete, LogicType, Power, Slots, Stamina, State, Subtype, TimeNext, TimeReset, Type, Violence]
+  reads:
+    - Affinity
+    - CacheOperator
+    - Cost
+    - For
+    - HasFlag
+    - IDOwnsKami
+    - IdHolder
+    - Index
+    - IndexBackground
+    - IndexBody
+    - IndexColor
+    - IndexFace
+    - IndexHand
+    - IndexRoom
+    - IsComplete
+    - LogicType
+    - Max
+    - State
+    - Subtype
+    - TimeNext
+    - TimeReset
+    - Type
   stats: [HARMONY, HEALTH, POWER, VIOLENCE]
+  config: [KAMI_HARV_BOUNTY, KAMI_HARV_FERTILITY, KAMI_HARV_INTENSITY, KAMI_HARV_STRAIN, KAMI_REST_METABOLISM, KAMI_TREE_REQ]
   bonuses: [HARV_BOUNTY_BOOST, HARV_FERTILITY_BOOST, HARV_INTENSITY_BOOST, REST_METABOLISM_BOOST, STND_STRAIN_BOOST]
   data: [SKILL_POINTS_USE]
   writes_without_access: [Time]
@@ -21,13 +44,13 @@ SkillUpgrade:
   access_not_written: [TimeStart, Type]
   steps:
     - LibAccount.getByOperator
+    - LibSkillRegistry.getByIndex
     - "revert if regID == 0: SkillUpgrade: skill not found"
+    - "LibFor.get(uint256)"
     - LibFor.isShape
     - "revert if !LibFor.isShape(components, holderID, forEntity): SkillUpgrade: invalid target"
-    - "eq For"
     - "if forEntity.eq(\"ACCOUNT\")": ["revert if accID != holderID: SkillUpgrade: not ur account"]
       else:
-        - "eq For"
         - "if forEntity.eq(\"KAMI\")": ["LibKami.verifyAccount(uint256,uint256)", "LibKami.verifyState(uint256,string) \"RESTING\"", "LibKami.sync(uint256)"]
     - LibSkill.verifyPrerequisites
     - LibSkill.upgradeFor

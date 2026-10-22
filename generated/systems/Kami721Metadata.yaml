@@ -9,8 +9,9 @@ Kami721Metadata:
     "executeTyped()": "0xe1df4ba6"
     "tokenURI(uint256)": "0xc87b56dd"
   deployed: true
-  reads: [Affinity, Level, MediaURI, Name, "Stat[by name]"]
+  reads: [Affinity, EntityType, IndexBackground, IndexBody, IndexColor, IndexFace, IndexHand, Level, MediaURI, Name, "Stat[by name]", Value]
   stats: [HARMONY, HEALTH, POWER, VIOLENCE]
+  config: [BASE_URI]
   steps:
     tokenURI: [LibKami721.getJsonBase64]
     execute: ["revert if !(false): Kami721MetadataSystem: no execute"]

@@ -14,8 +14,12 @@ LibRelationship.has:
 LibRelationship.isBlacklisted:
   sig: "(uint256 accID, uint256 registryID) internal view"
   steps:
+    - LibRelationshipRegistry.getBlacklist
+    - LibRelationshipRegistry.getNpcIndex
     - "for each (i < blacklist.length)": [LibRelationship.has]
 LibRelationship.isWhitelisted:
   sig: "(uint256 accID, uint256 registryID) internal view"
   steps:
+    - LibRelationshipRegistry.getWhitelist
+    - LibRelationshipRegistry.getNpcIndex
     - "for each (i < whitelist.length)": [LibRelationship.has]

@@ -10,6 +10,8 @@ Kami721Transfer:
     "batchTransferToMany(uint256[],address[])": "0xebcee357"
     "execute(bytes)": "0x09c5eabe"
   deployed: true
+  reads: [Value]
+  config: [KAMI721_ADDRESS]
   steps:
     batchTransfer:
       - LibKami721.getContract

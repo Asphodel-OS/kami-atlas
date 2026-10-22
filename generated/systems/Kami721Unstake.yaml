@@ -14,9 +14,11 @@ Kami721Unstake:
   skip_env: [testing]
   writes: [EntityType, For, IDAnchor, IDOwnsEquipment, IDOwnsInventory, IDOwnsKami, IDType, IdSource, IndexItem, Level, State, Time, TimeLast, Value]
   reads: [IndexRoom, TokenAddress]
+  config: [KAMI721_ADDRESS]
   data: [KAMI721_UNSTAKE]
   access_not_written: [IdHolder, ProxyPermissionsERC721, Type]
   steps:
+    - LibKami.getByIndex
     - LibAccount.getByOwner
     - LibAccount.getRoom
     - LibAccount.getRoom

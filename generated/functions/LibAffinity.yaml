@@ -7,3 +7,4 @@ LibAffinity.getHarvestEffectiveness:
   sig: "(string sourceAff, string targetAff) public pure"
 LibAffinity.getShifts:
   sig: "(string key) internal view"
+  steps: [LibConfig.getArray]

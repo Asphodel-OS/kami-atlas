@@ -10,13 +10,14 @@ QuestAccept:
     "executeTyped(uint32)": "0x09c90324"
   deployed: true
   writes: [EntityType, IDAnchor, IDOwnsQuest, IndexQuest, IsComplete, TimeLast, TimeStart, Value]
-  reads: [CacheOperator, For, HasFlag, IDOwnsKami, Index, IndexRoom, IsDisabled, Level, LogicType, SkillPoint, State, Time, TimeNext, Type]
+  reads: [CacheOperator, For, HasFlag, IDOwnsKami, IdSource, Index, IndexRoom, IsDisabled, Level, LogicType, SkillPoint, State, Time, TimeNext, Type]
   flags: [REPEATABLE]
   steps:
     - LibAccount.getByOperator
     - LibQuestRegistry.verifyExists
     - LibQuest.verifyEnabled
     - LibQuest.verifyRequirements
+    - LibQuest.getAccQuestIndex
     - LibQuestRegistry.isRepeatable
     - "if LibQuestRegistry.isRepeatable(components, index)": [LibQuest.verifyRepeatable, LibQuest.assignRepeatable]
       else: ["revert if questID != 0: accepted before", LibQuest.assign]

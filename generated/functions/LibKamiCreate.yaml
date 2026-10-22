@@ -65,7 +65,7 @@ LibKamiCreate.getSupplyHeadroom:
   steps: [LibKami721.getContract]
 LibKamiCreate.makeName:
   sig: "(uint32 index) internal view"
-  steps: ["LibConfig.getString(\"BASE_KAMI_NAME\")", "concat Value"]
+  steps: ["LibConfig.getString(\"BASE_KAMI_NAME\")"]
 LibKamiCreate.setBase:
   sig: "(uint256 id, uint32 index) internal"
   steps: ["set IDOwnsKami", "set IndexKami", LibKamiCreate.makeName, "set Name", "set State", "set Level", "set SkillPoint", "set Experience"]
@@ -73,7 +73,7 @@ LibKamiCreate.setStats:
   sig: "(uint256 id, uint32[] traits) internal"
   steps:
     - LibTraitRegistry.getTypeNames
-    - "for each (i < 5)": [LibTraitRegistry.addStats]
+    - "for each (i < 5)": [LibTraitRegistry.getStatsByIndex, LibTraitRegistry.addStats]
     - "set Health"
     - "set Power"
     - "set Violence"

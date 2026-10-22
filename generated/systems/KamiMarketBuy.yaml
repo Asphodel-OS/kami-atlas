@@ -35,7 +35,7 @@ KamiMarketBuy:
     - Values
   reads: [TokenAddress]
   events: [KAMI_MARKET_BUY]
-  config: [KAMI_MARKET_ENABLED, KAMI_MARKET_PURCHASE_COOLDOWN]
+  config: [KAMI_MARKET_ENABLED, KAMI_MARKET_FEE_RATE, KAMI_MARKET_FEE_RECIPIENT, KAMI_MARKET_PURCHASE_COOLDOWN, NEWBIE_VENDOR_TWAP_WINDOW]
   data: [KAMI_MARKET_BUY]
   writes_without_access: [Balance, IndexKami, Max]
   writes_without_access_paths:
@@ -51,7 +51,8 @@ KamiMarketBuy:
       - LibKamiMarket.verifyEnabled
       - "for each (i < listingIDs.length)": ["LibKamiMarket.verifyIsType(\"KAMI_LISTING\")", LibKamiMarket.verifyActive, LibKamiMarket.verifyNotExpired, LibKamiMarket.verifyNotOwner, LibKamiMarket.getPrice]
       - "revert if !(msg.value >= totalPrice): KamiMarketBuy: insufficient ETH"
-      - "for each (i < listingIDs.length)": [LibKamiMarket.fillListing, LibKamiMarket.calcFee, LibTWAP.poke, KamiMarketBuySystem._transferETH, LibKamiMarket.emitBuy, LibKamiMarket.logBuy]
+      - LibKamiMarket.getFeeRecipient
+      - "for each (i < listingIDs.length)": [LibKamiMarket.getOwner, LibKamiMarket.fillListing, LibKamiMarket.calcFee, LibTWAP.poke, KamiMarketBuySystem._transferETH, LibKamiMarket.emitBuy, LibKamiMarket.logBuy]
       - "if totalFee > 0": [KamiMarketBuySystem._transferETH]
       - "if excess > 0": [KamiMarketBuySystem._transferETH]
       - LibAccount.updateLastTs

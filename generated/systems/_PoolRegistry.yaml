@@ -33,6 +33,7 @@ _PoolRegistry:
       - LibPoolRegistry.get
       - "revert if !(LibPoolRegistry.get(components, indexA, indexB) == 0): Pool already exists"
       - LibPoolRegistry.genID
+      - LibInventory.getBalanceOf
       - "if pre > 0": [LibInventory.transferForNoLog]
       - LibInventory.getBalanceOf
       - "if pre > 0": [LibInventory.transferForNoLog]
@@ -43,18 +44,22 @@ _PoolRegistry:
       - LibPool.mintShares
       - LibPool.logSync
     donate:
+      - LibPoolRegistry.get
       - "revert if !(id != 0): Pool does not exist"
       - "if amtA > 0": [LibInventory.transferForNoLog]
       - "if amtB > 0": [LibInventory.transferForNoLog]
       - "if amtA > 0 || amtB > 0": [LibPool.logSync]
-    setFee: ["revert if !(id != 0): Pool does not exist", "revert if !(feeBps <= MAX_FEE_BPS): Pool: fee too high", LibPoolRegistry.setFee]
-    setDisabled: ["revert if !(id != 0): Pool does not exist", LibPoolRegistry.setDisabled]
+    setFee: [LibPoolRegistry.get, "revert if !(id != 0): Pool does not exist", "revert if !(feeBps <= MAX_FEE_BPS): Pool: fee too high", LibPoolRegistry.setFee]
+    setDisabled: [LibPoolRegistry.get, "revert if !(id != 0): Pool does not exist", LibPoolRegistry.setDisabled]
     remove:
+      - LibPoolRegistry.get
       - "revert if !(id != 0): Pool does not exist"
       - LibPool.forceExitAll
       - LibPool.getShares
       - "if LibPool.getShares(components, id, id) > 0": [LibPool.burnLockedShares]
       - LibPoolRegistry.getItemIndices
+      - LibInventory.getBalanceOf
+      - LibInventory.getBalanceOf
       - "if reserveLo > 0": [LibInventory.transferForNoLog]
       - "if reserveHi > 0": [LibInventory.transferForNoLog]
       - LibPool.logSync

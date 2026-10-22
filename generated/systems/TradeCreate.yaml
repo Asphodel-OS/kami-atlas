@@ -12,6 +12,7 @@ TradeCreate:
   writes: [EntityType, IDOwnsInventory, IDOwnsTrade, IdTarget, IndexItem, Keys, State, TimeLast, Value, Values]
   reads: [CacheOperator, HasFlag, IndexRoom]
   events: [TRADE_CREATE]
+  config: [MAX_TRADES_PER_ACCOUNT, TRADE_CREATION_FEE, TRADE_DELIVERY_FEE]
   data: [ITEM_COUNT, TRADE_CREATE]
   steps:
     - LibAccount.getByOwnerOrOperator

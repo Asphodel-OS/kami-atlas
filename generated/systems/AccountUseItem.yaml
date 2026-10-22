@@ -34,6 +34,7 @@ AccountUseItem:
     - Value
   reads: [CacheOperator, For, IDOwnsKami, Index, IsComplete, LogicType, SkillPoint, Subtype, TokenAddress]
   stats: [STAMINA]
+  config: [ACCOUNT_STAMINA, VIP_SCORE_ADDRESS, VIP_STAGE]
   bonuses: [TIMED, UPON_COOLDOWN_SET, UPON_DEATH, UPON_HARVEST_ACTION, UPON_HARVEST_STOP, UPON_KILL_OR_KILLED, UPON_LIQUIDATION]
   data: [ITEM_COUNT, ITEM_USE]
   writes_without_access: [Experience, HasFlag, IDAnchor, Level, State, Time, TimeNext]

@@ -12,13 +12,14 @@ KamiName:
   deployed: true
   skip_env: [testing]
   writes: [EntityType, IDOwnsInventory, IndexItem, Name, TimeLast, Value]
-  reads: [CacheOperator, IDOwnsKami, IndexRoom, State]
+  reads: [CacheOperator, IDOwnsKami, IdSource, IndexRoom, State]
   data: [ITEM_COUNT, ITEM_USE, KAMI_NAME]
   steps:
     - LibAccount.getByOperator
     - "LibKami.verifyAccount(uint256,uint256)"
     - LibKami.getRoom
     - "revert if LibKami.getRoom(components, id) != ROOM_INDEX: PetName: must be in room 11"
+    - LibInventory.getBalanceOf
     - "revert if balance == 0: PetName: You need Holy Dust for this"
     - "revert if bytes(name).length == 0: PetName: name cannot be empty"
     - "revert if bytes(name).length > 16: PetName: name can be at most 16 characters"

@@ -15,9 +15,10 @@ FriendCancel:
   steps:
     - LibAccount.getByOperator
     - LibFriend.checkIsFriendship
+    - LibFriend.getState
     - "if LibString.eq(state, \"REQUEST\")": [LibFriend.getAccount, LibFriend.getTarget, "revert if !(LibFriend.getAccount(components, friendshipID) == accID || LibFrien…: FriendCancel: not owner/target"]
       else:
         - "if LibString.eq(state, \"BLOCKED\")": [LibFriend.getAccount, "revert if LibFriend.getAccount(components, friendshipID) != accID: FriendCancel: not owner"]
-          else: [LibFriend.getAccount, "revert if LibFriend.getAccount(components, friendshipID) != accID: FriendCancel: not owner", LibFriend.remove]
+          else: [LibFriend.getAccount, "revert if LibFriend.getAccount(components, friendshipID) != accID: FriendCancel: not owner", LibFriend.getTarget, LibFriend.getFriendship, LibFriend.remove]
     - LibFriend.remove
     - LibAccount.updateLastTs

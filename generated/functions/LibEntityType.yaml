@@ -4,6 +4,9 @@ LibEntityType.checkAndSet:
   steps:
     - "has EntityType"
     - "if !have": ["set EntityType"]
+LibEntityType.get:
+  sig: "(uint256 id) internal view"
+  steps: ["get EntityType"]
 LibEntityType.has:
   sig: "(uint256 id) internal view"
   steps: ["has EntityType"]

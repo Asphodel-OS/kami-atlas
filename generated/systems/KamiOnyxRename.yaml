@@ -11,7 +11,7 @@ KamiOnyxRename:
     "executeTyped(uint256,string)": "0x68c47df2"
   deployed: true
   writes: [EntityType, IDOwnsInventory, IndexItem, Name, TimeLast, Value]
-  reads: [IDOwnsKami, IndexRoom, State]
+  reads: [IDOwnsKami, IdSource, IndexRoom, State]
   data: [ITEM_COUNT, KAMI_NAME, TOKEN_SPEND, TOKEN_SPEND_RENAME]
   disabled: "Onyx Features are temporarily disabled."
   access_not_written: [TokenAllowance]
